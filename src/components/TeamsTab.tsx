@@ -64,7 +64,7 @@ export function TeamsTab({ teams, tournamentType, onAddTeam, onRemoveTeam }: Tea
       <!DOCTYPE html>
       <html>
         <head>
-          <title>Liste des Équipes - Pétanque Manager</title>
+          <title>Liste des ${tournamentType === 'melee' ? 'Joueurs' : 'Équipes'} - Pétanque Manager</title>
           <style>
             body { 
               font-family: Arial, sans-serif; 
@@ -140,12 +140,12 @@ export function TeamsTab({ teams, tournamentType, onAddTeam, onRemoveTeam }: Tea
         <body>
           <div class="header">
             <img src="/logo1.png" alt="Pétanque Manager" class="logo" />
-            <h1>🏆 Liste des Équipes</h1>
+            <h1>🏆 Liste des ${tournamentType === 'melee' ? 'Joueurs' : 'Équipes'}</h1>
             <p>Tournoi de Pétanque - ${new Date().toLocaleDateString('fr-FR')}</p>
           </div>
           <div class="tournament-info">
-            <strong>Type:</strong> ${tournamentType.charAt(0).toUpperCase() + tournamentType.slice(1)} • 
-            <strong>Nombre d'équipes:</strong> ${teams.length}
+            <strong>Type:</strong> ${tournamentType.charAt(0).toUpperCase() + tournamentType.slice(1)} •
+            <strong>Nombre ${tournamentType === 'melee' ? 'de joueurs' : "d'équipes"}:</strong> ${teams.length}
           </div>
           <div class="team-list">
             ${teams.map(team => `
@@ -282,10 +282,12 @@ export function TeamsTab({ teams, tournamentType, onAddTeam, onRemoveTeam }: Tea
         <div className="text-center py-12">
           <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-            Aucune équipe inscrite
+            {tournamentType === 'melee' ? 'Aucun joueur inscrit' : 'Aucune équipe inscrite'}
           </h3>
           <p className="text-gray-500 dark:text-gray-400">
-            Commencez par ajouter des équipes pour votre tournoi
+            {tournamentType === 'melee'
+              ? 'Commencez par ajouter des joueurs pour votre tournoi'
+              : 'Commencez par ajouter des équipes pour votre tournoi'}
           </p>
         </div>
       )}

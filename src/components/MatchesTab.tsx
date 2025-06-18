@@ -39,11 +39,11 @@ export function MatchesTab({
   };
 
   const getGroupLabel = (ids: string[]) => {
-    const names = ids.map(id => {
+    const labels = ids.map(id => {
       const team = teams.find(t => t.id === id);
-      return team?.players[0]?.name || 'Inconnu';
+      return team?.name || team?.players[0]?.name || 'Inconnu';
     });
-    return names.join(' + ');
+    return labels.join(' + ');
   };
 
   const handleEditScore = (match: Match) => {
