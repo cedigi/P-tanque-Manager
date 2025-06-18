@@ -152,19 +152,39 @@ function generateMeleeMatches(tournament: Tournament): Match[] {
   const { teams, matches, currentRound, courts } = tournament;
   const round = currentRound + 1;
 
-  // Determine team size: more courts allow smaller teams (doublettes),
-  // otherwise we create triplettes.
-  const playersPerTeam = courts >= 4 ? 2 : 3;
+  /**
+   * Determine how many doublettes and triplettes are needed so that
+   * everyone plays if possible. We start with only doublettes and then
+   * convert some into triplettes when there are not enough courts.
+   */
+  const playerCount = teams.length;
+  let doublettes = Math.floor(playerCount / 2);
+  let triplettes = playerCount % 2;
+  if (triplettes === 1) {
+    doublettes -= 1; // one triplette uses three players
+  }
 
-  // Shuffle the individual players (each team is a single player in mêlée).
+  let teamCount = doublettes + triplettes;
+  while (teamCount > 2 * courts && doublettes >= 3) {
+    // Convert three doublettes (6 players) into two triplettes
+    doublettes -= 3;
+    triplettes += 2;
+    teamCount = doublettes + triplettes;
+  }
+
+  const groupSizes: number[] = [];
+  for (let i = 0; i < doublettes; i++) groupSizes.push(2);
+  for (let i = 0; i < triplettes; i++) groupSizes.push(3);
+
+  // Shuffle the individual players (each team is a single player in mêlée)
   const shuffled = [...teams].sort(() => Math.random() - 0.5);
 
   const groups: string[][] = [];
 
-  // Form groups while trying to avoid previous teammates
-  while (shuffled.length > 0) {
+  // Build groups according to the computed sizes while avoiding prior teammates
+  for (const size of groupSizes) {
     const group: string[] = [];
-    while (group.length < playersPerTeam && shuffled.length > 0) {
+    while (group.length < size && shuffled.length > 0) {
       let idx = shuffled.findIndex(team =>
         group.every(id => !haveTeamedBefore(id, team.id, matches))
       );
@@ -174,13 +194,10 @@ function generateMeleeMatches(tournament: Tournament): Match[] {
     groups.push(group);
   }
 
-  // If we ended up with an odd number of groups, merge the last one across the
-  // others so that everyone has an opponent.
-  if (groups.length % 2 === 1 && groups.length > 1) {
-    const extra = groups.pop()!;
-    extra.forEach((playerId, i) => {
-      groups[i % groups.length].push(playerId);
-    });
+  // Any remaining players (when groups couldn't be perfectly filled) join the
+  // last group.
+  while (shuffled.length > 0 && groups.length > 0) {
+    groups[groups.length - 1].push(shuffled.shift()!.id);
   }
 
   const matchesResult: Match[] = [];
