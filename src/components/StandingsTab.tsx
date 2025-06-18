@@ -48,15 +48,20 @@ export function StandingsTab({ teams }: StandingsTabProps) {
               text-align: center;
               margin-bottom: 10px;
             }
-            table { 
-              width: 100%; 
-              border-collapse: collapse; 
-              margin-top: 20px;
+            table {
+              width: 100%;
+              border-collapse: collapse;
+              margin-top: 10px;
             }
-            th, td { 
-              border: 1px solid #e2e8f0; 
-              padding: 12px; 
+            th, td {
+              padding: 8px;
               text-align: left;
+            }
+            tbody tr {
+              border-bottom: 1px solid #000;
+            }
+            tbody tr:last-child {
+              border-bottom: none;
             }
             th { 
               background: #f1f5f9; 
