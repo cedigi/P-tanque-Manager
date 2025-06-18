@@ -234,13 +234,13 @@ export function MatchesTab({
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       Terrain
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       {isSolo ? 'Joueur' : 'Équipe'}
                     </th>
-                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       Score
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       {isSolo ? 'Joueur' : 'Équipe'}
                     </th>
                     <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
@@ -282,7 +282,7 @@ export function MatchesTab({
                           </div>
                         )}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white text-center">
                         {match.team1Ids ? (
                           getGroupLabel(match.team1Ids)
                         ) : (
@@ -294,7 +294,7 @@ export function MatchesTab({
                           </>
                         )}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-center">
+                      <td className="px-4 py-4 whitespace-nowrap text-center">
                         {editingMatch === match.id ? (
                           <div className="flex items-center justify-center space-x-2">
                             <input
@@ -321,7 +321,7 @@ export function MatchesTab({
                           </span>
                         )}
                       </td>
-                      <td className="pl-12 pr-8 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                      <td className="pl-8 pr-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white text-center">
                         {match.isBye ? (
                           <span className="text-gray-500 dark:text-gray-400 italic">BYE</span>
                         ) : match.team2Ids ? (
