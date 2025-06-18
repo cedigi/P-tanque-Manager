@@ -118,25 +118,21 @@ export function StandingsTab({ teams }: StandingsTabProps) {
                 <th>Points Pour</th>
                 <th>Points Contre</th>
                 <th>Différentiel</th>
-                <th>Joueurs</th>
               </tr>
             </thead>
             <tbody>
               ${sortedTeams.map((team, index) => `
                 <tr class="${index < 3 ? 'podium' : ''}">
                   <td class="position">${index + 1}</td>
-                  <td class="team-name">${team.name}</td>
+                  <td class="team-name">
+                    ${team.name} - ${team.players.map(player => `${player.label ? `[${player.label}] ` : ''}${player.name}`).join(', ')}
+                  </td>
                   <td class="wins">${team.wins}</td>
                   <td class="losses">${team.losses}</td>
                   <td style="text-align: center;">${team.pointsFor}</td>
                   <td style="text-align: center;">${team.pointsAgainst}</td>
                   <td class="performance-${team.performance > 0 ? 'positive' : team.performance < 0 ? 'negative' : 'neutral'}" style="text-align: center;">
                     ${team.performance > 0 ? '+' : ''}${team.performance}
-                  </td>
-                  <td>
-                    ${team.players.map(player => `
-                      ${player.label ? `[${player.label}] ` : ''}${player.name}
-                    `).join(', ')}
                   </td>
                 </tr>
               `).join('')}
@@ -197,9 +193,6 @@ export function StandingsTab({ teams }: StandingsTabProps) {
                 <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   Différentiel
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Joueurs
-                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -214,6 +207,18 @@ export function StandingsTab({ teams }: StandingsTabProps) {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="font-medium text-gray-900 dark:text-white">{team.name}</div>
+                    <div className="flex flex-wrap gap-x-2 gap-y-1 mt-1 text-sm text-gray-600 dark:text-gray-400">
+                      {team.players.map((player) => (
+                        <div key={player.id} className="flex items-center space-x-1">
+                          {player.label && (
+                            <span className="w-4 h-4 bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center text-xs font-medium">
+                              {player.label}
+                            </span>
+                          )}
+                          <span>{player.name}</span>
+                        </div>
+                      ))}
+                    </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-center">
                     <span className="text-lg font-semibold text-green-600 dark:text-green-400">{team.wins}</span>
@@ -231,26 +236,12 @@ export function StandingsTab({ teams }: StandingsTabProps) {
                     <div className="flex items-center justify-center space-x-1">
                       {getPerformanceIcon(team.performance)}
                       <span className={`font-medium ${
-                        team.performance > 0 ? 'text-green-600 dark:text-green-400' : 
-                        team.performance < 0 ? 'text-red-600 dark:text-red-400' : 
+                        team.performance > 0 ? 'text-green-600 dark:text-green-400' :
+                        team.performance < 0 ? 'text-red-600 dark:text-red-400' :
                         'text-gray-500 dark:text-gray-400'
                       }`}>
                         {team.performance > 0 ? '+' : ''}{team.performance}
                       </span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="space-y-1">
-                      {team.players.map((player) => (
-                        <div key={player.id} className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
-                          {player.label && (
-                            <span className="w-4 h-4 bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center text-xs font-medium">
-                              {player.label}
-                            </span>
-                          )}
-                          <span>{player.name}</span>
-                        </div>
-                      ))}
                     </div>
                   </td>
                 </tr>
