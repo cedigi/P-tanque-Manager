@@ -125,10 +125,10 @@ export function MatchesTab({
               color: #d97706; 
               font-weight: bold;
             }
-            .score { 
-              font-size: 18px; 
-              font-weight: bold; 
-              text-align: center;
+            .score {
+              font-size: 18px;
+              font-weight: bold;
+              text-align: left;
             }
             @media print {
               body { margin: 0; }
@@ -141,9 +141,9 @@ export function MatchesTab({
             <thead>
               <tr>
                 <th>Terrain</th>
-                <th>${isSolo ? 'Joueur 1' : 'Équipe 1'}</th>
+                <th>${isSolo ? 'Joueur' : 'Équipe'}</th>
                 <th>Score</th>
-                <th>${isSolo ? 'Joueur 2' : 'Équipe 2'}</th>
+                <th>${isSolo ? 'Joueur' : 'Équipe'}</th>
                 <th>Statut</th>
               </tr>
             </thead>
@@ -244,18 +244,18 @@ export function MatchesTab({
                       Terrain
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      {isSolo ? 'Joueur 1' : 'Équipe 1'}
+                      {isSolo ? 'Joueur' : 'Équipe'}
                     </th>
                     <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       Score
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      {isSolo ? 'Joueur 2' : 'Équipe 2'}
+                    <th className="px-8 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      {isSolo ? 'Joueur' : 'Équipe'}
                     </th>
-                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    <th className="px-8 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       Statut
                     </th>
-                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       Actions
                     </th>
                   </tr>
@@ -333,7 +333,7 @@ export function MatchesTab({
                           </span>
                         )}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                      <td className="px-8 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
                         {match.isBye ? (
                           <span className="text-gray-500 dark:text-gray-400 italic">BYE</span>
                         ) : match.team2Ids ? (
@@ -347,7 +347,7 @@ export function MatchesTab({
                           </>
                         )}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-center">
+                      <td className="px-8 py-4 whitespace-nowrap text-center">
                         <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
                           match.completed || match.isBye
                             ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200'
@@ -356,7 +356,7 @@ export function MatchesTab({
                           {match.completed || match.isBye ? 'Terminé' : 'En cours'}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-center">
+                      <td className="px-4 py-4 whitespace-nowrap text-center">
                         {!match.isBye && (
                           <div className="flex justify-center space-x-2">
                             {editingMatch === match.id ? (
