@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { TournamentType } from '../types/tournament';
-import { Trophy, Users, Target } from 'lucide-react';
+import { Users, Target, Trophy } from 'lucide-react';
+import { Logo } from './Logo';
 
 interface TournamentSetupProps {
   onCreateTournament: (name: string, type: TournamentType, courts: number) => void;
@@ -30,8 +31,8 @@ export function TournamentSetup({ onCreateTournament }: TournamentSetupProps) {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-4">
       <div className="max-w-2xl w-full">
         <div className="text-center mb-8">
-          <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Trophy className="w-8 h-8 text-white" />
+          <div className="w-16 h-16 bg-blue-600 rounded-full flex items-center justify-center mx-auto mb-4 overflow-hidden">
+            <Logo className="w-12 h-12" />
           </div>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
             Nouveau Tournoi de Pétanque
