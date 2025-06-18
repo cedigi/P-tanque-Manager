@@ -165,13 +165,11 @@ function generateMeleeMatches(tournament: Tournament): Match[] {
     groups.push(shuffled.splice(0, playersPerTeam).map(t => t.id));
   }
 
-  // Handle any remaining players by splitting them across two final groups
-  if (shuffled.length > 0) {
-    const half = Math.ceil(shuffled.length / 2);
-    groups.push(shuffled.splice(0, half).map(t => t.id));
-    if (shuffled.length > 0) {
-      groups.push(shuffled.splice(0).map(t => t.id));
-    }
+  // Distribute any remaining players among existing groups to form triplettes
+  let idx = 0;
+  while (shuffled.length > 0) {
+    groups[idx % groups.length].push(shuffled.shift()!.id);
+    idx++;
   }
 
   const matches: Match[] = [];
