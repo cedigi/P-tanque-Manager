@@ -139,7 +139,7 @@ export function TeamsTab({ teams, tournamentType, onAddTeam, onRemoveTeam }: Tea
         </head>
         <body>
           <div class="header">
-            <img src="/logo.png" alt="Pétanque Manager" class="logo" />
+            <img src="/petanque-icon.svg" alt="Pétanque Manager" class="logo" />
             <h1>🏆 Liste des Équipes</h1>
             <p>Tournoi de Pétanque - ${new Date().toLocaleDateString('fr-FR')}</p>
           </div>
