@@ -256,7 +256,7 @@ export function StandingsTab({ teams }: StandingsTabProps) {
                   </td>
                   <td className="px-6 py-4">
                     <div className="space-y-1">
-                      {team.players.map((player, playerIndex) => (
+                      {team.players.map((player) => (
                         <div key={player.id} className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
                           {player.label && (
                             <span className="w-4 h-4 bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center text-xs font-medium">

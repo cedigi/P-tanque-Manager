@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Tournament, TournamentType, Team, Match, Player } from '../types/tournament';
+import { Tournament, TournamentType, Team, Player } from '../types/tournament';
 import { generateMatches } from '../utils/matchmaking';
 
 const STORAGE_KEY = 'petanque-tournament';
