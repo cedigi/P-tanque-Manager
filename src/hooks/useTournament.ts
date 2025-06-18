@@ -105,7 +105,14 @@ export function useTournament() {
     // Update team statistics
     const updatedTeams = tournament.teams.map(team => {
       const teamMatches = updatedMatches.filter(
-        match => (match.team1Id === team.id || match.team2Id === team.id) && match.completed
+        match =>
+          match.completed &&
+          (
+            match.team1Id === team.id ||
+            match.team2Id === team.id ||
+            (match.team1Ids && match.team1Ids.includes(team.id)) ||
+            (match.team2Ids && match.team2Ids.includes(team.id))
+          )
       );
 
       let wins = 0;
@@ -118,7 +125,13 @@ export function useTournament() {
           wins += 1;
           pointsFor += 13;
           pointsAgainst += 7;
-        } else if (match.team1Id === team.id) {
+          return;
+        }
+
+        const isTeam1 = match.team1Id === team.id || (match.team1Ids && match.team1Ids.includes(team.id));
+        const isTeam2 = match.team2Id === team.id || (match.team2Ids && match.team2Ids.includes(team.id));
+
+        if (isTeam1) {
           pointsFor += match.team1Score || 0;
           pointsAgainst += match.team2Score || 0;
           if ((match.team1Score || 0) > (match.team2Score || 0)) {
@@ -126,7 +139,7 @@ export function useTournament() {
           } else {
             losses += 1;
           }
-        } else if (match.team2Id === team.id) {
+        } else if (isTeam2) {
           pointsFor += match.team2Score || 0;
           pointsAgainst += match.team1Score || 0;
           if ((match.team2Score || 0) > (match.team1Score || 0)) {

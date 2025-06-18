@@ -149,26 +149,48 @@ function generateQuadretteMatches(tournament: Tournament): Match[] {
 }
 
 function generateMeleeMatches(tournament: Tournament): Match[] {
-  const { teams, currentRound } = tournament;
+  const { teams, currentRound, courts } = tournament;
   const round = currentRound + 1;
 
-  // Shuffle teams randomly for mêlée
-  const shuffledTeams = [...teams].sort(() => Math.random() - 0.5);
-  const newMatches: Match[] = [];
+  // Determine team size: more courts allow smaller teams (doublettes),
+  // otherwise we create triplettes.
+  const playersPerTeam = courts >= 4 ? 2 : 3;
 
+  // Shuffle the individual players (each team is a single player in mêlée).
+  const shuffled = [...teams].sort(() => Math.random() - 0.5);
+
+  const groups: string[][] = [];
+  // Create groups of the chosen size
+  while (shuffled.length >= playersPerTeam) {
+    groups.push(shuffled.splice(0, playersPerTeam).map(t => t.id));
+  }
+
+  // Handle any remaining players by splitting them across two final groups
+  if (shuffled.length > 0) {
+    const half = Math.ceil(shuffled.length / 2);
+    groups.push(shuffled.splice(0, half).map(t => t.id));
+    if (shuffled.length > 0) {
+      groups.push(shuffled.splice(0).map(t => t.id));
+    }
+  }
+
+  const matches: Match[] = [];
   let courtIndex = 1;
-  for (let i = 0; i < shuffledTeams.length - 1; i += 2) {
-    const team1 = shuffledTeams[i];
-    const team2 = shuffledTeams[i + 1];
 
-    if (!team2) continue;
+  for (let i = 0; i < groups.length; i += 2) {
+    const team1Ids = groups[i];
+    const team2Ids = groups[i + 1] || [];
 
-    newMatches.push({
+    matches.push({
       id: crypto.randomUUID(),
       round,
+      // Court numbers above the available courts represent waiting ("Libre")
+      // matches. They will be shown as such in the UI.
       court: courtIndex,
-      team1Id: team1.id,
-      team2Id: team2.id,
+      team1Id: team1Ids[0],
+      team2Id: team2Ids[0] || team1Ids[0],
+      team1Ids,
+      team2Ids,
       completed: false,
       isBye: false,
     });
@@ -176,7 +198,7 @@ function generateMeleeMatches(tournament: Tournament): Match[] {
     courtIndex++;
   }
 
-  return newMatches;
+  return matches;
 }
 
 function havePlayedBefore(team1Id: string, team2Id: string, matches: Match[]): boolean {
