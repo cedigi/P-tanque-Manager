@@ -40,9 +40,14 @@ export function useTournament() {
     if (!tournament) return;
 
     const teamNumber = tournament.teams.length + 1;
+    const teamName =
+      tournament.type === 'melee'
+        ? `${teamNumber} - ${players[0].name}`
+        : `Équipe ${teamNumber}`;
+
     const team: Team = {
       id: crypto.randomUUID(),
-      name: `Équipe ${teamNumber}`,
+      name: teamName,
       players,
       wins: 0,
       losses: 0,
@@ -65,7 +70,10 @@ export function useTournament() {
     // Renumber teams
     const renumberedTeams = updatedTeams.map((team, index) => ({
       ...team,
-      name: `Équipe ${index + 1}`,
+      name:
+        tournament.type === 'melee'
+          ? `${index + 1} - ${team.players[0].name}`
+          : `Équipe ${index + 1}`,
     }));
 
     const updatedTournament = {
