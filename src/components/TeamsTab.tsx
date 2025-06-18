@@ -241,16 +241,16 @@ export function TeamsTab({ teams, tournamentType, onAddTeam, onRemoveTeam }: Tea
       )}
 
       {/* Liste des équipes en format vertical compact */}
-      <div className="space-y-3">
+      <div className="space-y-1">
         {teams.map((team) => (
-          <div key={team.id} className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+          <div key={team.id} className="bg-white dark:bg-gray-800 p-2 rounded-md shadow-sm border border-gray-200 dark:border-gray-700">
             <div className="flex justify-between items-start">
               <div className="flex-1">
-                <div className="flex items-center space-x-2 mb-2">
+                <div className="flex items-center space-x-2 mb-1">
                   <Users className="w-5 h-5 text-blue-600" />
                   <h3 className="font-medium text-gray-900 dark:text-white">{team.name}</h3>
                 </div>
-                <div className="flex flex-wrap gap-x-4 gap-y-1">
+                <div className="flex flex-wrap gap-x-2 gap-y-1">
                   {team.players.map((player: Player) => (
                     <div key={player.id} className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
                       {player.label && (
@@ -261,9 +261,6 @@ export function TeamsTab({ teams, tournamentType, onAddTeam, onRemoveTeam }: Tea
                       <span>{player.name}</span>
                     </div>
                   ))}
-                </div>
-                <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                  V: {team.wins} | D: {team.losses} | Diff: {team.performance > 0 ? '+' : ''}{team.performance}
                 </div>
               </div>
               <button
