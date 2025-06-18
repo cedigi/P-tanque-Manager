@@ -203,6 +203,43 @@ function generateMeleeMatches(tournament: Tournament): Match[] {
   const matchesResult: Match[] = [];
   let courtIndex = 1;
 
+  // If exactly two doublettes are present while all others are triplettes,
+  // make them play each other to avoid mismatched team sizes.
+  const doubletteIndexes = groups
+    .map((g, idx) => (g.length === 2 ? idx : -1))
+    .filter(idx => idx !== -1);
+  if (doubletteIndexes.length === 2) {
+    const [idxA, idxB] = doubletteIndexes;
+    const groupA = groups[idxA];
+    const groupB = groups[idxB];
+
+    const alreadyPlayed = groupA.some(id1 =>
+      groupB.some(id2 => havePlayedAgainst(id1, id2, matches))
+    );
+
+    if (!alreadyPlayed) {
+      // Remove groups starting from the highest index
+      const first = Math.max(idxA, idxB);
+      const second = Math.min(idxA, idxB);
+      groups.splice(first, 1);
+      groups.splice(second, 1);
+
+      matchesResult.push({
+        id: crypto.randomUUID(),
+        round,
+        court: courtIndex,
+        team1Id: groupA[0],
+        team2Id: groupB[0],
+        team1Ids: groupA,
+        team2Ids: groupB,
+        completed: false,
+        isBye: false,
+      });
+
+      courtIndex++;
+    }
+  }
+
   while (groups.length > 1) {
     const team1Ids = groups.shift()!;
 
