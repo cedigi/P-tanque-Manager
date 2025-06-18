@@ -66,35 +66,21 @@ export function TeamsTab({ teams, tournamentType, onAddTeam, onRemoveTeam }: Tea
       <!DOCTYPE html>
       <html>
         <head>
-          <title>Liste des ${isSolo ? 'Joueurs' : 'Équipes'} - Pétanque Manager</title>
+          <title>Liste des équipes</title>
           <style>
-            body { 
-              font-family: Arial, sans-serif; 
-              margin: 20px; 
+            body {
+              font-family: Arial, sans-serif;
+              margin: 10px;
               color: #333;
             }
-            .header { 
-              text-align: center; 
-              margin-bottom: 30px; 
-              border-bottom: 2px solid #2563eb;
-              padding-bottom: 15px;
+            h1 {
+              text-align: center;
+              margin-bottom: 10px;
             }
-            .logo {
-              width: 80px;
-              height: 80px;
-              margin: 0 auto 15px;
-              display: block;
-            }
-            .tournament-info {
-              background: #f8fafc;
-              padding: 15px;
-              border-radius: 8px;
-              margin-bottom: 20px;
-            }
-            .team-list { 
-              display: flex; 
-              flex-direction: column; 
-              gap: 15px; 
+            .team-list {
+              display: flex;
+              flex-direction: column;
+              gap: 15px;
             }
             .team-item { 
               border: 1px solid #e2e8f0; 
@@ -139,15 +125,7 @@ export function TeamsTab({ teams, tournamentType, onAddTeam, onRemoveTeam }: Tea
           </style>
         </head>
         <body>
-          <div class="header">
-            <img src="/logo1.png" alt="Pétanque Manager" class="logo" />
-            <h1>🏆 Liste des ${isSolo ? 'Joueurs' : 'Équipes'}</h1>
-            <p>Tournoi de Pétanque - ${new Date().toLocaleDateString('fr-FR')}</p>
-          </div>
-          <div class="tournament-info">
-            <strong>Type:</strong> ${tournamentType.charAt(0).toUpperCase() + tournamentType.slice(1)} •
-            <strong>Nombre ${isSolo ? 'de joueurs' : "d'équipes"}:</strong> ${teams.length}
-          </div>
+          <h1>Liste des équipes</h1>
           <div class="team-list">
             ${teams.map(team => `
               <div class="team-item">

@@ -84,24 +84,16 @@ export function MatchesTab({
       <!DOCTYPE html>
       <html>
         <head>
-          <title>Matchs Tour ${round} - Pétanque Manager</title>
+          <title>Tour ${round}</title>
           <style>
-            body { 
-              font-family: Arial, sans-serif; 
-              margin: 20px; 
+            body {
+              font-family: Arial, sans-serif;
+              margin: 10px;
               color: #333;
             }
-            .header { 
-              text-align: center; 
-              margin-bottom: 30px; 
-              border-bottom: 2px solid #2563eb;
-              padding-bottom: 15px;
-            }
-            .round-info {
-              background: #f8fafc;
-              padding: 15px;
-              border-radius: 8px;
-              margin-bottom: 20px;
+            h1 {
+              text-align: center;
+              margin-bottom: 10px;
             }
             table { 
               width: 100%; 
@@ -139,14 +131,7 @@ export function MatchesTab({
           </style>
         </head>
         <body>
-          <div class="header">
-            <h1>Tour ${round}</h1>
-            <p>Tournoi de Pétanque - ${new Date().toLocaleDateString('fr-FR')}</p>
-          </div>
-          <div class="round-info">
-            <strong>Tour:</strong> ${round} • 
-            <strong>Nombre de matchs:</strong> ${roundMatches.length}
-          </div>
+          <h1>Tour ${round}</h1>
           <table>
             <thead>
               <tr>
