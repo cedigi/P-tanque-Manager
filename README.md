@@ -1,1 +1,1 @@
-# P-tanque-Manager
+# Petanque-Manager
