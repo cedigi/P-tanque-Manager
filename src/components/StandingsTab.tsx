@@ -111,13 +111,13 @@ export function StandingsTab({ teams }: StandingsTabProps) {
           <table>
             <thead>
               <tr>
-                <th>Position</th>
+                <th style="text-align: center;">Position</th>
                 <th>${isSolo ? 'Joueur' : 'Équipe'}</th>
-                <th>V</th>
-                <th>D</th>
-                <th>Points Pour</th>
-                <th>Points Contre</th>
-                <th>Différentiel</th>
+                <th style="text-align: center;">V</th>
+                <th style="text-align: center;">D</th>
+                <th style="text-align: center;">+</th>
+                <th style="text-align: center;">-</th>
+                <th style="text-align: center;">Différentiel</th>
               </tr>
             </thead>
             <tbody>
@@ -185,10 +185,10 @@ export function StandingsTab({ teams }: StandingsTabProps) {
                   D
                 </th>
                 <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Points Pour
+                  +
                 </th>
                 <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Points Contre
+                  -
                 </th>
                 <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   Différentiel
