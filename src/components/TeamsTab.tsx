@@ -13,6 +13,8 @@ export function TeamsTab({ teams, tournamentType, onAddTeam, onRemoveTeam }: Tea
   const [players, setPlayers] = useState<Player[]>([]);
   const [showForm, setShowForm] = useState(false);
 
+  const isSolo = tournamentType === 'melee' || tournamentType === 'tete-a-tete';
+
   const getPlayersPerTeam = () => {
     switch (tournamentType) {
       case 'tete-a-tete': return 1;
@@ -64,7 +66,7 @@ export function TeamsTab({ teams, tournamentType, onAddTeam, onRemoveTeam }: Tea
       <!DOCTYPE html>
       <html>
         <head>
-          <title>Liste des ${tournamentType === 'melee' ? 'Joueurs' : 'Équipes'} - Pétanque Manager</title>
+          <title>Liste des ${isSolo ? 'Joueurs' : 'Équipes'} - Pétanque Manager</title>
           <style>
             body { 
               font-family: Arial, sans-serif; 
@@ -107,9 +109,10 @@ export function TeamsTab({ teams, tournamentType, onAddTeam, onRemoveTeam }: Tea
               color: #1e40af; 
               margin-bottom: 8px;
             }
-            .player { 
-              margin: 4px 0; 
+            .player {
+              margin: 2px 0;
               padding-left: 10px;
+              font-size: 12px;
             }
             .player-label {
               display: inline-block;
@@ -124,13 +127,6 @@ export function TeamsTab({ teams, tournamentType, onAddTeam, onRemoveTeam }: Tea
               font-weight: bold;
               margin-right: 8px;
             }
-            .stats {
-              font-size: 12px;
-              color: #64748b;
-              margin-top: 8px;
-              padding-top: 8px;
-              border-top: 1px solid #f1f5f9;
-            }
             @media print {
               body { margin: 0; }
               .team-item { break-inside: avoid; }
@@ -140,12 +136,12 @@ export function TeamsTab({ teams, tournamentType, onAddTeam, onRemoveTeam }: Tea
         <body>
           <div class="header">
             <img src="/logo1.png" alt="Pétanque Manager" class="logo" />
-            <h1>🏆 Liste des ${tournamentType === 'melee' ? 'Joueurs' : 'Équipes'}</h1>
+            <h1>🏆 Liste des ${isSolo ? 'Joueurs' : 'Équipes'}</h1>
             <p>Tournoi de Pétanque - ${new Date().toLocaleDateString('fr-FR')}</p>
           </div>
           <div class="tournament-info">
             <strong>Type:</strong> ${tournamentType.charAt(0).toUpperCase() + tournamentType.slice(1)} •
-            <strong>Nombre ${tournamentType === 'melee' ? 'de joueurs' : "d'équipes"}:</strong> ${teams.length}
+            <strong>Nombre ${isSolo ? 'de joueurs' : "d'équipes"}:</strong> ${teams.length}
           </div>
           <div class="team-list">
             ${teams.map(team => `
@@ -157,9 +153,6 @@ export function TeamsTab({ teams, tournamentType, onAddTeam, onRemoveTeam }: Tea
                     ${player.name}
                   </div>
                 `).join('')}
-                <div class="stats">
-                  Victoires: ${team.wins} | Défaites: ${team.losses} | Différentiel: ${team.performance > 0 ? '+' : ''}${team.performance}
-                </div>
               </div>
             `).join('')}
           </div>
@@ -176,7 +169,7 @@ export function TeamsTab({ teams, tournamentType, onAddTeam, onRemoveTeam }: Tea
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-          {tournamentType === 'melee' ? 'Joueurs' : 'Équipes'}
+          {isSolo ? 'Joueurs' : 'Équipes'}
         </h2>
         <div className="flex space-x-3">
           {teams.length > 0 && (
@@ -193,7 +186,7 @@ export function TeamsTab({ teams, tournamentType, onAddTeam, onRemoveTeam }: Tea
             className="flex items-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
           >
             <Plus className="w-4 h-4" />
-            <span>Ajouter {tournamentType === 'melee' ? 'un joueur' : 'une équipe'}</span>
+            <span>Ajouter {isSolo ? 'un joueur' : 'une équipe'}</span>
           </button>
         </div>
       </div>
@@ -201,7 +194,7 @@ export function TeamsTab({ teams, tournamentType, onAddTeam, onRemoveTeam }: Tea
       {showForm && (
         <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm mb-6 border border-gray-200 dark:border-gray-700">
           <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
-            {tournamentType === 'melee' ? 'Nouveau joueur' : `Nouvelle équipe (${getPlayersPerTeam()} joueur${getPlayersPerTeam() > 1 ? 's' : ''})`}
+            {isSolo ? 'Nouveau joueur' : `Nouvelle équipe (${getPlayersPerTeam()} joueur${getPlayersPerTeam() > 1 ? 's' : ''})`}
           </h3>
           <form onSubmit={handleSubmit} className="space-y-4">
             {players.map((player, index) => (
@@ -266,7 +259,7 @@ export function TeamsTab({ teams, tournamentType, onAddTeam, onRemoveTeam }: Tea
               <button
                 onClick={() => onRemoveTeam(team.id)}
                 className="text-red-500 hover:text-red-700 transition-colors ml-4"
-                title="Supprimer l'équipe"
+                title={isSolo ? 'Supprimer le joueur' : "Supprimer l'équipe"}
               >
                 <Trash2 className="w-4 h-4" />
               </button>
@@ -279,10 +272,10 @@ export function TeamsTab({ teams, tournamentType, onAddTeam, onRemoveTeam }: Tea
         <div className="text-center py-12">
           <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-            {tournamentType === 'melee' ? 'Aucun joueur inscrit' : 'Aucune équipe inscrite'}
+            {isSolo ? 'Aucun joueur inscrit' : 'Aucune équipe inscrite'}
           </h3>
           <p className="text-gray-500 dark:text-gray-400">
-            {tournamentType === 'melee'
+            {isSolo
               ? 'Commencez par ajouter des joueurs pour votre tournoi'
               : 'Commencez par ajouter des équipes pour votre tournoi'}
           </p>
