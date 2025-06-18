@@ -97,12 +97,6 @@ export function MatchesTab({
               border-bottom: 2px solid #2563eb;
               padding-bottom: 15px;
             }
-            .logo {
-              width: 80px;
-              height: 80px;
-              margin: 0 auto 15px;
-              display: block;
-            }
             .round-info {
               background: #f8fafc;
               padding: 15px;
@@ -146,8 +140,7 @@ export function MatchesTab({
         </head>
         <body>
           <div class="header">
-            <img src="/logo1.png" alt="Pétanque Manager" class="logo" />
-            <h1>🏆 Matchs - Tour ${round}</h1>
+            <h1>Tour ${round}</h1>
             <p>Tournoi de Pétanque - ${new Date().toLocaleDateString('fr-FR')}</p>
           </div>
           <div class="round-info">
