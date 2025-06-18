@@ -21,10 +21,11 @@ export function useTournament() {
     setTournament(tournament);
   };
 
-  const createTournament = (name: string, type: TournamentType, courts: number) => {
+  const createTournament = (type: TournamentType, courts: number) => {
+    const defaultName = `Tournoi ${new Date().toLocaleDateString()}`;
     const newTournament: Tournament = {
       id: crypto.randomUUID(),
-      name,
+      name: defaultName,
       type,
       courts,
       teams: [],

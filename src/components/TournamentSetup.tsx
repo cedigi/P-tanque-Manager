@@ -4,19 +4,16 @@ import { Users, Target, Trophy } from 'lucide-react';
 import { Logo } from './Logo';
 
 interface TournamentSetupProps {
-  onCreateTournament: (name: string, type: TournamentType, courts: number) => void;
+  onCreateTournament: (type: TournamentType, courts: number) => void;
 }
 
 export function TournamentSetup({ onCreateTournament }: TournamentSetupProps) {
-  const [name, setName] = useState('');
   const [type, setType] = useState<TournamentType>('doublette');
   const [courts, setCourts] = useState(4);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (name.trim()) {
-      onCreateTournament(name.trim(), type, courts);
-    }
+    onCreateTournament(type, courts);
   };
 
   const tournamentTypes = [
@@ -43,19 +40,6 @@ export function TournamentSetup({ onCreateTournament }: TournamentSetupProps) {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Nom du tournoi
-            </label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              placeholder="Ex: Championnat Municipal 2024"
-              required
-            />
-          </div>
 
           <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm">
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">
