@@ -6,18 +6,20 @@ interface MatchesTabProps {
   matches: Match[];
   teams: Team[];
   currentRound: number;
+  courts: number;
   onGenerateRound: () => void;
   onUpdateScore: (matchId: string, team1Score: number, team2Score: number) => void;
   onUpdateCourt: (matchId: string, court: number) => void;
 }
 
-export function MatchesTab({ 
-  matches, 
-  teams, 
-  currentRound, 
-  onGenerateRound, 
+export function MatchesTab({
+  matches,
+  teams,
+  currentRound,
+  courts,
+  onGenerateRound,
   onUpdateScore,
-  onUpdateCourt 
+  onUpdateCourt
 }: MatchesTabProps) {
   const [editingMatch, setEditingMatch] = useState<string | null>(null);
   const [editScores, setEditScores] = useState<{ team1: number; team2: number }>({ team1: 0, team2: 0 });
@@ -155,7 +157,7 @@ export function MatchesTab({
             <tbody>
               ${roundMatches.map(match => `
                 <tr>
-                  <td>${match.isBye ? '-' : match.court}</td>
+                  <td>${match.isBye ? '-' : (match.court <= courts ? match.court : 'Libre ' + (match.court - courts))}</td>
                   <td>
                     ${getTeamName(match.team1Id)}<br/>
                     <small>${getTeamPlayers(match.team1Id)}</small>
@@ -274,15 +276,28 @@ export function MatchesTab({
                         ) : (
                           <div className="flex items-center space-x-1">
                             <MapPin className="w-4 h-4 text-gray-400" />
-                            <select
-                              value={match.court}
-                              onChange={(e) => onUpdateCourt(match.id, Number(e.target.value))}
-                              className="text-sm border-0 bg-transparent text-gray-900 dark:text-white focus:ring-0"
-                            >
-                              {Array.from({ length: 10 }, (_, i) => i + 1).map(court => (
-                                <option key={court} value={court}>{court}</option>
-                              ))}
-                            </select>
+                            {match.court > courts ? (
+                              <select
+                                value={match.court}
+                                onChange={(e) => onUpdateCourt(match.id, Number(e.target.value))}
+                                className="text-sm border-0 bg-transparent text-gray-900 dark:text-white focus:ring-0"
+                              >
+                                <option value={match.court}>{`Libre ${match.court - courts}`}</option>
+                                {Array.from({ length: 10 }, (_, i) => i + 1).map(court => (
+                                  <option key={court} value={court}>{court}</option>
+                                ))}
+                              </select>
+                            ) : (
+                              <select
+                                value={match.court}
+                                onChange={(e) => onUpdateCourt(match.id, Number(e.target.value))}
+                                className="text-sm border-0 bg-transparent text-gray-900 dark:text-white focus:ring-0"
+                              >
+                                {Array.from({ length: 10 }, (_, i) => i + 1).map(court => (
+                                  <option key={court} value={court}>{court}</option>
+                                ))}
+                              </select>
+                            )}
                           </div>
                         )}
                       </td>

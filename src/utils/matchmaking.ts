@@ -147,31 +147,31 @@ function generateQuadretteMatches(tournament: Tournament): Match[] {
 }
 
 function generateMeleeMatches(tournament: Tournament): Match[] {
-  const { teams, currentRound, courts } = tournament;
+  const { teams, currentRound } = tournament;
   const round = currentRound + 1;
-  
+
   // Shuffle teams randomly for mêlée
   const shuffledTeams = [...teams].sort(() => Math.random() - 0.5);
   const newMatches: Match[] = [];
 
-  // Create matches for available courts
   let courtIndex = 1;
-  for (let i = 0; i < shuffledTeams.length - 1 && courtIndex <= courts; i += 2) {
+  for (let i = 0; i < shuffledTeams.length - 1; i += 2) {
     const team1 = shuffledTeams[i];
     const team2 = shuffledTeams[i + 1];
 
-    if (team2) {
-      newMatches.push({
-        id: crypto.randomUUID(),
-        round,
-        court: courtIndex,
-        team1Id: team1.id,
-        team2Id: team2.id,
-        completed: false,
-        isBye: false,
-      });
-      courtIndex++;
-    }
+    if (!team2) continue;
+
+    newMatches.push({
+      id: crypto.randomUUID(),
+      round,
+      court: courtIndex,
+      team1Id: team1.id,
+      team2Id: team2.id,
+      completed: false,
+      isBye: false,
+    });
+
+    courtIndex++;
   }
 
   return newMatches;
