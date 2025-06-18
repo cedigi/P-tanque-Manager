@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { Player, TournamentType } from '../types/tournament';
+import { Player, Team, TournamentType } from '../types/tournament';
 import { Plus, Trash2, Users, Printer } from 'lucide-react';
 
 interface TeamsTabProps {
-  teams: any[];
+  teams: Team[];
   tournamentType: TournamentType;
   onAddTeam: (players: Player[]) => void;
   onRemoveTeam: (teamId: string) => void;
