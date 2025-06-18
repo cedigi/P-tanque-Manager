@@ -6,6 +6,6 @@ interface LogoProps {
 
 export function Logo({ className }: LogoProps) {
   return (
-    <img src="/petanque-icon.svg" alt="Pétanque Manager" className={className} />
+    <img src="/logo1.png" alt="Pétanque Manager" className={className} />
   );
 }

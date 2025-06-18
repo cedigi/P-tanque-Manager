@@ -134,7 +134,7 @@ export function MatchesTab({
         </head>
         <body>
           <div class="header">
-            <img src="/petanque-icon.svg" alt="Pétanque Manager" class="logo" />
+            <img src="/logo1.png" alt="Pétanque Manager" class="logo" />
             <h1>🏆 Matchs - Tour ${round}</h1>
             <p>Tournoi de Pétanque - ${new Date().toLocaleDateString('fr-FR')}</p>
           </div>
