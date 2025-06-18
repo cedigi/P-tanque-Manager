@@ -90,6 +90,7 @@ function App() {
               matches={tournament.matches}
               teams={tournament.teams}
               currentRound={tournament.currentRound}
+              courts={tournament.courts}
               onGenerateRound={generateRound}
               onUpdateScore={updateMatchScore}
               onUpdateCourt={updateMatchCourt}
