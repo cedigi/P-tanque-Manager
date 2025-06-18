@@ -102,6 +102,10 @@ export function MatchesTab({
             }
             th, td {
               padding: 8px;
+              text-align: center;
+            }
+            th:first-child,
+            td:first-child {
               text-align: left;
             }
             tbody tr {
@@ -124,6 +128,10 @@ export function MatchesTab({
             }
             .team-right {
               padding-left: 20px;
+              text-align: center;
+            }
+            .team {
+              text-align: center;
             }
             @media print {
               body { margin: 0; }
@@ -136,21 +144,21 @@ export function MatchesTab({
             <thead>
               <tr>
                 <th>Terrain</th>
-                <th>${isSolo ? 'Joueur' : 'Équipe'}</th>
+                <th class="team">${isSolo ? 'Joueur' : 'Équipe'}</th>
                 <th>Score</th>
-                <th>${isSolo ? 'Joueur' : 'Équipe'}</th>
+                <th class="team">${isSolo ? 'Joueur' : 'Équipe'}</th>
               </tr>
             </thead>
             <tbody>
               ${roundMatches.map(match => `
                 <tr>
                   <td>${match.isBye ? '-' : (match.court <= courts ? match.court : 'Libre ' + (match.court - courts))}</td>
-                  <td>
+                  <td class="team">
                     ${match.team1Ids ? getGroupLabel(match.team1Ids) : getTeamName(match.team1Id)}
                     ${!match.team1Ids ? `<br/><small>${getTeamPlayers(match.team1Id)}</small>` : ''}
                   </td>
                   <td class="score">${match.completed || match.isBye ? `${match.team1Score} - ${match.team2Score}` : '- - -'}</td>
-                  <td class="team-right">
+                  <td class="team-right team">
                     ${match.isBye ? 'BYE' : match.team2Ids ? getGroupLabel(match.team2Ids) : `${getTeamName(match.team2Id)}<br/><small>${getTeamPlayers(match.team2Id)}</small>`}
                   </td>
                 </tr>
