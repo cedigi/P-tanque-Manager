@@ -120,7 +120,7 @@ function generateQuadretteMatches(tournament: Tournament): Match[] {
   Object.keys(quadretteTeams).forEach(baseTeamId => {
     const teamLabels = quadretteTeams[baseTeamId];
     
-    roundSchedule.forEach((patterns, groupIndex) => {
+    roundSchedule.forEach((patterns) => {
       const pattern = patterns[0];
       
       if (pattern.length > 1) {

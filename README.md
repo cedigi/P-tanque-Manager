@@ -15,6 +15,10 @@ Install the project dependencies:
 npm install
 ```
 
+This command installs all dependencies, including linting packages such as
+`@eslint/js`. Alternatively, you can run `./setup.sh` to perform the same
+setup automatically.
+
 ## Development
 
 Start a development server with hot reloading:
