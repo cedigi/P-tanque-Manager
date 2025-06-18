@@ -7,6 +7,7 @@ interface StandingsTabProps {
 }
 
 export function StandingsTab({ teams }: StandingsTabProps) {
+  const isSolo = teams.every(t => t.players.length === 1);
   const sortedTeams = [...teams].sort((a, b) => {
     // Sort by wins first, then by point differential
     if (b.wins !== a.wins) {
@@ -121,13 +122,13 @@ export function StandingsTab({ teams }: StandingsTabProps) {
             <p>Tournoi de Pétanque - ${new Date().toLocaleDateString('fr-FR')}</p>
           </div>
           <div class="tournament-info">
-            <strong>Nombre d'équipes:</strong> ${teams.length}
+            <strong>Nombre ${isSolo ? 'de joueurs' : "d'équipes"}:</strong> ${teams.length}
           </div>
           <table>
             <thead>
               <tr>
                 <th>Position</th>
-                <th>Équipe</th>
+                <th>${isSolo ? 'Joueur' : 'Équipe'}</th>
                 <th>V</th>
                 <th>D</th>
                 <th>Points Pour</th>
@@ -172,7 +173,7 @@ export function StandingsTab({ teams }: StandingsTabProps) {
         <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Classement</h2>
         <div className="flex items-center space-x-4">
           <div className="text-sm text-gray-500 dark:text-gray-400">
-            {teams.length} équipe{teams.length > 1 ? 's' : ''} inscrite{teams.length > 1 ? 's' : ''}
+            {teams.length} {isSolo ? 'joueur' : 'équipe'}{teams.length > 1 ? 's' : ''} inscrit{teams.length > 1 ? 's' : ''}
           </div>
           {teams.length > 0 && (
             <button
@@ -195,7 +196,7 @@ export function StandingsTab({ teams }: StandingsTabProps) {
                   Position
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Équipe
+                  {isSolo ? 'Joueur' : 'Équipe'}
                 </th>
                 <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   V
@@ -282,7 +283,7 @@ export function StandingsTab({ teams }: StandingsTabProps) {
             Aucun classement disponible
           </h3>
           <p className="text-gray-500 dark:text-gray-400">
-            Le classement apparaîtra une fois que des équipes seront inscrites
+            Le classement apparaîtra une fois que {isSolo ? 'des joueurs' : 'des équipes'} seront inscrits
           </p>
         </div>
       )}

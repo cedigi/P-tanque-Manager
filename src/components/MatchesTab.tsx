@@ -25,9 +25,11 @@ export function MatchesTab({
   const [editScores, setEditScores] = useState<{ team1: number; team2: number }>({ team1: 0, team2: 0 });
   const [selectedRound, setSelectedRound] = useState<number | null>(null);
 
+  const isSolo = teams.every(t => t.players.length === 1);
+
   const getTeamName = (teamId: string) => {
     const team = teams.find(t => t.id === teamId);
-    return team?.name || 'Équipe inconnue';
+    return team?.name || (isSolo ? 'Joueur inconnu' : 'Équipe inconnue');
   };
 
   const getTeamPlayers = (teamId: string) => {
@@ -156,9 +158,9 @@ export function MatchesTab({
             <thead>
               <tr>
                 <th>Terrain</th>
-                <th>Équipe 1</th>
+                <th>${isSolo ? 'Joueur 1' : 'Équipe 1'}</th>
                 <th>Score</th>
-                <th>Équipe 2</th>
+                <th>${isSolo ? 'Joueur 2' : 'Équipe 2'}</th>
                 <th>Statut</th>
               </tr>
             </thead>
@@ -207,7 +209,7 @@ export function MatchesTab({
       {teams.length < 2 && (
         <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 mb-6">
           <p className="text-yellow-800 dark:text-yellow-200">
-            Vous devez inscrire au moins 2 équipes pour générer des matchs.
+            Vous devez inscrire au moins 2 {isSolo ? 'joueurs' : 'équipes'} pour générer des matchs.
           </p>
         </div>
       )}
@@ -259,13 +261,13 @@ export function MatchesTab({
                       Terrain
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Équipe 1
+                      {isSolo ? 'Joueur 1' : 'Équipe 1'}
                     </th>
                     <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       Score
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Équipe 2
+                      {isSolo ? 'Joueur 2' : 'Équipe 2'}
                     </th>
                     <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       Statut
