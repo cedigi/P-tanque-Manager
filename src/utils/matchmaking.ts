@@ -14,25 +14,23 @@ export function generateMatches(tournament: Tournament): Match[] {
 function generateStandardMatches(tournament: Tournament): Match[] {
   const { teams, matches, currentRound, courts } = tournament;
   const round = currentRound + 1;
-  
+
   // Sort teams by performance (best to worst)
   const sortedTeams = [...teams].sort((a, b) => b.performance - a.performance);
-  
-  // Get teams that haven't played against each other
-  const availableTeams = [...sortedTeams];
+
+  const remainingTeams = [...sortedTeams];
   const newMatches: Match[] = [];
-  const usedTeams = new Set<string>();
 
   // Handle BYE if odd number of teams
-  if (availableTeams.length % 2 === 1) {
+  if (remainingTeams.length % 2 === 1) {
     let byeTeam: Team;
     if (round === 1) {
       // Random team for first round
-      const randomIndex = Math.floor(Math.random() * availableTeams.length);
-      byeTeam = availableTeams[randomIndex];
+      const randomIndex = Math.floor(Math.random() * remainingTeams.length);
+      byeTeam = remainingTeams[randomIndex];
     } else {
       // Worst performing team
-      byeTeam = availableTeams[availableTeams.length - 1];
+      byeTeam = remainingTeams[remainingTeams.length - 1];
     }
 
     newMatches.push({
@@ -47,35 +45,35 @@ function generateStandardMatches(tournament: Tournament): Match[] {
       isBye: true,
     });
 
-    availableTeams.splice(availableTeams.findIndex(t => t.id === byeTeam.id), 1);
-    usedTeams.add(byeTeam.id);
+    remainingTeams.splice(remainingTeams.findIndex(t => t.id === byeTeam.id), 1);
   }
 
-  // Pair remaining teams
+  // Pair remaining teams ensuring everyone gets an opponent
   let courtIndex = 1;
-  for (let i = 0; i < availableTeams.length - 1; i += 2) {
-    if (usedTeams.has(availableTeams[i].id) || usedTeams.has(availableTeams[i + 1]?.id)) {
-      continue;
+  while (remainingTeams.length > 1) {
+    const team1 = remainingTeams.shift() as Team;
+
+    let opponentIndex = remainingTeams.findIndex(
+      team => !havePlayedBefore(team1.id, team.id, matches)
+    );
+
+    if (opponentIndex === -1) {
+      opponentIndex = 0;
     }
 
-    const team1 = availableTeams[i];
-    const team2 = availableTeams[i + 1];
+    const [team2] = remainingTeams.splice(opponentIndex, 1);
 
-    if (team2 && !havePlayedBefore(team1.id, team2.id, matches)) {
-      newMatches.push({
-        id: crypto.randomUUID(),
-        round,
-        court: ((courtIndex - 1) % courts) + 1,
-        team1Id: team1.id,
-        team2Id: team2.id,
-        completed: false,
-        isBye: false,
-      });
+    newMatches.push({
+      id: crypto.randomUUID(),
+      round,
+      court: ((courtIndex - 1) % courts) + 1,
+      team1Id: team1.id,
+      team2Id: team2.id,
+      completed: false,
+      isBye: false,
+    });
 
-      usedTeams.add(team1.id);
-      usedTeams.add(team2.id);
-      courtIndex++;
-    }
+    courtIndex++;
   }
 
   return newMatches;
