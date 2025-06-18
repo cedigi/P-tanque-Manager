@@ -80,14 +80,14 @@ export function TeamsTab({ teams, tournamentType, onAddTeam, onRemoveTeam }: Tea
             .team-list {
               display: flex;
               flex-direction: column;
-              gap: 15px;
+              gap: 4px;
             }
-            .team-item { 
-              border: 1px solid #e2e8f0; 
-              border-radius: 8px; 
-              padding: 15px; 
-              background: white;
-              box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            .team-item {
+              padding: 8px 0;
+              border-bottom: 1px solid #000;
+            }
+            .team-item:last-child {
+              border-bottom: none;
             }
             .team-name {
               font-weight: bold;
