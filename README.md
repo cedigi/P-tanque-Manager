@@ -1,1 +1,66 @@
-# Petanque-Manager
+# Pétanque Manager
+
+Pétanque Manager is a small web application used to manage a pétanque tournament. It is built with [React](https://reactjs.org/), [TypeScript](https://www.typescriptlang.org/) and [Vite](https://vitejs.dev/).
+
+## Prerequisites
+
+- [Node.js](https://nodejs.org/) (version 18 or later)
+- [npm](https://www.npmjs.com/) which comes bundled with Node.js
+
+## Installation
+
+Install the project dependencies:
+
+```bash
+npm install
+```
+
+## Development
+
+Start a development server with hot reloading:
+
+```bash
+npm run dev
+```
+
+Open `http://localhost:5173` in your browser to view the application.
+
+## Building
+
+Create an optimized production build:
+
+```bash
+npm run build
+```
+
+You can preview the build locally with:
+
+```bash
+npm run preview
+```
+
+## Linting
+
+Run the linter to check for code style issues:
+
+```bash
+npm run lint
+```
+
+## Project structure
+
+The main source code lives in the `src` directory:
+
+```
+src/
+├── App.tsx            # Application root component
+├── main.tsx           # Entry point
+├── index.css          # Global styles
+├── components/        # Reusable React components
+├── hooks/             # Custom React hooks
+├── types/             # TypeScript type definitions
+└── utils/             # Utility functions
+```
+
+To start the application in development mode run `npm run dev` as shown above.
+
