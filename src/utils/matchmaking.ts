@@ -172,6 +172,13 @@ function generateMeleeMatches(tournament: Tournament): Match[] {
     teamCount = doublettes + triplettes;
   }
 
+  // Ensure an even number of teams so no one gets a BYE
+  while (teamCount % 2 === 1 && doublettes >= 3) {
+    doublettes -= 3;
+    triplettes += 2;
+    teamCount = doublettes + triplettes;
+  }
+
   const groupSizes: number[] = [];
   for (let i = 0; i < doublettes; i++) groupSizes.push(2);
   for (let i = 0; i < triplettes; i++) groupSizes.push(3);
@@ -274,16 +281,16 @@ function generateMeleeMatches(tournament: Tournament): Match[] {
     matchesResult.push({
       id: crypto.randomUUID(),
       round,
-      court: 0,
+      // Put unmatched teams on a waiting court rather than giving a BYE
+      court: courtIndex,
       team1Id: teamIds[0],
       team2Id: teamIds[0],
       team1Ids: teamIds,
       team2Ids: teamIds,
-      team1Score: 13,
-      team2Score: 7,
-      completed: true,
-      isBye: true,
+      completed: false,
+      isBye: false,
     });
+    courtIndex++;
   }
 
   return matchesResult;
