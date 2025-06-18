@@ -28,6 +28,14 @@ export function MatchesTab({
     return team?.name || 'Équipe inconnue';
   };
 
+  const getTeamPlayers = (teamId: string) => {
+    const team = teams.find(t => t.id === teamId);
+    if (!team) return '';
+    return team.players
+      .map(player => (player.label ? `[${player.label}] ${player.name}` : player.name))
+      .join(', ');
+  };
+
   const handleEditScore = (match: Match) => {
     setEditingMatch(match.id);
     setEditScores({
@@ -148,9 +156,14 @@ export function MatchesTab({
               ${roundMatches.map(match => `
                 <tr>
                   <td>${match.isBye ? '-' : match.court}</td>
-                  <td>${getTeamName(match.team1Id)}</td>
+                  <td>
+                    ${getTeamName(match.team1Id)}<br/>
+                    <small>${getTeamPlayers(match.team1Id)}</small>
+                  </td>
                   <td class="score">${match.completed || match.isBye ? `${match.team1Score} - ${match.team2Score}` : '- - -'}</td>
-                  <td>${match.isBye ? 'BYE' : getTeamName(match.team2Id)}</td>
+                  <td>
+                    ${match.isBye ? 'BYE' : `${getTeamName(match.team2Id)}<br/><small>${getTeamPlayers(match.team2Id)}</small>`}
+                  </td>
                   <td class="${match.completed || match.isBye ? 'status-completed' : 'status-pending'}">
                     ${match.completed || match.isBye ? 'Terminé' : 'En cours'}
                   </td>
@@ -275,6 +288,9 @@ export function MatchesTab({
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
                         {getTeamName(match.team1Id)}
+                        <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                          {getTeamPlayers(match.team1Id)}
+                        </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-center">
                         {editingMatch === match.id ? (
@@ -307,7 +323,12 @@ export function MatchesTab({
                         {match.isBye ? (
                           <span className="text-gray-500 dark:text-gray-400 italic">BYE</span>
                         ) : (
-                          getTeamName(match.team2Id)
+                          <>
+                            {getTeamName(match.team2Id)}
+                            <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                              {getTeamPlayers(match.team2Id)}
+                            </div>
+                          </>
                         )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-center">
