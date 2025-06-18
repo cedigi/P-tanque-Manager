@@ -42,7 +42,7 @@ export function useTournament() {
 
     const teamNumber = tournament.teams.length + 1;
     const teamName =
-      tournament.type === 'melee'
+      tournament.type === 'melee' || tournament.type === 'tete-a-tete'
         ? `${teamNumber} - ${players[0].name}`
         : `Équipe ${teamNumber}`;
 
@@ -72,7 +72,7 @@ export function useTournament() {
     const renumberedTeams = updatedTeams.map((team, index) => ({
       ...team,
       name:
-        tournament.type === 'melee'
+        tournament.type === 'melee' || tournament.type === 'tete-a-tete'
           ? `${index + 1} - ${team.players[0].name}`
           : `Équipe ${index + 1}`,
     }));
