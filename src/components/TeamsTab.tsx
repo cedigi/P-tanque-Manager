@@ -103,15 +103,20 @@ export function TeamsTab({ teams, tournamentType, onAddTeam, onRemoveTeam }: Tea
               background: white;
               box-shadow: 0 1px 3px rgba(0,0,0,0.1);
             }
-            .team-name { 
-              font-weight: bold; 
-              font-size: 16px; 
-              color: #1e40af; 
+            .team-name {
+              font-weight: bold;
+              font-size: 16px;
+              color: #1e40af;
               margin-bottom: 8px;
             }
+            .player-list {
+              display: flex;
+              flex-wrap: wrap;
+              gap: 4px 12px;
+            }
             .player {
-              margin: 2px 0;
-              padding-left: 10px;
+              display: inline-flex;
+              align-items: center;
               font-size: 12px;
             }
             .player-label {
@@ -148,14 +153,14 @@ export function TeamsTab({ teams, tournamentType, onAddTeam, onRemoveTeam }: Tea
               <div class="team-item">
                 <div class="team-name">${team.name}</div>
                 ${!isSolo
-                  ? team.players
+                  ? `<div class="player-list">${team.players
                       .map((player: Player) => `
                         <div class="player">
                           ${player.label ? `<span class="player-label">${player.label}</span>` : ''}
                           ${player.name}
                         </div>
                       `)
-                      .join('')
+                      .join('')}</div>`
                   : ''}
               </div>
             `).join('')}
