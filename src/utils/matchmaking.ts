@@ -149,7 +149,7 @@ function generateQuadretteMatches(tournament: Tournament): Match[] {
 }
 
 function generateMeleeMatches(tournament: Tournament): Match[] {
-  const { teams, currentRound, courts } = tournament;
+  const { teams, matches, currentRound, courts } = tournament;
   const round = currentRound + 1;
 
   // Determine team size: more courts allow smaller teams (doublettes),
@@ -160,33 +160,52 @@ function generateMeleeMatches(tournament: Tournament): Match[] {
   const shuffled = [...teams].sort(() => Math.random() - 0.5);
 
   const groups: string[][] = [];
-  // Create groups of the chosen size
-  while (shuffled.length >= playersPerTeam) {
-    groups.push(shuffled.splice(0, playersPerTeam).map(t => t.id));
-  }
 
-  // Distribute any remaining players among existing groups to form triplettes
-  let idx = 0;
+  // Form groups while trying to avoid previous teammates
   while (shuffled.length > 0) {
-    groups[idx % groups.length].push(shuffled.shift()!.id);
-    idx++;
+    const group: string[] = [];
+    while (group.length < playersPerTeam && shuffled.length > 0) {
+      let idx = shuffled.findIndex(team =>
+        group.every(id => !haveTeamedBefore(id, team.id, matches))
+      );
+      if (idx === -1) idx = 0;
+      group.push(shuffled.splice(idx, 1)[0].id);
+    }
+    groups.push(group);
   }
 
-  const matches: Match[] = [];
+  // If we ended up with an odd number of groups, merge the last one across the
+  // others so that everyone has an opponent.
+  if (groups.length % 2 === 1 && groups.length > 1) {
+    const extra = groups.pop()!;
+    extra.forEach((playerId, i) => {
+      groups[i % groups.length].push(playerId);
+    });
+  }
+
+  const matchesResult: Match[] = [];
   let courtIndex = 1;
 
-  for (let i = 0; i < groups.length; i += 2) {
-    const team1Ids = groups[i];
-    const team2Ids = groups[i + 1] || [];
+  while (groups.length > 1) {
+    const team1Ids = groups.shift()!;
 
-    matches.push({
+    let opponentIndex = groups.findIndex(group =>
+      !team1Ids.some(id1 =>
+        group.some(id2 => havePlayedAgainst(id1, id2, matches))
+      )
+    );
+    if (opponentIndex === -1) opponentIndex = 0;
+
+    const team2Ids = groups.splice(opponentIndex, 1)[0];
+
+    matchesResult.push({
       id: crypto.randomUUID(),
       round,
       // Court numbers above the available courts represent waiting ("Libre")
       // matches. They will be shown as such in the UI.
       court: courtIndex,
       team1Id: team1Ids[0],
-      team2Id: team2Ids[0] || team1Ids[0],
+      team2Id: team2Ids[0],
       team1Ids,
       team2Ids,
       completed: false,
@@ -196,12 +215,49 @@ function generateMeleeMatches(tournament: Tournament): Match[] {
     courtIndex++;
   }
 
-  return matches;
+  if (groups.length === 1) {
+    const teamIds = groups.shift()!;
+    matchesResult.push({
+      id: crypto.randomUUID(),
+      round,
+      court: courtIndex,
+      team1Id: teamIds[0],
+      team2Id: teamIds[0],
+      team1Ids: teamIds,
+      team2Ids: teamIds,
+      completed: false,
+      isBye: false,
+    });
+  }
+
+  return matchesResult;
 }
 
 function havePlayedBefore(team1Id: string, team2Id: string, matches: Match[]): boolean {
-  return matches.some(match => 
+  return matches.some(match =>
     (match.team1Id === team1Id && match.team2Id === team2Id) ||
     (match.team1Id === team2Id && match.team2Id === team1Id)
   );
+}
+
+function haveTeamedBefore(id1: string, id2: string, matches: Match[]): boolean {
+  return matches.some(match => {
+    const team1 = match.team1Ids ?? [match.team1Id];
+    const team2 = match.team2Ids ?? [match.team2Id];
+    return (
+      (team1.includes(id1) && team1.includes(id2)) ||
+      (team2.includes(id1) && team2.includes(id2))
+    );
+  });
+}
+
+function havePlayedAgainst(id1: string, id2: string, matches: Match[]): boolean {
+  return matches.some(match => {
+    const team1 = match.team1Ids ?? [match.team1Id];
+    const team2 = match.team2Ids ?? [match.team2Id];
+    return (
+      (team1.includes(id1) && team2.includes(id2)) ||
+      (team1.includes(id2) && team2.includes(id1))
+    );
+  });
 }
