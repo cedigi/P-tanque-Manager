@@ -37,30 +37,16 @@ export function StandingsTab({ teams }: StandingsTabProps) {
       <!DOCTYPE html>
       <html>
         <head>
-          <title>Classement - Pétanque Manager</title>
+          <title>Résultats</title>
           <style>
-            body { 
-              font-family: Arial, sans-serif; 
-              margin: 20px; 
+            body {
+              font-family: Arial, sans-serif;
+              margin: 10px;
               color: #333;
             }
-            .header { 
-              text-align: center; 
-              margin-bottom: 30px; 
-              border-bottom: 2px solid #2563eb;
-              padding-bottom: 15px;
-            }
-            .logo {
-              width: 80px;
-              height: 80px;
-              margin: 0 auto 15px;
-              display: block;
-            }
-            .tournament-info {
-              background: #f8fafc;
-              padding: 15px;
-              border-radius: 8px;
-              margin-bottom: 20px;
+            h1 {
+              text-align: center;
+              margin-bottom: 10px;
             }
             table { 
               width: 100%; 
@@ -116,14 +102,7 @@ export function StandingsTab({ teams }: StandingsTabProps) {
           </style>
         </head>
         <body>
-          <div class="header">
-            <img src="/logo1.png" alt="Pétanque Manager" class="logo" />
-            <h1>🏆 Classement Final</h1>
-            <p>Tournoi de Pétanque - ${new Date().toLocaleDateString('fr-FR')}</p>
-          </div>
-          <div class="tournament-info">
-            <strong>Nombre ${isSolo ? 'de joueurs' : "d'équipes"}:</strong> ${teams.length}
-          </div>
+          <h1>Résultats</h1>
           <table>
             <thead>
               <tr>
