@@ -12,7 +12,7 @@ export function generateMatches(tournament: Tournament): Match[] {
 }
 
 function generateStandardMatches(tournament: Tournament): Match[] {
-  const { teams, matches, currentRound, courts } = tournament;
+  const { teams, matches, currentRound } = tournament;
   const round = currentRound + 1;
 
   // Sort teams by performance (best to worst)
@@ -66,7 +66,9 @@ function generateStandardMatches(tournament: Tournament): Match[] {
     newMatches.push({
       id: crypto.randomUUID(),
       round,
-      court: ((courtIndex - 1) % courts) + 1,
+      // Court numbers continue sequentially. Matches with a court number higher
+      // than the available courts represent waiting games ("Libre").
+      court: courtIndex,
       team1Id: team1.id,
       team2Id: team2.id,
       completed: false,
