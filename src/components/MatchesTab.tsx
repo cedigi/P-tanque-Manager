@@ -117,18 +117,10 @@ export function MatchesTab({
             tr:nth-child(even) { 
               background: #f8fafc;
             }
-            .status-completed { 
-              color: #059669; 
-              font-weight: bold;
-            }
-            .status-pending { 
-              color: #d97706; 
-              font-weight: bold;
-            }
             .score {
               font-size: 18px;
               font-weight: bold;
-              text-align: left;
+              text-align: center;
             }
             .team-right {
               padding-left: 20px;
@@ -145,9 +137,8 @@ export function MatchesTab({
               <tr>
                 <th>Terrain</th>
                 <th>${isSolo ? 'Joueur' : 'Équipe'}</th>
-                <th>${isSolo ? 'Joueur' : 'Équipe'}</th>
                 <th>Score</th>
-                <th>Statut</th>
+                <th>${isSolo ? 'Joueur' : 'Équipe'}</th>
               </tr>
             </thead>
             <tbody>
@@ -158,12 +149,9 @@ export function MatchesTab({
                     ${match.team1Ids ? getGroupLabel(match.team1Ids) : getTeamName(match.team1Id)}
                     ${!match.team1Ids ? `<br/><small>${getTeamPlayers(match.team1Id)}</small>` : ''}
                   </td>
+                  <td class="score">${match.completed || match.isBye ? `${match.team1Score} - ${match.team2Score}` : '- - -'}</td>
                   <td class="team-right">
                     ${match.isBye ? 'BYE' : match.team2Ids ? getGroupLabel(match.team2Ids) : `${getTeamName(match.team2Id)}<br/><small>${getTeamPlayers(match.team2Id)}</small>`}
-                  </td>
-                  <td class="score">${match.completed || match.isBye ? `${match.team1Score} - ${match.team2Score}` : '- - -'}</td>
-                  <td class="${match.completed || match.isBye ? 'status-completed' : 'status-pending'}">
-                    ${match.completed || match.isBye ? 'Terminé' : 'En cours'}
                   </td>
                 </tr>
               `).join('')}
@@ -249,14 +237,11 @@ export function MatchesTab({
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       {isSolo ? 'Joueur' : 'Équipe'}
                     </th>
-                    <th className="pl-12 pr-8 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      {isSolo ? 'Joueur' : 'Équipe'}
-                    </th>
                     <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       Score
                     </th>
-                    <th className="px-8 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Statut
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                      {isSolo ? 'Joueur' : 'Équipe'}
                     </th>
                     <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       Actions
@@ -309,20 +294,6 @@ export function MatchesTab({
                           </>
                         )}
                       </td>
-                      <td className="pl-12 pr-8 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-                        {match.isBye ? (
-                          <span className="text-gray-500 dark:text-gray-400 italic">BYE</span>
-                        ) : match.team2Ids ? (
-                          getGroupLabel(match.team2Ids)
-                        ) : (
-                          <>
-                            {getTeamName(match.team2Id)}
-                            <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                              {getTeamPlayers(match.team2Id)}
-                            </div>
-                          </>
-                        )}
-                      </td>
                       <td className="px-6 py-4 whitespace-nowrap text-center">
                         {editingMatch === match.id ? (
                           <div className="flex items-center justify-center space-x-2">
@@ -350,14 +321,19 @@ export function MatchesTab({
                           </span>
                         )}
                       </td>
-                      <td className="px-8 py-4 whitespace-nowrap text-center">
-                        <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                          match.completed || match.isBye
-                            ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200'
-                            : 'bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200'
-                        }`}>
-                          {match.completed || match.isBye ? 'Terminé' : 'En cours'}
-                        </span>
+                      <td className="pl-12 pr-8 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                        {match.isBye ? (
+                          <span className="text-gray-500 dark:text-gray-400 italic">BYE</span>
+                        ) : match.team2Ids ? (
+                          getGroupLabel(match.team2Ids)
+                        ) : (
+                          <>
+                            {getTeamName(match.team2Id)}
+                            <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                              {getTeamPlayers(match.team2Id)}
+                            </div>
+                          </>
+                        )}
                       </td>
                       <td className="px-4 py-4 whitespace-nowrap text-center">
                         {!match.isBye && (
