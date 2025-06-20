@@ -18,28 +18,83 @@ function generateStandardMatches(tournament: Tournament): Match[] {
   // Sort teams by performance (best to worst)
   const sortedTeams = [...teams].sort((a, b) => b.performance - a.performance);
 
-  if (round === 1) {
-    // Shuffle teams so initial pairings are random
-    for (let i = sortedTeams.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [sortedTeams[i], sortedTeams[j]] = [sortedTeams[j], sortedTeams[i]];
-    }
-  }
-
   const remainingTeams = [...sortedTeams];
   const newMatches: Match[] = [];
 
+  if (round === 1) {
+    // For the very first round we want to avoid the typical 1 vs 2, 3 vs 4
+    // pattern which can feel predictable.  Instead we pair teams using an
+    // offset (1 vs 3, 2 vs 4, 5 vs 7, 6 vs 8, ...).  Any leftover teams are
+    // matched sequentially.
+
+    // Handle BYE if the number of teams is odd. The last team simply sits out.
+    if (remainingTeams.length % 2 === 1) {
+      const byeTeam = remainingTeams.pop() as Team;
+      newMatches.push({
+        id: crypto.randomUUID(),
+        round,
+        court: 0,
+        team1Id: byeTeam.id,
+        team2Id: byeTeam.id,
+        team1Score: 13,
+        team2Score: 7,
+        completed: true,
+        isBye: true,
+      });
+    }
+
+    let courtIndex = 1;
+
+    // Pair by groups of four using the 1 vs 3, 2 vs 4 pattern
+    let i = 0;
+    for (; i + 3 < remainingTeams.length; i += 4) {
+      const t1 = remainingTeams[i];
+      const t2 = remainingTeams[i + 2];
+      newMatches.push({
+        id: crypto.randomUUID(),
+        round,
+        court: courtIndex++,
+        team1Id: t1.id,
+        team2Id: t2.id,
+        completed: false,
+        isBye: false,
+      });
+
+      const t3 = remainingTeams[i + 1];
+      const t4 = remainingTeams[i + 3];
+      newMatches.push({
+        id: crypto.randomUUID(),
+        round,
+        court: courtIndex++,
+        team1Id: t3.id,
+        team2Id: t4.id,
+        completed: false,
+        isBye: false,
+      });
+    }
+
+    // Pair any remaining teams sequentially
+    for (; i < remainingTeams.length - 1; i += 2) {
+      const t1 = remainingTeams[i];
+      const t2 = remainingTeams[i + 1];
+      newMatches.push({
+        id: crypto.randomUUID(),
+        round,
+        court: courtIndex++,
+        team1Id: t1.id,
+        team2Id: t2.id,
+        completed: false,
+        isBye: false,
+      });
+    }
+
+    return newMatches;
+  }
+
   // Handle BYE if odd number of teams
   if (remainingTeams.length % 2 === 1) {
-    let byeTeam: Team;
-    if (round === 1) {
-      // Random team for first round
-      const randomIndex = Math.floor(Math.random() * remainingTeams.length);
-      byeTeam = remainingTeams[randomIndex];
-    } else {
-      // Worst performing team
-      byeTeam = remainingTeams[remainingTeams.length - 1];
-    }
+    // Worst performing team gets the BYE in subsequent rounds
+    const byeTeam = remainingTeams[remainingTeams.length - 1];
 
     newMatches.push({
       id: crypto.randomUUID(),
