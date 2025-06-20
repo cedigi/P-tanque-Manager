@@ -18,6 +18,14 @@ function generateStandardMatches(tournament: Tournament): Match[] {
   // Sort teams by performance (best to worst)
   const sortedTeams = [...teams].sort((a, b) => b.performance - a.performance);
 
+  if (round === 1) {
+    // Shuffle teams so initial pairings are random
+    for (let i = sortedTeams.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [sortedTeams[i], sortedTeams[j]] = [sortedTeams[j], sortedTeams[i]];
+    }
+  }
+
   const remainingTeams = [...sortedTeams];
   const newMatches: Match[] = [];
 
