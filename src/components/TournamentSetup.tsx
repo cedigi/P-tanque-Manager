@@ -89,10 +89,10 @@ export function TournamentSetup({ onCreateTournament }: TournamentSetupProps) {
               onChange={(e) => setCourts(Number(e.target.value))}
               className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
-              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(num => (
+              {Array.from({ length: 150 }, (_, i) => i + 1).map(num => (
                 <option key={num} value={num}>{num} terrain{num > 1 ? 's' : ''}</option>
               ))}
-            </select>
+              </select>
           </div>
 
           <button
