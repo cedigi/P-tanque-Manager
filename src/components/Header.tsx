@@ -1,4 +1,5 @@
 import { Sun, Moon } from 'lucide-react';
+import { Logo } from './Logo';
 
 interface HeaderProps {
   darkMode: boolean;
@@ -11,12 +12,8 @@ export function Header({ darkMode, onToggleDarkMode }: HeaderProps) {
       <div className="px-6 py-4 flex items-center justify-between">
         {/* Logo + titre */}
         <div className="flex items-center space-x-3">
-          {/* Le src "/logo1.png" pointe vers public/logo1.png */}
-          <img
-            src="/logo1.png"
-            alt="Pétanque Manager Logo"
-            className="w-10 h-10"
-          />
+          {/* Utilisation du composant Logo pour garantir le bon chemin d'accès */}
+          <Logo className="w-10 h-10" />
           <div>
             <h1 className="text-xl font-bold text-gray-900 dark:text-white">
               Pétanque Manager
