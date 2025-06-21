@@ -1,0 +1,128 @@
+/* theme-cyber-blue.css
+   Thème “Cybernétique Bleu” pour Pétanque Manager
+   Place ce fichier dans public/theme-cyber-blue.css */
+
+/* Variables de couleur */
+:root {
+  --bg-main: #E8ECEF;        /* Fond principal clair */
+  --bg-secondary: #F4F6F7;   /* Secondaire (cards, panels) */
+  --text-main: #1B1D21;      /* Texte principal sombre */
+  --accent:   #00D6FF;       /* Néon Bleu */
+  --border:   #AAB2B8;       /* Bordures grises */
+}
+
+/* Corps de page */
+body {
+  background-color: var(--bg-main);
+  color: var(--text-main);
+  margin: 0;
+  font-family: "Segoe UI", sans-serif;
+}
+
+/* Boutons (ex. .btn) */
+.btn {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.5rem 1rem;
+  color: var(--text-main);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn:hover {
+  background-color: var(--bg-main);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* Headers et en-têtes */
+header {
+  background-color: var(--bg-secondary);
+  border-bottom: 2px solid var(--accent);
+}
+
+/* Onglets (TabNavigation) */
+.tab {
+  background-color: var(--bg-secondary);
+  padding: 0.5rem 1rem;
+  margin-right: 0.25rem;
+  border: 1px solid var(--border);
+  border-radius: 4px 4px 0 0;
+  cursor: pointer;
+}
+
+.tab-active {
+  background-color: white;
+  border-bottom: 2px solid var(--accent);
+  color: var(--accent);
+}
+
+/* Sections principales (cards, containers) */
+.section {
+  background-color: white;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+/* Tableau / Grille (StandingsTab, MatchesTab) */
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.table th,
+.table td {
+  border: 1px solid var(--border);
+  padding: 0.5rem;
+  text-align: left;
+}
+
+.table th {
+  background-color: var(--bg-secondary);
+}
+
+/* Inputs (select, number, text) */
+input,
+select,
+textarea {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 0.5rem;
+  color: var(--text-main);
+  transition: border-color 0.2s;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+/* Scrollbars (Chrome, Edge) */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+}
+::-webkit-scrollbar-thumb {
+  background-color: var(--border);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent);
+}
+
+/* Liens */
+a {
+  color: var(--accent);
+  text-decoration: none;
+}
+a:hover {
+  text-decoration: underline;
+}
