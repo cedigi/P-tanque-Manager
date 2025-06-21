@@ -1,4 +1,4 @@
-import React from 'react';
+import logo from '../assets/logo1.png';
 
 interface LogoProps {
   className?: string;
@@ -6,6 +6,9 @@ interface LogoProps {
 
 export function Logo({ className }: LogoProps) {
   return (
-    <img src="/logo1.png" alt="Pétanque Manager" className={className} />
+    <img src={logo} alt="Pétanque Manager" className={className} />
   );
 }
+
+
+
