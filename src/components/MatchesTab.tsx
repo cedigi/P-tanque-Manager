@@ -107,6 +107,7 @@ export function MatchesTab({
             th:first-child,
             td:first-child {
               text-align: left;
+              width: 60px;
             }
             tbody tr {
               border-bottom: 1px solid #000;
