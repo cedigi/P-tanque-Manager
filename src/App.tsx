@@ -10,6 +10,7 @@ import { RotateCcw } from 'lucide-react';
 
 function App() {
   const [darkMode, setDarkMode] = useState(false);
+  const [cyberTheme, setCyberTheme] = useState(false);
   const [activeTab, setActiveTab] = useState('teams');
   const {
     tournament,
@@ -28,6 +29,16 @@ function App() {
     if (savedDarkMode) {
       document.documentElement.classList.add('dark');
     }
+
+    const savedCyberTheme = localStorage.getItem('cyberTheme') === 'true';
+    setCyberTheme(savedCyberTheme);
+    if (savedCyberTheme) {
+      const link = document.createElement('link');
+      link.id = 'cyber-theme-link';
+      link.rel = 'stylesheet';
+      link.href = '/theme-cyber-blue.css';
+      document.head.appendChild(link);
+    }
   }, []);
 
   const toggleDarkMode = () => {
@@ -38,6 +49,24 @@ function App() {
       document.documentElement.classList.add('dark');
     } else {
       document.documentElement.classList.remove('dark');
+    }
+  };
+
+  const toggleCyberTheme = () => {
+    const newCyberTheme = !cyberTheme;
+    setCyberTheme(newCyberTheme);
+    localStorage.setItem('cyberTheme', String(newCyberTheme));
+    const existing = document.getElementById('cyber-theme-link');
+    if (newCyberTheme) {
+      if (!existing) {
+        const link = document.createElement('link');
+        link.id = 'cyber-theme-link';
+        link.rel = 'stylesheet';
+        link.href = '/theme-cyber-blue.css';
+        document.head.appendChild(link);
+      }
+    } else {
+      existing?.remove();
     }
   };
 
@@ -52,7 +81,12 @@ function App() {
   return (
     <div className={darkMode ? 'dark' : ''}>
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-        <Header darkMode={darkMode} onToggleDarkMode={toggleDarkMode} />
+        <Header
+          darkMode={darkMode}
+          onToggleDarkMode={toggleDarkMode}
+          cyberTheme={cyberTheme}
+          onToggleCyberTheme={toggleCyberTheme}
+        />
         
         <div className="bg-white dark:bg-gray-800 shadow-sm">
           <div className="px-6 py-4 flex justify-between items-center">
