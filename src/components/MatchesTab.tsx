@@ -272,7 +272,7 @@ export function MatchesTab({
                                 className="text-sm border-0 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded focus:ring-0"
                               >
                                 <option value={match.court}>{`Libre ${match.court - courts}`}</option>
-                                {Array.from({ length: 10 }, (_, i) => i + 1).map(court => (
+                                {Array.from({ length: courts }, (_, i) => i + 1).map(court => (
                                   <option key={court} value={court}>{court}</option>
                                 ))}
                               </select>
@@ -282,7 +282,7 @@ export function MatchesTab({
                                 onChange={(e) => onUpdateCourt(match.id, Number(e.target.value))}
                                 className="text-sm border-0 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded focus:ring-0"
                               >
-                                {Array.from({ length: 10 }, (_, i) => i + 1).map(court => (
+                                {Array.from({ length: courts }, (_, i) => i + 1).map(court => (
                                   <option key={court} value={court}>{court}</option>
                                 ))}
                               </select>
