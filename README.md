@@ -17,7 +17,8 @@ npm install
 
 This command installs all dependencies, including linting packages such as
 `@eslint/js`. Alternatively, you can run `./setup.sh` to perform the same
-setup automatically.
+setup automatically. Run either of these commands **before** executing
+`npm run lint` so that the linter and its plugins are available.
 
 ## Development
 
