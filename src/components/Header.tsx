@@ -11,14 +11,12 @@ export function Header({ darkMode, onToggleDarkMode }: HeaderProps) {
       <div className="px-6 py-4 flex items-center justify-between">
         {/* Logo + titre */}
         <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center overflow-hidden">
-            {/* Le src "/logo1.png" pointe vers public/logo1.png */}
-            <img
-              src="/logo1.png"
-              alt="Pétanque Manager Logo"
-              className="w-8 h-8"
-            />
-          </div>
+          {/* Le src "/logo1.png" pointe vers public/logo1.png */}
+          <img
+            src="/logo1.png"
+            alt="Pétanque Manager Logo"
+            className="w-10 h-10"
+          />
           <div>
             <h1 className="text-xl font-bold text-gray-900 dark:text-white">
               Pétanque Manager
