@@ -9,7 +9,7 @@ import { useTournament } from './hooks/useTournament';
 import { RotateCcw } from 'lucide-react';
 
 function App() {
-  const [cyberTheme, setCyberTheme] = useState(false);
+  const [darkMode, setDarkMode] = useState(false);
   const [activeTab, setActiveTab] = useState('teams');
   const {
     tournament,
@@ -23,21 +23,21 @@ function App() {
   } = useTournament();
 
   useEffect(() => {
-    const savedCyberTheme = localStorage.getItem('cyberTheme') === 'true';
-    setCyberTheme(savedCyberTheme);
-    if (savedCyberTheme) {
-      document.documentElement.classList.add('cyber');
+    const savedDarkMode = localStorage.getItem('darkMode') === 'true';
+    setDarkMode(savedDarkMode);
+    if (savedDarkMode) {
+      document.documentElement.classList.add('dark');
     }
   }, []);
 
-  const toggleCyberTheme = () => {
-    const newCyberTheme = !cyberTheme;
-    setCyberTheme(newCyberTheme);
-    localStorage.setItem('cyberTheme', String(newCyberTheme));
-    if (newCyberTheme) {
-      document.documentElement.classList.add('cyber');
+  const toggleDarkMode = () => {
+    const newDarkMode = !darkMode;
+    setDarkMode(newDarkMode);
+    localStorage.setItem('darkMode', String(newDarkMode));
+    if (newDarkMode) {
+      document.documentElement.classList.add('dark');
     } else {
-      document.documentElement.classList.remove('cyber');
+      document.documentElement.classList.remove('dark');
     }
   };
 
@@ -98,12 +98,9 @@ function App() {
   );
 
   return (
-    <div>
-      <div className="min-h-screen bg-gray-50">
-        <Header
-          cyberTheme={cyberTheme}
-          onToggleCyberTheme={toggleCyberTheme}
-        />
+    <div className={darkMode ? 'dark' : ''}>
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+        <Header darkMode={darkMode} onToggleDarkMode={toggleDarkMode} />
         {content}
       </div>
     </div>

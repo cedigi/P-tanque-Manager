@@ -1,12 +1,12 @@
-import { Zap } from 'lucide-react';
+import { Sun, Moon } from 'lucide-react';
 import { Logo } from './Logo';
 
 interface HeaderProps {
-  cyberTheme: boolean;
-  onToggleCyberTheme: () => void;
+  darkMode: boolean;
+  onToggleDarkMode: () => void;
 }
 
-export function Header({ cyberTheme, onToggleCyberTheme }: HeaderProps) {
+export function Header({ darkMode, onToggleDarkMode }: HeaderProps) {
   return (
     <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
       <div className="px-6 py-4 flex items-center justify-between">
@@ -24,16 +24,17 @@ export function Header({ cyberTheme, onToggleCyberTheme }: HeaderProps) {
           </div>
         </div>
 
-        {/* Boutons de thèmes */}
-        <div className="flex space-x-2">
-          <button
-            onClick={onToggleCyberTheme}
-            className={`p-2 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors ${cyberTheme ? 'text-blue-600' : ''}`}
-            title="Thème cyber"
-          >
-            <Zap className="w-5 h-5 text-gray-600 dark:text-gray-300" />
-          </button>
-        </div>
+        <button
+          onClick={onToggleDarkMode}
+          className="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+          title={darkMode ? 'Mode clair' : 'Mode sombre'}
+        >
+          {darkMode ? (
+            <Sun className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+          ) : (
+            <Moon className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+          )}
+        </button>
       </div>
     </header>
   );
