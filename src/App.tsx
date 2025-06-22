@@ -33,11 +33,7 @@ function App() {
     const savedCyberTheme = localStorage.getItem('cyberTheme') === 'true';
     setCyberTheme(savedCyberTheme);
     if (savedCyberTheme) {
-      const link = document.createElement('link');
-      link.id = 'cyber-theme-link';
-      link.rel = 'stylesheet';
-      link.href = '/theme-cyber-blue.css';
-      document.head.appendChild(link);
+      document.documentElement.classList.add('cyber');
     }
   }, []);
 
@@ -56,17 +52,10 @@ function App() {
     const newCyberTheme = !cyberTheme;
     setCyberTheme(newCyberTheme);
     localStorage.setItem('cyberTheme', String(newCyberTheme));
-    const existing = document.getElementById('cyber-theme-link');
     if (newCyberTheme) {
-      if (!existing) {
-        const link = document.createElement('link');
-        link.id = 'cyber-theme-link';
-        link.rel = 'stylesheet';
-        link.href = '/theme-cyber-blue.css';
-        document.head.appendChild(link);
-      }
+      document.documentElement.classList.add('cyber');
     } else {
-      existing?.remove();
+      document.documentElement.classList.remove('cyber');
     }
   };
 
