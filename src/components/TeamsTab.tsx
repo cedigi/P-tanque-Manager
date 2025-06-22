@@ -69,13 +69,16 @@ export function TeamsTab({ teams, tournamentType, onAddTeam, onRemoveTeam }: Tea
           <title>Liste des équipes</title>
           <style>
             body {
-              font-family: Arial, sans-serif;
+              font-family: 'Orbitron', monospace;
               margin: 10px;
-              color: #333;
+              color: #00d4ff;
+              background: #0a0a0a;
             }
             h1 {
               text-align: center;
               margin-bottom: 10px;
+              color: #00d4ff;
+              text-shadow: 0 0 10px rgba(0, 212, 255, 0.8);
             }
             .team-list {
               display: flex;
@@ -84,7 +87,7 @@ export function TeamsTab({ teams, tournamentType, onAddTeam, onRemoveTeam }: Tea
             }
             .team-item {
               padding: 8px 0;
-              border-bottom: 1px solid #000;
+              border-bottom: 1px solid #00d4ff;
             }
             .team-item:last-child {
               border-bottom: none;
@@ -92,7 +95,7 @@ export function TeamsTab({ teams, tournamentType, onAddTeam, onRemoveTeam }: Tea
             .team-name {
               font-weight: bold;
               font-size: 16px;
-              color: #1e40af;
+              color: #00d4ff;
               margin-bottom: 8px;
             }
             .player-list {
@@ -104,16 +107,18 @@ export function TeamsTab({ teams, tournamentType, onAddTeam, onRemoveTeam }: Tea
               display: inline-flex;
               align-items: center;
               font-size: 12px;
+              color: #b3e5fc;
             }
             .player-label {
               display: inline-block;
               width: 20px;
               height: 20px;
-              background: #dbeafe;
-              color: #1e40af;
+              background: rgba(0, 212, 255, 0.2);
+              color: #00d4ff;
+              border: 1px solid #00d4ff;
               border-radius: 50%;
               text-align: center;
-              line-height: 20px;
+              line-height: 18px;
               font-size: 12px;
               font-weight: bold;
               margin-right: 8px;
@@ -125,7 +130,7 @@ export function TeamsTab({ teams, tournamentType, onAddTeam, onRemoveTeam }: Tea
           </style>
         </head>
         <body>
-          <h1>Liste des équipes</h1>
+          <h1>LISTE DES ÉQUIPES</h1>
           <div class="team-list">
             ${teams.map(team => `
               <div class="team-item">
@@ -154,40 +159,40 @@ export function TeamsTab({ teams, tournamentType, onAddTeam, onRemoveTeam }: Tea
 
   return (
     <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-          {isSolo ? 'Joueurs' : 'Équipes'}
+      <div className="flex justify-between items-center mb-8">
+        <h2 className="text-3xl font-bold neon-text tracking-wider">
+          {isSolo ? 'JOUEURS' : 'ÉQUIPES'}
         </h2>
-        <div className="flex space-x-3">
+        <div className="flex space-x-4">
           {teams.length > 0 && (
             <button
               onClick={handlePrint}
-              className="flex items-center space-x-2 bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors"
+              className="cyber-button flex items-center space-x-2 px-4 py-2 rounded-lg transition-all duration-300 hover:scale-105"
             >
               <Printer className="w-4 h-4" />
-              <span>Imprimer la liste</span>
+              <span>IMPRIMER</span>
             </button>
           )}
           <button
             onClick={initializeForm}
-            className="flex items-center space-x-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+            className="cyber-button flex items-center space-x-2 px-4 py-2 rounded-lg transition-all duration-300 hover:scale-105"
           >
             <Plus className="w-4 h-4" />
-            <span>Ajouter {isSolo ? 'un joueur' : 'une équipe'}</span>
+            <span>AJOUTER {isSolo ? 'JOUEUR' : 'ÉQUIPE'}</span>
           </button>
         </div>
       </div>
 
       {showForm && (
-        <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm mb-6 border border-gray-200 dark:border-gray-700">
-          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
-            {isSolo ? 'Nouveau joueur' : `Nouvelle équipe (${getPlayersPerTeam()} joueur${getPlayersPerTeam() > 1 ? 's' : ''})`}
+        <div className="cyber-card p-6 rounded-xl mb-8 cyber-glow">
+          <h3 className="text-xl font-bold text-cyan-300 mb-6 tracking-wide">
+            {isSolo ? 'NOUVEAU JOUEUR' : `NOUVELLE ÉQUIPE (${getPlayersPerTeam()} joueur${getPlayersPerTeam() > 1 ? 's' : ''})`}
           </h3>
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-6">
             {players.map((player, index) => (
-              <div key={player.id} className="flex items-center space-x-3">
+              <div key={player.id} className="flex items-center space-x-4">
                 {tournamentType === 'quadrette' && (
-                  <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center font-medium">
+                  <div className="w-10 h-10 bg-cyan-400/20 border border-cyan-400 text-cyan-400 rounded-full flex items-center justify-center font-bold text-lg">
                     {player.label}
                   </div>
                 )}
@@ -196,49 +201,50 @@ export function TeamsTab({ teams, tournamentType, onAddTeam, onRemoveTeam }: Tea
                   value={player.name}
                   onChange={(e) => handlePlayerNameChange(index, e.target.value)}
                   placeholder={`Nom du joueur ${tournamentType === 'quadrette' ? player.label : index + 1}`}
-                  className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="cyber-input flex-1 px-4 py-3 rounded-lg font-medium tracking-wide"
                   required
                 />
               </div>
             ))}
-            <div className="flex space-x-3">
+            <div className="flex space-x-4">
               <button
                 type="submit"
-                className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
+                className="cyber-button px-6 py-3 rounded-lg font-bold tracking-wide hover:scale-105 transition-all duration-300"
+                style={{ background: 'linear-gradient(135deg, rgba(0, 255, 0, 0.1) 0%, rgba(0, 200, 0, 0.2) 100%)', borderColor: '#00ff00' }}
               >
-                Ajouter
+                AJOUTER
               </button>
               <button
                 type="button"
                 onClick={handleCancel}
-                className="bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors"
+                className="cyber-button px-6 py-3 rounded-lg font-bold tracking-wide hover:scale-105 transition-all duration-300"
+                style={{ background: 'linear-gradient(135deg, rgba(255, 0, 0, 0.1) 0%, rgba(200, 0, 0, 0.2) 100%)', borderColor: '#ff0000', color: '#ff6666' }}
               >
-                Annuler
+                ANNULER
               </button>
             </div>
           </form>
         </div>
       )}
 
-      {/* Liste des équipes en format vertical compact */}
-      <div className="space-y-1">
+      <div className="space-y-3">
         {teams.map((team) => (
-          <div key={team.id} className="bg-white dark:bg-gray-800 p-2 rounded-md shadow-sm border border-gray-200 dark:border-gray-700">
+          <div key={team.id} className="cyber-card p-4 rounded-lg hover:cyber-glow transition-all duration-300">
             <div className="flex justify-between items-start">
               <div className="flex-1">
-                <div className="flex items-center space-x-2 mb-1">
-                  <Users className="w-5 h-5 text-blue-600" />
-                  <h3 className="font-medium text-gray-900 dark:text-white">{team.name}</h3>
+                <div className="flex items-center space-x-3 mb-2">
+                  <Users className="w-6 h-6 text-cyan-400" />
+                  <h3 className="font-bold text-cyan-200 text-lg tracking-wide">{team.name}</h3>
                 </div>
                 {!isSolo && (
-                  <div className="flex flex-wrap gap-x-2 gap-y-1">
+                  <div className="flex flex-wrap gap-x-4 gap-y-2">
                     {team.players.map((player: Player) => (
                       <div
                         key={player.id}
-                        className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400"
+                        className="flex items-center space-x-2 text-sm text-cyan-300/80 font-medium"
                       >
                         {player.label && (
-                          <span className="w-5 h-5 bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center text-xs font-medium">
+                          <span className="w-6 h-6 bg-cyan-400/20 border border-cyan-400 text-cyan-400 rounded-full flex items-center justify-center text-xs font-bold">
                             {player.label}
                           </span>
                         )}
@@ -250,10 +256,10 @@ export function TeamsTab({ teams, tournamentType, onAddTeam, onRemoveTeam }: Tea
               </div>
               <button
                 onClick={() => onRemoveTeam(team.id)}
-                className="text-red-500 hover:text-red-700 transition-colors ml-4"
+                className="text-red-400 hover:text-red-300 transition-colors ml-4 p-2 rounded-lg hover:bg-red-400/10"
                 title={isSolo ? 'Supprimer le joueur' : "Supprimer l'équipe"}
               >
-                <Trash2 className="w-4 h-4" />
+                <Trash2 className="w-5 h-5" />
               </button>
             </div>
           </div>
@@ -261,12 +267,12 @@ export function TeamsTab({ teams, tournamentType, onAddTeam, onRemoveTeam }: Tea
       </div>
 
       {teams.length === 0 && !showForm && (
-        <div className="text-center py-12">
-          <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-            {isSolo ? 'Aucun joueur inscrit' : 'Aucune équipe inscrite'}
+        <div className="text-center py-16">
+          <Users className="w-16 h-16 text-cyan-400/50 mx-auto mb-6" />
+          <h3 className="text-2xl font-bold neon-text mb-4 tracking-wide">
+            {isSolo ? 'AUCUN JOUEUR INSCRIT' : 'AUCUNE ÉQUIPE INSCRITE'}
           </h3>
-          <p className="text-gray-500 dark:text-gray-400">
+          <p className="text-cyan-300/60 text-lg font-medium">
             {isSolo
               ? 'Commencez par ajouter des joueurs pour votre tournoi'
               : 'Commencez par ajouter des équipes pour votre tournoi'}

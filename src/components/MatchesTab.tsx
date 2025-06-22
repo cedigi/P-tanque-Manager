@@ -87,45 +87,46 @@ export function MatchesTab({
           <title>Tour ${round}</title>
           <style>
             body {
-              font-family: Arial, sans-serif;
+              font-family: 'Orbitron', monospace;
               margin: 10px;
-              color: #333;
+              color: #00d4ff;
+              background: #0a0a0a;
             }
             h1 {
               text-align: center;
               margin-bottom: 10px;
+              color: #00d4ff;
+              text-shadow: 0 0 10px rgba(0, 212, 255, 0.8);
             }
             table {
               width: 100%;
               border-collapse: collapse;
               margin-top: 10px;
+              border: 1px solid #00d4ff;
             }
             th, td {
               padding: 8px;
               text-align: center;
+              border: 1px solid rgba(0, 212, 255, 0.3);
             }
             th:first-child,
             td:first-child {
               text-align: left;
               width: 60px;
             }
-            tbody tr {
-              border-bottom: 1px solid #000;
-            }
-            tbody tr:last-child {
-              border-bottom: none;
-            }
             th { 
-              background: #f1f5f9; 
+              background: rgba(0, 212, 255, 0.2);
               font-weight: bold;
+              color: #00d4ff;
             }
             tr:nth-child(even) { 
-              background: #f8fafc;
+              background: rgba(0, 212, 255, 0.05);
             }
             .score {
               font-size: 18px;
               font-weight: bold;
               text-align: center;
+              color: #00ff00;
             }
             .team-right {
               padding-left: 20px;
@@ -133,6 +134,7 @@ export function MatchesTab({
             }
             .team {
               text-align: center;
+              color: #b3e5fc;
             }
             @media print {
               body { margin: 0; }
@@ -140,14 +142,14 @@ export function MatchesTab({
           </style>
         </head>
         <body>
-          <h1>Tour ${round}</h1>
+          <h1>TOUR ${round}</h1>
           <table>
             <thead>
               <tr>
-                <th>Terrain</th>
-                <th class="team">${isSolo ? 'Joueur' : 'Équipe'}</th>
-                <th>Score</th>
-                <th class="team">${isSolo ? 'Joueur' : 'Équipe'}</th>
+                <th>TERRAIN</th>
+                <th class="team">${isSolo ? 'JOUEUR' : 'ÉQUIPE'}</th>
+                <th>SCORE</th>
+                <th class="team">${isSolo ? 'JOUEUR' : 'ÉQUIPE'}</th>
               </tr>
             </thead>
             <tbody>
@@ -177,44 +179,44 @@ export function MatchesTab({
 
   return (
     <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Matchs</h2>
+      <div className="flex justify-between items-center mb-8">
+        <h2 className="text-3xl font-bold neon-text tracking-wider">MATCHS</h2>
         <button
           onClick={onGenerateRound}
-          className="flex items-center space-x-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
+          className="cyber-button flex items-center space-x-2 px-6 py-3 rounded-lg font-bold tracking-wide hover:scale-105 transition-all duration-300"
           disabled={teams.length < 2}
+          style={{ background: 'linear-gradient(135deg, rgba(0, 255, 0, 0.1) 0%, rgba(0, 200, 0, 0.2) 100%)', borderColor: '#00ff00' }}
         >
-          <Play className="w-4 h-4" />
-          <span>Générer tour {currentRound + 1}</span>
+          <Play className="w-5 h-5" />
+          <span>GÉNÉRER TOUR {currentRound + 1}</span>
         </button>
       </div>
 
       {teams.length < 2 && (
-        <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4 mb-6">
-          <p className="text-yellow-800 dark:text-yellow-200">
+        <div className="cyber-card p-6 rounded-xl mb-8" style={{ background: 'linear-gradient(135deg, rgba(255, 165, 0, 0.1) 0%, rgba(255, 140, 0, 0.2) 100%)', borderColor: '#ffa500' }}>
+          <p className="text-orange-300 font-medium text-lg">
             Vous devez inscrire au moins 2 {isSolo ? 'joueurs' : 'équipes'} pour générer des matchs.
           </p>
         </div>
       )}
 
-      {/* Menu déroulant pour sélectionner le tour */}
       {sortedRounds.length > 0 && (
-        <div className="mb-6">
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            Sélectionner un tour à afficher :
+        <div className="mb-8">
+          <label className="block text-lg font-bold text-cyan-300 mb-4 tracking-wide">
+            SÉLECTIONNER UN TOUR À AFFICHER :
           </label>
           <div className="relative inline-block">
             <select
               value={selectedRound || ''}
               onChange={(e) => setSelectedRound(e.target.value ? Number(e.target.value) : null)}
-              className="appearance-none bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-2 pr-8 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="cyber-select appearance-none px-4 py-3 pr-10 rounded-lg font-medium tracking-wide"
             >
-              <option value="">Tous les tours</option>
+              <option value="">TOUS LES TOURS</option>
               {sortedRounds.map(round => (
-                <option key={round} value={round}>Tour {round}</option>
+                <option key={round} value={round} className="bg-slate-800">TOUR {round}</option>
               ))}
             </select>
-            <ChevronDown className="absolute right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+            <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-cyan-400 pointer-events-none" />
           </div>
         </div>
       )}
@@ -223,81 +225,81 @@ export function MatchesTab({
         {sortedRounds
           .filter(round => selectedRound === null || round === selectedRound)
           .map(round => (
-          <div key={round} className="bg-white dark:bg-gray-800 rounded-lg shadow-sm">
-            <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-                Tour {round}
+          <div key={round} className="cyber-card rounded-xl overflow-hidden">
+            <div className="px-6 py-4 border-b border-cyan-400/30 flex justify-between items-center" style={{ background: 'linear-gradient(135deg, rgba(0, 212, 255, 0.1) 0%, rgba(0, 102, 204, 0.2) 100%)' }}>
+              <h3 className="text-xl font-bold neon-text tracking-wide">
+                TOUR {round}
               </h3>
               <button
                 onClick={() => handlePrintRound(round)}
-                className="flex items-center space-x-2 bg-gray-600 text-white px-3 py-1 rounded-lg hover:bg-gray-700 transition-colors text-sm"
+                className="cyber-button flex items-center space-x-2 px-4 py-2 rounded-lg font-bold text-sm tracking-wide hover:scale-105 transition-all duration-300"
               >
                 <Printer className="w-4 h-4" />
-                <span>Imprimer</span>
+                <span>IMPRIMER</span>
               </button>
             </div>
             <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50 dark:bg-gray-700">
+              <table className="cyber-table w-full">
+                <thead>
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Terrain
+                    <th className="px-6 py-4 text-left font-bold tracking-wider">
+                      TERRAIN
                     </th>
-                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      {isSolo ? 'Joueur' : 'Équipe'}
+                    <th className="px-6 py-4 text-center font-bold tracking-wider">
+                      {isSolo ? 'JOUEUR' : 'ÉQUIPE'}
                     </th>
-                    <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Score
+                    <th className="px-4 py-4 text-center font-bold tracking-wider">
+                      SCORE
                     </th>
-                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      {isSolo ? 'Joueur' : 'Équipe'}
+                    <th className="px-6 py-4 text-center font-bold tracking-wider">
+                      {isSolo ? 'JOUEUR' : 'ÉQUIPE'}
                     </th>
-                    <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Actions
+                    <th className="px-4 py-4 text-center font-bold tracking-wider">
+                      ACTIONS
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                <tbody>
                   {groupedMatches[round].map((match) => (
-                    <tr key={match.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
+                    <tr key={match.id} className="hover:bg-cyan-400/10 transition-colors">
                       <td className="px-6 py-4 whitespace-nowrap">
                         {match.isBye ? (
-                          <span className="text-gray-500 dark:text-gray-400">-</span>
+                          <span className="text-cyan-400/50">-</span>
                         ) : (
-                          <div className="flex items-center space-x-1">
-                            <MapPin className="w-4 h-4 text-gray-400" />
+                          <div className="flex items-center space-x-2">
+                            <MapPin className="w-4 h-4 text-cyan-400" />
                             {match.court > courts ? (
                               <select
                                 value={match.court}
                                 onChange={(e) => onUpdateCourt(match.id, Number(e.target.value))}
-                                className="text-sm border-0 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded focus:ring-0"
+                                className="cyber-select text-sm border-0 rounded font-medium"
                               >
                                 <option value={match.court}>{`Libre ${match.court - courts}`}</option>
                                 {Array.from({ length: courts }, (_, i) => i + 1).map(court => (
-                                  <option key={court} value={court}>{court}</option>
+                                  <option key={court} value={court} className="bg-slate-800">{court}</option>
                                 ))}
                               </select>
                             ) : (
                               <select
                                 value={match.court}
                                 onChange={(e) => onUpdateCourt(match.id, Number(e.target.value))}
-                                className="text-sm border-0 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded focus:ring-0"
+                                className="cyber-select text-sm border-0 rounded font-medium"
                               >
                                 {Array.from({ length: courts }, (_, i) => i + 1).map(court => (
-                                  <option key={court} value={court}>{court}</option>
+                                  <option key={court} value={court} className="bg-slate-800">{court}</option>
                                 ))}
                               </select>
                             )}
                           </div>
                         )}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white text-center">
+                      <td className="px-6 py-4 whitespace-nowrap text-center">
                         {match.team1Ids ? (
-                          getGroupLabel(match.team1Ids)
+                          <span className="font-bold text-cyan-200">{getGroupLabel(match.team1Ids)}</span>
                         ) : (
                           <>
-                            {getTeamName(match.team1Id)}
-                            <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                            <span className="font-bold text-cyan-200">{getTeamName(match.team1Id)}</span>
+                            <div className="mt-1 text-xs text-cyan-400/70">
                               {getTeamPlayers(match.team1Id)}
                             </div>
                           </>
@@ -312,33 +314,33 @@ export function MatchesTab({
                               max="13"
                               value={editScores.team1}
                               onChange={(e) => setEditScores({ ...editScores, team1: Number(e.target.value) })}
-                              className="w-12 px-2 py-1 text-center border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                              className="cyber-input w-16 px-2 py-1 text-center rounded font-bold"
                             />
-                            <span className="text-gray-500 dark:text-gray-400">-</span>
+                            <span className="text-cyan-400 font-bold">-</span>
                             <input
                               type="number"
                               min="0"
                               max="13"
                               value={editScores.team2}
                               onChange={(e) => setEditScores({ ...editScores, team2: Number(e.target.value) })}
-                              className="w-12 px-2 py-1 text-center border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                              className="cyber-input w-16 px-2 py-1 text-center rounded font-bold"
                             />
                           </div>
                         ) : (
-                          <span className="text-lg font-medium text-gray-900 dark:text-white">
+                          <span className="text-2xl font-bold neon-text">
                             {match.completed || match.isBye ? `${match.team1Score} - ${match.team2Score}` : '- - -'}
                           </span>
                         )}
                       </td>
-                      <td className="pl-8 pr-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white text-center">
+                      <td className="pl-8 pr-6 py-4 whitespace-nowrap text-center">
                         {match.isBye ? (
-                          <span className="text-gray-500 dark:text-gray-400 italic">BYE</span>
+                          <span className="text-cyan-400/50 italic font-bold">BYE</span>
                         ) : match.team2Ids ? (
-                          getGroupLabel(match.team2Ids)
+                          <span className="font-bold text-cyan-200">{getGroupLabel(match.team2Ids)}</span>
                         ) : (
                           <>
-                            {getTeamName(match.team2Id)}
-                            <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                            <span className="font-bold text-cyan-200">{getTeamName(match.team2Id)}</span>
+                            <div className="mt-1 text-xs text-cyan-400/70">
                               {getTeamPlayers(match.team2Id)}
                             </div>
                           </>
@@ -351,14 +353,14 @@ export function MatchesTab({
                               <>
                                 <button
                                   onClick={() => handleSaveScore(match.id)}
-                                  className="text-green-600 hover:text-green-800 transition-colors"
+                                  className="text-green-400 hover:text-green-300 transition-colors p-2 rounded-lg hover:bg-green-400/10"
                                   title="Sauvegarder"
                                 >
-                                  <Trophy className="w-4 h-4" />
+                                  <Trophy className="w-5 h-5" />
                                 </button>
                                 <button
                                   onClick={handleCancelEdit}
-                                  className="text-gray-500 hover:text-gray-700 transition-colors"
+                                  className="text-red-400 hover:text-red-300 transition-colors p-2 rounded-lg hover:bg-red-400/10 text-xl font-bold"
                                   title="Annuler"
                                 >
                                   ×
@@ -367,10 +369,10 @@ export function MatchesTab({
                             ) : (
                               <button
                                 onClick={() => handleEditScore(match)}
-                                className="text-blue-600 hover:text-blue-800 transition-colors"
+                                className="text-cyan-400 hover:text-cyan-300 transition-colors p-2 rounded-lg hover:bg-cyan-400/10"
                                 title="Modifier le score"
                               >
-                                <Edit3 className="w-4 h-4" />
+                                <Edit3 className="w-5 h-5" />
                               </button>
                             )}
                           </div>
@@ -386,12 +388,12 @@ export function MatchesTab({
       </div>
 
       {matches.length === 0 && (
-        <div className="text-center py-12">
-          <Play className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-            Aucun match généré
+        <div className="text-center py-16">
+          <Play className="w-16 h-16 text-cyan-400/50 mx-auto mb-6" />
+          <h3 className="text-2xl font-bold neon-text mb-4 tracking-wide">
+            AUCUN MATCH GÉNÉRÉ
           </h3>
-          <p className="text-gray-500 dark:text-gray-400">
+          <p className="text-cyan-300/60 text-lg font-medium">
             Générez le premier tour pour commencer le tournoi
           </p>
         </div>

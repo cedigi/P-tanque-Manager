@@ -25,36 +25,36 @@ export function TournamentSetup({ onCreateTournament }: TournamentSetupProps) {
   ] as const;
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 flex items-center justify-center p-4">
       <div className="max-w-2xl w-full">
         <div className="text-center mb-8">
-          <div className="w-16 h-16 mx-auto mb-4">
-            <Logo className="w-16 h-16" />
+          <div className="relative w-20 h-20 mx-auto mb-6">
+            <Logo className="w-20 h-20 drop-shadow-2xl" />
+            <div className="absolute inset-0 w-20 h-20 rounded-full bg-cyan-400/30 blur-2xl animate-pulse"></div>
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-            Nouveau Tournoi de Pétanque
+          <h1 className="text-4xl font-bold neon-text mb-4 tracking-wider">
+            NOUVEAU TOURNOI DE PÉTANQUE
           </h1>
-          <p className="text-gray-600 dark:text-gray-400">
+          <p className="text-cyan-300/80 text-lg font-medium tracking-wide">
             Configurez votre tournoi et commencez à organiser les matchs
           </p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-
-          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">
-              Type de tournoi
+        <form onSubmit={handleSubmit} className="space-y-8">
+          <div className="cyber-card p-8 rounded-xl">
+            <label className="block text-lg font-bold text-cyan-300 mb-6 tracking-wide">
+              TYPE DE TOURNOI
             </label>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {tournamentTypes.map((tournamentType) => {
                 const Icon = tournamentType.icon;
                 return (
                   <label
                     key={tournamentType.value}
-                    className={`flex items-center p-3 border-2 rounded-lg cursor-pointer transition-colors ${
+                    className={`cyber-border flex items-center p-4 rounded-lg cursor-pointer transition-all duration-300 ${
                       type === tournamentType.value
-                        ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-                        : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'
+                        ? 'cyber-glow bg-cyan-400/10 border-cyan-400'
+                        : 'hover:bg-cyan-400/5'
                     }`}
                   >
                     <input
@@ -65,12 +65,12 @@ export function TournamentSetup({ onCreateTournament }: TournamentSetupProps) {
                       onChange={(e) => setType(e.target.value as TournamentType)}
                       className="sr-only"
                     />
-                    <Icon className="w-5 h-5 text-blue-600 mr-3" />
+                    <Icon className="w-6 h-6 text-cyan-400 mr-4" />
                     <div>
-                      <div className="font-medium text-gray-900 dark:text-white">
+                      <div className="font-bold text-cyan-200 text-lg tracking-wide">
                         {tournamentType.label}
                       </div>
-                      <div className="text-sm text-gray-500 dark:text-gray-400">
+                      <div className="text-sm text-cyan-400/70 font-medium">
                         {tournamentType.players}
                       </div>
                     </div>
@@ -80,26 +80,28 @@ export function TournamentSetup({ onCreateTournament }: TournamentSetupProps) {
             </div>
           </div>
 
-          <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-sm">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Nombre de terrains
+          <div className="cyber-card p-8 rounded-xl">
+            <label className="block text-lg font-bold text-cyan-300 mb-4 tracking-wide">
+              NOMBRE DE TERRAINS
             </label>
             <select
               value={courts}
               onChange={(e) => setCourts(Number(e.target.value))}
-              className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="cyber-select w-full px-4 py-3 rounded-lg text-lg font-medium tracking-wide focus:outline-none"
             >
               {Array.from({ length: 150 }, (_, i) => i + 1).map(num => (
-                <option key={num} value={num}>{num} terrain{num > 1 ? 's' : ''}</option>
+                <option key={num} value={num} className="bg-slate-800">
+                  {num} terrain{num > 1 ? 's' : ''}
+                </option>
               ))}
-              </select>
+            </select>
           </div>
 
           <button
             type="submit"
-            className="w-full bg-blue-600 text-white py-3 px-4 rounded-lg font-medium hover:bg-blue-700 transition-colors focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            className="cyber-button w-full py-4 px-6 rounded-xl text-xl font-bold tracking-wider hover:scale-105 transition-all duration-300"
           >
-            Créer le tournoi
+            CRÉER LE TOURNOI
           </button>
         </form>
       </div>

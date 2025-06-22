@@ -9,7 +9,6 @@ interface StandingsTabProps {
 export function StandingsTab({ teams }: StandingsTabProps) {
   const isSolo = teams.every(t => t.players.length === 1);
   const sortedTeams = [...teams].sort((a, b) => {
-    // Sort by wins first, then by point differential
     if (b.wins !== a.wins) {
       return b.wins - a.wins;
     }
@@ -17,16 +16,16 @@ export function StandingsTab({ teams }: StandingsTabProps) {
   });
 
   const getPositionIcon = (index: number) => {
-    if (index === 0) return <Trophy className="w-5 h-5 text-yellow-500" />;
-    if (index === 1) return <Trophy className="w-5 h-5 text-gray-400" />;
-    if (index === 2) return <Trophy className="w-5 h-5 text-orange-500" />;
-    return <span className="w-5 h-5 flex items-center justify-center text-sm font-medium text-gray-500 dark:text-gray-400">{index + 1}</span>;
+    if (index === 0) return <Trophy className="w-6 h-6 text-yellow-400 drop-shadow-lg" />;
+    if (index === 1) return <Trophy className="w-6 h-6 text-gray-300 drop-shadow-lg" />;
+    if (index === 2) return <Trophy className="w-6 h-6 text-orange-400 drop-shadow-lg" />;
+    return <span className="w-6 h-6 flex items-center justify-center text-lg font-bold text-cyan-400">{index + 1}</span>;
   };
 
   const getPerformanceIcon = (performance: number) => {
-    if (performance > 0) return <TrendingUp className="w-4 h-4 text-green-500" />;
-    if (performance < 0) return <TrendingDown className="w-4 h-4 text-red-500" />;
-    return <div className="w-4 h-4" />;
+    if (performance > 0) return <TrendingUp className="w-5 h-5 text-green-400" />;
+    if (performance < 0) return <TrendingDown className="w-5 h-5 text-red-400" />;
+    return <div className="w-5 h-5" />;
   };
 
   const handlePrint = () => {
@@ -40,38 +39,38 @@ export function StandingsTab({ teams }: StandingsTabProps) {
           <title>Résultats</title>
           <style>
             body {
-              font-family: Arial, sans-serif;
+              font-family: 'Orbitron', monospace;
               margin: 10px;
-              color: #333;
+              color: #00d4ff;
+              background: #0a0a0a;
             }
             h1 {
               text-align: center;
               margin-bottom: 10px;
+              color: #00d4ff;
+              text-shadow: 0 0 10px rgba(0, 212, 255, 0.8);
             }
             table {
               width: 100%;
               border-collapse: collapse;
               margin-top: 10px;
+              border: 1px solid #00d4ff;
             }
             th, td {
               padding: 8px;
               text-align: left;
-            }
-            tbody tr {
-              border-bottom: 1px solid #000;
-            }
-            tbody tr:last-child {
-              border-bottom: none;
+              border: 1px solid rgba(0, 212, 255, 0.3);
             }
             th { 
-              background: #f1f5f9; 
+              background: rgba(0, 212, 255, 0.2);
               font-weight: bold;
+              color: #00d4ff;
             }
             tr:nth-child(even) { 
-              background: #f8fafc;
+              background: rgba(0, 212, 255, 0.05);
             }
             .podium { 
-              background: linear-gradient(to right, #dbeafe, transparent);
+              background: linear-gradient(to right, rgba(0, 212, 255, 0.1), transparent);
             }
             .position { 
               font-weight: bold; 
@@ -79,27 +78,28 @@ export function StandingsTab({ teams }: StandingsTabProps) {
             }
             .team-name { 
               font-weight: bold;
+              color: #00d4ff;
             }
             .wins { 
-              color: #059669; 
+              color: #00ff00; 
               font-weight: bold; 
               text-align: center;
             }
             .losses { 
-              color: #dc2626; 
+              color: #ff4444; 
               font-weight: bold; 
               text-align: center;
             }
             .performance-positive { 
-              color: #059669; 
+              color: #00ff00; 
               font-weight: bold;
             }
             .performance-negative { 
-              color: #dc2626; 
+              color: #ff4444; 
               font-weight: bold;
             }
             .performance-neutral { 
-              color: #64748b;
+              color: #b3e5fc;
             }
             @media print {
               body { margin: 0; }
@@ -107,17 +107,17 @@ export function StandingsTab({ teams }: StandingsTabProps) {
           </style>
         </head>
         <body>
-          <h1>Résultats</h1>
+          <h1>RÉSULTATS</h1>
           <table>
             <thead>
               <tr>
-                <th style="text-align: center;">Position</th>
-                <th>${isSolo ? 'Joueur' : 'Équipe'}</th>
+                <th style="text-align: center;">POSITION</th>
+                <th>${isSolo ? 'JOUEUR' : 'ÉQUIPE'}</th>
                 <th style="text-align: center;">V</th>
                 <th style="text-align: center;">D</th>
                 <th style="text-align: center;">+</th>
                 <th style="text-align: center;">-</th>
-                <th style="text-align: center;">Différentiel</th>
+                <th style="text-align: center;">DIFFÉRENTIEL</th>
               </tr>
             </thead>
             <tbody>
@@ -149,69 +149,69 @@ export function StandingsTab({ teams }: StandingsTabProps) {
 
   return (
     <div className="p-6">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Classement</h2>
-        <div className="flex items-center space-x-4">
-          <div className="text-sm text-gray-500 dark:text-gray-400">
+      <div className="flex justify-between items-center mb-8">
+        <h2 className="text-3xl font-bold neon-text tracking-wider">CLASSEMENT</h2>
+        <div className="flex items-center space-x-6">
+          <div className="text-lg text-cyan-300/80 font-medium">
             {teams.length} {isSolo ? 'joueur' : 'équipe'}{teams.length > 1 ? 's' : ''} inscrit{teams.length > 1 ? 's' : ''}
           </div>
           {teams.length > 0 && (
             <button
               onClick={handlePrint}
-              className="flex items-center space-x-2 bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors"
+              className="cyber-button flex items-center space-x-2 px-4 py-2 rounded-lg font-bold tracking-wide hover:scale-105 transition-all duration-300"
             >
               <Printer className="w-4 h-4" />
-              <span>Imprimer le classement</span>
+              <span>IMPRIMER</span>
             </button>
           )}
         </div>
       </div>
 
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm overflow-hidden">
+      <div className="cyber-card rounded-xl overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50 dark:bg-gray-700">
+          <table className="cyber-table w-full">
+            <thead>
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Position
+                <th className="px-6 py-4 text-center font-bold tracking-wider">
+                  POSITION
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  {isSolo ? 'Joueur' : 'Équipe'}
+                <th className="px-6 py-4 text-left font-bold tracking-wider">
+                  {isSolo ? 'JOUEUR' : 'ÉQUIPE'}
                 </th>
-                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                <th className="px-6 py-4 text-center font-bold tracking-wider">
                   V
                 </th>
-                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                <th className="px-6 py-4 text-center font-bold tracking-wider">
                   D
                 </th>
-                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                <th className="px-6 py-4 text-center font-bold tracking-wider">
                   +
                 </th>
-                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                <th className="px-6 py-4 text-center font-bold tracking-wider">
                   -
                 </th>
-                <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                  Différentiel
+                <th className="px-6 py-4 text-center font-bold tracking-wider">
+                  DIFFÉRENTIEL
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+            <tbody>
               {sortedTeams.map((team, index) => (
-                <tr key={team.id} className={`hover:bg-gray-50 dark:hover:bg-gray-700 ${
-                  index < 3 ? 'bg-gradient-to-r from-blue-50 to-transparent dark:from-blue-900/20' : ''
+                <tr key={team.id} className={`hover:bg-cyan-400/10 transition-colors ${
+                  index < 3 ? 'bg-gradient-to-r from-cyan-400/10 to-transparent' : ''
                 }`}>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center space-x-2">
+                  <td className="px-6 py-4 whitespace-nowrap text-center">
+                    <div className="flex items-center justify-center">
                       {getPositionIcon(index)}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="font-medium text-gray-900 dark:text-white">{team.name}</div>
-                    <div className="flex flex-wrap gap-x-2 gap-y-1 mt-1 text-sm text-gray-600 dark:text-gray-400">
+                    <div className="font-bold text-cyan-200 text-lg">{team.name}</div>
+                    <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2">
                       {team.players.map((player) => (
-                        <div key={player.id} className="flex items-center space-x-1">
+                        <div key={player.id} className="flex items-center space-x-2 text-sm text-cyan-400/80 font-medium">
                           {player.label && (
-                            <span className="w-4 h-4 bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center text-xs font-medium">
+                            <span className="w-5 h-5 bg-cyan-400/20 border border-cyan-400 text-cyan-400 rounded-full flex items-center justify-center text-xs font-bold">
                               {player.label}
                             </span>
                           )}
@@ -221,24 +221,24 @@ export function StandingsTab({ teams }: StandingsTabProps) {
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-center">
-                    <span className="text-lg font-semibold text-green-600 dark:text-green-400">{team.wins}</span>
+                    <span className="text-2xl font-bold text-green-400">{team.wins}</span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-center">
-                    <span className="text-lg font-semibold text-red-600 dark:text-red-400">{team.losses}</span>
+                    <span className="text-2xl font-bold text-red-400">{team.losses}</span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-center">
-                    <span className="text-sm font-medium text-gray-900 dark:text-white">{team.pointsFor}</span>
+                    <span className="text-lg font-bold text-cyan-200">{team.pointsFor}</span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-center">
-                    <span className="text-sm font-medium text-gray-900 dark:text-white">{team.pointsAgainst}</span>
+                    <span className="text-lg font-bold text-cyan-200">{team.pointsAgainst}</span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-center">
-                    <div className="flex items-center justify-center space-x-1">
+                    <div className="flex items-center justify-center space-x-2">
                       {getPerformanceIcon(team.performance)}
-                      <span className={`font-medium ${
-                        team.performance > 0 ? 'text-green-600 dark:text-green-400' :
-                        team.performance < 0 ? 'text-red-600 dark:text-red-400' :
-                        'text-gray-500 dark:text-gray-400'
+                      <span className={`text-lg font-bold ${
+                        team.performance > 0 ? 'text-green-400' :
+                        team.performance < 0 ? 'text-red-400' :
+                        'text-cyan-400/60'
                       }`}>
                         {team.performance > 0 ? '+' : ''}{team.performance}
                       </span>
@@ -252,12 +252,12 @@ export function StandingsTab({ teams }: StandingsTabProps) {
       </div>
 
       {teams.length === 0 && (
-        <div className="text-center py-12">
-          <Trophy className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
-            Aucun classement disponible
+        <div className="text-center py-16">
+          <Trophy className="w-16 h-16 text-cyan-400/50 mx-auto mb-6" />
+          <h3 className="text-2xl font-bold neon-text mb-4 tracking-wide">
+            AUCUN CLASSEMENT DISPONIBLE
           </h3>
-          <p className="text-gray-500 dark:text-gray-400">
+          <p className="text-cyan-300/60 text-lg font-medium">
             Le classement apparaîtra une fois que {isSolo ? 'des joueurs' : 'des équipes'} seront inscrits
           </p>
         </div>

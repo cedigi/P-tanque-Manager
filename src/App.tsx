@@ -9,7 +9,7 @@ import { useTournament } from './hooks/useTournament';
 import { RotateCcw } from 'lucide-react';
 
 function App() {
-  const [darkMode, setDarkMode] = useState(false);
+  const [darkMode, setDarkMode] = useState(true); // Always dark for cybernetic theme
   const [activeTab, setActiveTab] = useState('teams');
   const {
     tournament,
@@ -23,36 +23,28 @@ function App() {
   } = useTournament();
 
   useEffect(() => {
-    const savedDarkMode = localStorage.getItem('darkMode') === 'true';
-    setDarkMode(savedDarkMode);
-    if (savedDarkMode) {
-      document.documentElement.classList.add('dark');
-    }
+    // Force dark mode for cybernetic theme
+    document.documentElement.classList.add('dark');
   }, []);
 
   const toggleDarkMode = () => {
-    const newDarkMode = !darkMode;
-    setDarkMode(newDarkMode);
-    localStorage.setItem('darkMode', String(newDarkMode));
-    if (newDarkMode) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
+    // Keep cybernetic theme always dark
+    return;
   };
 
+  const isSolo = tournament && (tournament.type === 'melee' || tournament.type === 'tete-a-tete');
 
   const content = !tournament ? (
     <TournamentSetup onCreateTournament={createTournament} />
   ) : (
     <>
-      <div className="bg-white dark:bg-gray-800 shadow-sm">
-        <div className="px-6 py-4 flex justify-between items-center">
+      <div className="cyber-card shadow-xl">
+        <div className="px-6 py-6 flex justify-between items-center">
           <div>
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+            <h2 className="text-2xl font-bold neon-text tracking-wide">
               {tournament.name}
             </h2>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
+            <p className="text-cyan-300/80 font-medium tracking-wide">
               {tournament.type.charAt(0).toUpperCase() +
                 tournament.type.slice(1)} • {tournament.courts} terrain
               {tournament.courts > 1 ? 's' : ''} • Tour {tournament.currentRound}
@@ -60,17 +52,17 @@ function App() {
           </div>
           <button
             onClick={resetTournament}
-            className="flex items-center space-x-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+            className="cyber-button flex items-center space-x-2 px-4 py-2 rounded-lg transition-all duration-300 hover:scale-105"
             title="Nouveau tournoi"
           >
             <RotateCcw className="w-4 h-4" />
-            <span>Nouveau tournoi</span>
+            <span>NOUVEAU TOURNOI</span>
           </button>
         </div>
         <TabNavigation activeTab={activeTab} onTabChange={setActiveTab} />
       </div>
 
-      <main>
+      <main className="min-h-screen">
         {activeTab === 'teams' && (
           <TeamsTab
             teams={tournament.teams}
@@ -98,8 +90,8 @@ function App() {
   );
 
   return (
-    <div className={darkMode ? 'dark' : ''}>
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="dark">
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900">
         <Header darkMode={darkMode} onToggleDarkMode={toggleDarkMode} />
         {content}
       </div>
