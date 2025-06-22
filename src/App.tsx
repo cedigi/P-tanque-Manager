@@ -59,13 +59,61 @@ function App() {
     }
   };
 
-  if (!tournament) {
-    return (
-      <div className={darkMode ? 'dark' : ''}>
-        <TournamentSetup onCreateTournament={createTournament} />
+
+  const content = !tournament ? (
+    <TournamentSetup onCreateTournament={createTournament} />
+  ) : (
+    <>
+      <div className="bg-white dark:bg-gray-800 shadow-sm">
+        <div className="px-6 py-4 flex justify-between items-center">
+          <div>
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+              {tournament.name}
+            </h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              {tournament.type.charAt(0).toUpperCase() +
+                tournament.type.slice(1)} • {tournament.courts} terrain
+              {tournament.courts > 1 ? 's' : ''} • Tour {tournament.currentRound}
+            </p>
+          </div>
+          <button
+            onClick={resetTournament}
+            className="flex items-center space-x-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+            title="Nouveau tournoi"
+          >
+            <RotateCcw className="w-4 h-4" />
+            <span>Nouveau tournoi</span>
+          </button>
+        </div>
+        <TabNavigation activeTab={activeTab} onTabChange={setActiveTab} />
       </div>
-    );
-  }
+
+      <main>
+        {activeTab === 'teams' && (
+          <TeamsTab
+            teams={tournament.teams}
+            tournamentType={tournament.type}
+            onAddTeam={addTeam}
+            onRemoveTeam={removeTeam}
+          />
+        )}
+        {activeTab === 'matches' && (
+          <MatchesTab
+            matches={tournament.matches}
+            teams={tournament.teams}
+            currentRound={tournament.currentRound}
+            courts={tournament.courts}
+            onGenerateRound={generateRound}
+            onUpdateScore={updateMatchScore}
+            onUpdateCourt={updateMatchCourt}
+          />
+        )}
+        {activeTab === 'standings' && (
+          <StandingsTab teams={tournament.teams} />
+        )}
+      </main>
+    </>
+  );
 
   return (
     <div className={darkMode ? 'dark' : ''}>
@@ -76,53 +124,7 @@ function App() {
           cyberTheme={cyberTheme}
           onToggleCyberTheme={toggleCyberTheme}
         />
-        
-        <div className="bg-white dark:bg-gray-800 shadow-sm">
-          <div className="px-6 py-4 flex justify-between items-center">
-            <div>
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-                {tournament.name}
-              </h2>
-              <p className="text-sm text-gray-500 dark:text-gray-400">
-                {tournament.type.charAt(0).toUpperCase() + tournament.type.slice(1)} • {tournament.courts} terrain{tournament.courts > 1 ? 's' : ''} • Tour {tournament.currentRound}
-              </p>
-            </div>
-            <button
-              onClick={resetTournament}
-              className="flex items-center space-x-2 text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
-              title="Nouveau tournoi"
-            >
-              <RotateCcw className="w-4 h-4" />
-              <span>Nouveau tournoi</span>
-            </button>
-          </div>
-          <TabNavigation activeTab={activeTab} onTabChange={setActiveTab} />
-        </div>
-
-        <main>
-          {activeTab === 'teams' && (
-            <TeamsTab
-              teams={tournament.teams}
-              tournamentType={tournament.type}
-              onAddTeam={addTeam}
-              onRemoveTeam={removeTeam}
-            />
-          )}
-          {activeTab === 'matches' && (
-            <MatchesTab
-              matches={tournament.matches}
-              teams={tournament.teams}
-              currentRound={tournament.currentRound}
-              courts={tournament.courts}
-              onGenerateRound={generateRound}
-              onUpdateScore={updateMatchScore}
-              onUpdateCourt={updateMatchCourt}
-            />
-          )}
-          {activeTab === 'standings' && (
-            <StandingsTab teams={tournament.teams} />
-          )}
-        </main>
+        {content}
       </div>
     </div>
   );
