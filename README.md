@@ -71,7 +71,6 @@ To start the application in development mode run `npm run dev` as shown above.
 
 ## Theme toggle
 
-The header includes a single button with a lightning bolt icon. When pressed it
-applies a "cyber" look by loading `public/theme-cyber-blue.css`. This choice is
-stored in the browser so it persists across reloads.
+The header provides a moon/sun button that switches between light and dark
+themes. This preference is saved in the browser so it persists across reloads.
 
