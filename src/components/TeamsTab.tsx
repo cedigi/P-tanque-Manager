@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Player, Team, TournamentType } from '../types/tournament';
 import { Plus, Trash2, Users, Printer } from 'lucide-react';
-import { CyberPlayerForm } from './CyberPlayerForm';
 
 interface TeamsTabProps {
   teams: Team[];
@@ -138,7 +137,7 @@ export function TeamsTab({ teams, tournamentType, onAddTeam, onRemoveTeam }: Tea
               )}
             </div>
           </div>
-          <CyberPlayerForm
+          <PlayerForm
             onAddPlayer={handleAddPlayer}
             onCancel={handleCancel}
             playerLabel={tournamentType === 'quadrette' ? ['A', 'B', 'C', 'D'][currentPlayerIndex] : undefined}
@@ -155,10 +154,6 @@ export function TeamsTab({ teams, tournamentType, onAddTeam, onRemoveTeam }: Tea
                   <Users className="w-6 h-6 text-white" />
                   <h3 className="font-bold text-white text-xl tracking-wide">{team.name}</h3>
                 </div>
-                <div className="flex space-x-6 text-sm text-white/80 mb-4">
-                  <span>Rating: <span className="text-white font-bold">{team.teamRating}</span></span>
-                  <span>Synchro: <span className="text-white font-bold">{team.synchroLevel}%</span></span>
-                </div>
               </div>
               <button
                 onClick={() => onRemoveTeam(team.id)}
@@ -169,55 +164,23 @@ export function TeamsTab({ teams, tournamentType, onAddTeam, onRemoveTeam }: Tea
               </button>
             </div>
 
-            {!isSolo && (
-              <div className="space-y-3">
-                {team.players.map((player: Player) => (
-                  <div
-                    key={player.id}
-                    className="glass-card p-4"
-                  >
-                    <div className="flex justify-between items-start mb-3">
-                      <div className="flex items-center space-x-3">
-                        {player.label && (
-                          <span className="w-8 h-8 bg-blue-400/20 border border-blue-400 text-blue-400 rounded-full flex items-center justify-center text-sm font-bold">
-                            {player.label}
-                          </span>
-                        )}
-                        <span className="font-bold text-white text-lg">{player.name}</span>
-                      </div>
-                      <div className="text-right text-sm">
-                        <div className="text-white/80">Combat: <span className="text-white font-bold">{player.combatRating}</span></div>
-                        <div className="text-white/80">Neural: <span className="text-white font-bold">{player.neuralScore}</span></div>
-                      </div>
-                    </div>
-
-                    <div className="mb-3">
-                      <h5 className="text-sm font-bold text-white/80 mb-2">Implants cybernétiques:</h5>
-                      <div className="flex flex-wrap gap-2">
-                        {player.cyberImplants.map((implant) => (
-                          <div
-                            key={implant.id}
-                            className="flex items-center space-x-2 px-3 py-1 rounded-full text-xs font-bold border glass-card"
-                            style={{ 
-                              borderColor: implant.color, 
-                              color: implant.color
-                            }}
-                          >
-                            <span>{implant.name}</span>
-                            <span className="text-white/80">+{implant.boost}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="flex justify-between text-xs text-white/60">
-                      <span>Hacking: Niveau {player.hackingLevel}</span>
-                      <span>Augmentation: Niveau {player.augmentationLevel}</span>
-                    </div>
+            <div className="space-y-3">
+              {team.players.map((player: Player) => (
+                <div
+                  key={player.id}
+                  className="glass-card p-4"
+                >
+                  <div className="flex items-center space-x-3">
+                    {player.label && (
+                      <span className="w-8 h-8 bg-blue-400/20 border border-blue-400 text-blue-400 rounded-full flex items-center justify-center text-sm font-bold">
+                        {player.label}
+                      </span>
+                    )}
+                    <span className="font-bold text-white text-lg">{player.name}</span>
                   </div>
-                ))}
-              </div>
-            )}
+                </div>
+              ))}
+            </div>
           </div>
         ))}
       </div>
@@ -235,6 +198,82 @@ export function TeamsTab({ teams, tournamentType, onAddTeam, onRemoveTeam }: Tea
           </p>
         </div>
       )}
+    </div>
+  );
+}
+
+// Formulaire simplifié sans les implants cybernétiques
+interface PlayerFormProps {
+  onAddPlayer: (player: Player) => void;
+  onCancel: () => void;
+  playerLabel?: string;
+}
+
+function PlayerForm({ onAddPlayer, onCancel, playerLabel }: PlayerFormProps) {
+  const [name, setName] = useState('');
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (name.trim()) {
+      const player: Player = {
+        id: crypto.randomUUID(),
+        name: name.trim(),
+        label: playerLabel,
+        cyberImplants: [],
+        neuralScore: 100,
+        combatRating: 100,
+        hackingLevel: 1,
+        augmentationLevel: 0
+      };
+      onAddPlayer(player);
+    }
+  };
+
+  return (
+    <div className="glass-card p-8">
+      <div className="flex justify-between items-center mb-6">
+        <h3 className="text-2xl font-bold text-white tracking-wider">
+          Nouveau joueur {playerLabel && `[${playerLabel}]`}
+        </h3>
+        <button
+          onClick={onCancel}
+          className="text-red-400 hover:text-red-300 transition-colors p-2 rounded-lg hover:bg-red-400/10"
+        >
+          ×
+        </button>
+      </div>
+
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div>
+          <label className="block text-lg font-bold text-white mb-3 tracking-wide">
+            Nom du joueur
+          </label>
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Entrez le nom du joueur"
+            className="glass-input w-full px-4 py-3 text-lg font-medium tracking-wide"
+            required
+          />
+        </div>
+
+        <div className="flex space-x-4">
+          <button
+            type="submit"
+            className="glass-button flex-1 py-3 px-6 font-bold text-lg tracking-wider hover:scale-105 transition-all duration-300"
+          >
+            Créer joueur
+          </button>
+          <button
+            type="button"
+            onClick={onCancel}
+            className="glass-button-secondary px-6 py-3 font-bold text-lg tracking-wider hover:scale-105 transition-all duration-300"
+          >
+            Annuler
+          </button>
+        </div>
+      </form>
     </div>
   );
 }

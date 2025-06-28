@@ -1,9 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Tournament, TournamentType, Team, Player } from '../types/tournament';
 import { generateMatches } from '../utils/matchmaking';
-import { calculatePlayerRating } from '../utils/cyberImplants';
 
-const STORAGE_KEY = 'cyber-petanque-tournament';
+const STORAGE_KEY = 'petanque-tournament';
 
 export function useTournament() {
   const [tournament, setTournament] = useState<Tournament | null>(null);
@@ -23,7 +22,7 @@ export function useTournament() {
   };
 
   const createTournament = (type: TournamentType, courts: number) => {
-    const defaultName = `Cyber-Tournoi ${new Date().toLocaleDateString()}`;
+    const defaultName = `Tournoi ${new Date().toLocaleDateString()}`;
     const newTournament: Tournament = {
       id: crypto.randomUUID(),
       name: defaultName,
@@ -34,7 +33,7 @@ export function useTournament() {
       currentRound: 0,
       completed: false,
       createdAt: new Date(),
-      securityLevel: 3,
+      securityLevel: 1,
       networkStatus: 'online',
     };
     saveTournament(newTournament);
@@ -47,12 +46,7 @@ export function useTournament() {
     const teamName =
       tournament.type === 'melee' || tournament.type === 'tete-a-tete'
         ? `${teamNumber} - ${players[0].name}`
-        : `Cyber-Équipe ${teamNumber}`;
-
-    // Calculate team stats
-    const totalCombatRating = players.reduce((sum, player) => sum + player.combatRating, 0);
-    const avgNeuralScore = players.reduce((sum, player) => sum + player.neuralScore, 0) / players.length;
-    const totalImplants = players.reduce((sum, player) => sum + player.cyberImplants.length, 0);
+        : `Équipe ${teamNumber}`;
 
     const team: Team = {
       id: crypto.randomUUID(),
@@ -63,8 +57,8 @@ export function useTournament() {
       pointsFor: 0,
       pointsAgainst: 0,
       performance: 0,
-      teamRating: Math.floor(totalCombatRating / players.length),
-      synchroLevel: Math.min(100, Math.floor(avgNeuralScore + (totalImplants * 5))),
+      teamRating: 100,
+      synchroLevel: 100,
     };
 
     const updatedTournament = {
@@ -84,7 +78,7 @@ export function useTournament() {
       name:
         tournament.type === 'melee' || tournament.type === 'tete-a-tete'
           ? `${index + 1} - ${team.players[0].name}`
-          : `Cyber-Équipe ${index + 1}`,
+          : `Équipe ${index + 1}`,
     }));
 
     const updatedTournament = {
@@ -116,8 +110,8 @@ export function useTournament() {
           team1Score,
           team2Score,
           completed: true,
-          battleIntensity: Math.floor(Math.random() * 100) + 50,
-          hackingAttempts: Math.floor(Math.random() * 5),
+          battleIntensity: 50,
+          hackingAttempts: 0,
         };
       }
       return match;

@@ -1,4 +1,4 @@
-import { Moon, Sun, Shield } from 'lucide-react';
+import { Moon, Sun } from 'lucide-react';
 import { Logo } from './Logo';
 
 interface HeaderProps {
@@ -26,20 +26,6 @@ export function Header({ darkMode, onToggleDarkMode }: HeaderProps) {
         </div>
 
         <div className="flex items-center space-x-4">
-          <div className="flex items-center space-x-2">
-            <button
-              className="glass-tab px-4 py-2 rounded-lg text-sm font-semibold"
-            >
-              <Moon className="w-4 h-4 mr-2 inline" />
-              Dark
-            </button>
-            <button
-              className="glass-tab active px-4 py-2 rounded-lg text-sm font-semibold"
-            >
-              <Shield className="w-4 h-4 mr-2 inline" />
-              Cyber
-            </button>
-          </div>
           <button
             onClick={onToggleDarkMode}
             className="glass-button-secondary p-3 rounded-lg transition-all duration-300 hover:scale-110"
