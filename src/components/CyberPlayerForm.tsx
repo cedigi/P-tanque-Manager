@@ -55,10 +55,10 @@ export function CyberPlayerForm({ onAddPlayer, onCancel, playerLabel }: CyberPla
   };
 
   return (
-    <div className="cyber-card p-8 rounded-xl cyber-glow">
+    <div className="glass-card p-8">
       <div className="flex justify-between items-center mb-6">
-        <h3 className="text-2xl font-bold neon-text tracking-wider">
-          NOUVEAU CYBER-JOUEUR {playerLabel && `[${playerLabel}]`}
+        <h3 className="text-2xl font-bold text-white tracking-wider">
+          Nouveau joueur {playerLabel && `[${playerLabel}]`}
         </h3>
         <button
           onClick={onCancel}
@@ -70,40 +70,40 @@ export function CyberPlayerForm({ onAddPlayer, onCancel, playerLabel }: CyberPla
 
       <form onSubmit={handleSubmit} className="space-y-8">
         <div>
-          <label className="block text-lg font-bold text-cyan-300 mb-3 tracking-wide">
-            NOM DU JOUEUR
+          <label className="block text-lg font-bold text-white mb-3 tracking-wide">
+            Nom du joueur
           </label>
           <input
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="Entrez le nom du cyber-joueur"
-            className="cyber-input w-full px-4 py-3 rounded-lg text-lg font-medium tracking-wide"
+            placeholder="Entrez le nom du joueur"
+            className="glass-input w-full px-4 py-3 text-lg font-medium tracking-wide"
             required
           />
         </div>
 
         <div>
           <div className="flex justify-between items-center mb-4">
-            <label className="text-lg font-bold text-cyan-300 tracking-wide">
-              IMPLANTS CYBERNÉTIQUES ({selectedImplants.length}/3)
+            <label className="text-lg font-bold text-white tracking-wide">
+              Implants cybernétiques ({selectedImplants.length}/3)
             </label>
             <button
               type="button"
               onClick={handleRandomImplants}
-              className="cyber-button px-4 py-2 rounded-lg text-sm font-bold tracking-wide hover:scale-105 transition-all duration-300"
+              className="glass-button-secondary px-4 py-2 text-sm font-bold tracking-wide hover:scale-105 transition-all duration-300"
             >
-              ALÉATOIRE
+              Aléatoire
             </button>
           </div>
 
           {selectedImplants.length > 0 && (
             <div className="mb-6 space-y-3">
-              <h4 className="text-md font-bold text-cyan-400 tracking-wide">IMPLANTS INSTALLÉS:</h4>
+              <h4 className="text-md font-bold text-white tracking-wide">Implants installés:</h4>
               {selectedImplants.map((implant) => (
                 <div
                   key={implant.id}
-                  className="cyber-border p-4 rounded-lg flex justify-between items-center"
+                  className="glass-card p-4 flex justify-between items-center"
                   style={{ borderColor: implant.color }}
                 >
                   <div className="flex items-center space-x-3">
@@ -111,7 +111,7 @@ export function CyberPlayerForm({ onAddPlayer, onCancel, playerLabel }: CyberPla
                       {getImplantTypeIcon(implant.type)}
                       <span className="font-bold">{implant.name}</span>
                     </div>
-                    <span className="text-cyan-300 text-sm">+{implant.boost} pts</span>
+                    <span className="text-white text-sm">+{implant.boost} pts</span>
                   </div>
                   <button
                     type="button"
@@ -136,11 +136,11 @@ export function CyberPlayerForm({ onAddPlayer, onCancel, playerLabel }: CyberPla
                   type="button"
                   onClick={() => handleAddImplant(implant)}
                   disabled={isSelected || !canAdd}
-                  className={`cyber-border p-4 rounded-lg text-left transition-all duration-300 ${
+                  className={`glass-card p-4 text-left transition-all duration-300 ${
                     isSelected 
                       ? 'opacity-50 cursor-not-allowed' 
                       : canAdd 
-                        ? 'hover:cyber-glow cursor-pointer' 
+                        ? 'hover:scale-105 cursor-pointer' 
                         : 'opacity-30 cursor-not-allowed'
                   }`}
                   style={{ borderColor: implant.color }}
@@ -150,9 +150,9 @@ export function CyberPlayerForm({ onAddPlayer, onCancel, playerLabel }: CyberPla
                       {getImplantTypeIcon(implant.type)}
                       <span className="font-bold text-sm">{implant.name}</span>
                     </div>
-                    <span className="text-cyan-300 text-xs">Niv.{implant.level}</span>
+                    <span className="text-white text-xs">Niv.{implant.level}</span>
                   </div>
-                  <p className="text-xs text-cyan-400/70 mb-2">{implant.description}</p>
+                  <p className="text-xs text-white/70 mb-2">{implant.description}</p>
                   <div className="text-xs font-bold" style={{ color: implant.color }}>
                     BOOST: +{implant.boost} pts
                   </div>
@@ -162,16 +162,16 @@ export function CyberPlayerForm({ onAddPlayer, onCancel, playerLabel }: CyberPla
           </div>
         </div>
 
-        <div className="cyber-card p-4 rounded-lg" style={{ background: 'linear-gradient(135deg, rgba(0, 212, 255, 0.05) 0%, rgba(0, 102, 204, 0.1) 100%)' }}>
-          <h4 className="text-lg font-bold text-cyan-300 mb-3 tracking-wide">STATISTIQUES PRÉVUES:</h4>
+        <div className="glass-card p-4 bg-blue-500/10">
+          <h4 className="text-lg font-bold text-white mb-3 tracking-wide">Statistiques prévues:</h4>
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div>
-              <span className="text-cyan-400">Combat Rating:</span>
-              <span className="text-cyan-200 font-bold ml-2">{calculatePlayerRating(selectedImplants)}</span>
+              <span className="text-white/80">Combat Rating:</span>
+              <span className="text-white font-bold ml-2">{calculatePlayerRating(selectedImplants)}</span>
             </div>
             <div>
-              <span className="text-cyan-400">Augmentation:</span>
-              <span className="text-cyan-200 font-bold ml-2">Niveau {selectedImplants.length}</span>
+              <span className="text-white/80">Augmentation:</span>
+              <span className="text-white font-bold ml-2">Niveau {selectedImplants.length}</span>
             </div>
           </div>
         </div>
@@ -179,18 +179,16 @@ export function CyberPlayerForm({ onAddPlayer, onCancel, playerLabel }: CyberPla
         <div className="flex space-x-4">
           <button
             type="submit"
-            className="cyber-button flex-1 py-3 px-6 rounded-lg font-bold text-lg tracking-wider hover:scale-105 transition-all duration-300"
-            style={{ background: 'linear-gradient(135deg, rgba(0, 255, 0, 0.1) 0%, rgba(0, 200, 0, 0.2) 100%)', borderColor: '#00ff00' }}
+            className="glass-button flex-1 py-3 px-6 font-bold text-lg tracking-wider hover:scale-105 transition-all duration-300"
           >
-            CRÉER CYBER-JOUEUR
+            Créer joueur
           </button>
           <button
             type="button"
             onClick={onCancel}
-            className="cyber-button px-6 py-3 rounded-lg font-bold text-lg tracking-wider hover:scale-105 transition-all duration-300"
-            style={{ background: 'linear-gradient(135deg, rgba(255, 0, 0, 0.1) 0%, rgba(200, 0, 0, 0.2) 100%)', borderColor: '#ff0000', color: '#ff6666' }}
+            className="glass-button-secondary px-6 py-3 font-bold text-lg tracking-wider hover:scale-105 transition-all duration-300"
           >
-            ANNULER
+            Annuler
           </button>
         </div>
       </form>

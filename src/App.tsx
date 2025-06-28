@@ -9,7 +9,7 @@ import { useTournament } from './hooks/useTournament';
 import { RotateCcw } from 'lucide-react';
 
 function App() {
-  const [darkMode, setDarkMode] = useState(true); // Always dark for cybernetic theme
+  const [darkMode, setDarkMode] = useState(true);
   const [activeTab, setActiveTab] = useState('teams');
   const {
     tournament,
@@ -23,13 +23,12 @@ function App() {
   } = useTournament();
 
   useEffect(() => {
-    // Force dark mode for cybernetic theme
     document.documentElement.classList.add('dark');
   }, []);
 
   const toggleDarkMode = () => {
-    // Keep cybernetic theme always dark
-    return;
+    setDarkMode(!darkMode);
+    document.documentElement.classList.toggle('dark');
   };
 
   const isSolo = tournament && (tournament.type === 'melee' || tournament.type === 'tete-a-tete');
@@ -38,13 +37,13 @@ function App() {
     <TournamentSetup onCreateTournament={createTournament} />
   ) : (
     <>
-      <div className="cyber-card shadow-xl">
+      <div className="glass-card shadow-xl mx-6 mt-6">
         <div className="px-6 py-6 flex justify-between items-center">
           <div>
-            <h2 className="text-2xl font-bold neon-text tracking-wide">
+            <h2 className="text-2xl font-bold text-white tracking-wide">
               {tournament.name}
             </h2>
-            <p className="text-cyan-300/80 font-medium tracking-wide">
+            <p className="text-white/80 font-medium tracking-wide">
               {tournament.type.charAt(0).toUpperCase() +
                 tournament.type.slice(1)} • {tournament.courts} terrain
               {tournament.courts > 1 ? 's' : ''} • Tour {tournament.currentRound}
@@ -52,7 +51,7 @@ function App() {
           </div>
           <button
             onClick={resetTournament}
-            className="cyber-button flex items-center space-x-2 px-4 py-2 rounded-lg transition-all duration-300 hover:scale-105"
+            className="glass-button-secondary flex items-center space-x-2 px-4 py-2 rounded-lg transition-all duration-300 hover:scale-105"
             title="Nouveau tournoi"
           >
             <RotateCcw className="w-4 h-4" />
@@ -90,11 +89,17 @@ function App() {
   );
 
   return (
-    <div className="dark">
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900">
-        <Header darkMode={darkMode} onToggleDarkMode={toggleDarkMode} />
-        {content}
+    <div className="min-h-screen relative">
+      {/* Floating orbs background */}
+      <div className="floating-orbs">
+        <div className="orb"></div>
+        <div className="orb"></div>
+        <div className="orb"></div>
+        <div className="orb"></div>
       </div>
+      
+      <Header darkMode={darkMode} onToggleDarkMode={toggleDarkMode} />
+      {content}
     </div>
   );
 }

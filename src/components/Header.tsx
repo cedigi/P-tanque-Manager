@@ -1,4 +1,4 @@
-import { Wifi, WifiOff, Shield } from 'lucide-react';
+import { Moon, Sun, Shield } from 'lucide-react';
 import { Logo } from './Logo';
 
 interface HeaderProps {
@@ -8,39 +8,44 @@ interface HeaderProps {
 
 export function Header({ darkMode, onToggleDarkMode }: HeaderProps) {
   return (
-    <header className="cyber-card border-b border-cyan-400/30 shadow-lg">
+    <header className="glass-card border-b border-white/20 shadow-lg mx-6 mt-6">
       <div className="px-6 py-4 flex items-center justify-between">
         <div className="flex items-center space-x-4">
           <div className="relative">
             <Logo className="w-12 h-12 drop-shadow-lg" />
-            <div className="absolute inset-0 w-12 h-12 rounded-full bg-cyan-400/20 blur-xl animate-pulse"></div>
-            <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full animate-ping"></div>
+            <div className="absolute inset-0 w-12 h-12 rounded-full bg-white/20 blur-xl animate-pulse"></div>
           </div>
           <div>
-            <h1 className="text-2xl font-bold neon-text tracking-wider">
-              CYBER-PÉTANQUE MANAGER
+            <h1 className="text-2xl font-bold text-white tracking-wider">
+              Pétanque Manager
             </h1>
-            <p className="text-sm text-cyan-300/80 tracking-wide font-medium">
-              SYSTÈME DE GESTION CYBERNÉTIQUE v3.7.2
+            <p className="text-sm text-white/80 tracking-wide font-medium">
+              Gestionnaire de tournois moderne
             </p>
           </div>
         </div>
 
         <div className="flex items-center space-x-4">
-          <div className="flex items-center space-x-2 text-green-400 text-sm">
-            <Wifi className="w-4 h-4" />
-            <span className="font-bold">RÉSEAU SÉCURISÉ</span>
-          </div>
-          <div className="flex items-center space-x-2 text-cyan-400 text-sm">
-            <Shield className="w-4 h-4" />
-            <span className="font-bold">PROTOCOLE ACTIF</span>
+          <div className="flex items-center space-x-2">
+            <button
+              className="glass-tab px-4 py-2 rounded-lg text-sm font-semibold"
+            >
+              <Moon className="w-4 h-4 mr-2 inline" />
+              Dark
+            </button>
+            <button
+              className="glass-tab active px-4 py-2 rounded-lg text-sm font-semibold"
+            >
+              <Shield className="w-4 h-4 mr-2 inline" />
+              Cyber
+            </button>
           </div>
           <button
             onClick={onToggleDarkMode}
-            className="cyber-button p-3 rounded-lg transition-all duration-300 hover:scale-110"
-            title="Paramètres système"
+            className="glass-button-secondary p-3 rounded-lg transition-all duration-300 hover:scale-110"
+            title="Changer de thème"
           >
-            <Shield className="w-5 h-5" />
+            {darkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
           </button>
         </div>
       </div>
