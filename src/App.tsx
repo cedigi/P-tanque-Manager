@@ -90,12 +90,14 @@ function App() {
 
   return (
     <div className="min-h-screen relative">
-      {/* Floating orbs background */}
-      <div className="floating-orbs">
-        <div className="orb"></div>
-        <div className="orb"></div>
-        <div className="orb"></div>
-        <div className="orb"></div>
+      {/* Floating petanque balls background */}
+      <div className="floating-petanque-balls">
+        <div className="petanque-ball"></div>
+        <div className="petanque-ball"></div>
+        <div className="petanque-ball"></div>
+        <div className="petanque-ball"></div>
+        <div className="petanque-ball"></div>
+        <div className="petanque-ball"></div>
       </div>
       
       <Header darkMode={darkMode} onToggleDarkMode={toggleDarkMode} />
