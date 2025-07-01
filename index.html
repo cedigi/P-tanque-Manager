@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pétanque Manager - Logiciel de Gestion de Tournois</title>
-    <link rel="icon" type="image/png" href="/logo1.png">
+    <link rel="icon" type="image/png" href="logo.png">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
 </head>
@@ -13,11 +13,12 @@
     <nav class="navbar">
         <div class="nav-container">
             <div class="nav-logo">
-                <img src="https://images.pexels.com/photos/163064/play-stone-network-networked-interactive-163064.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop" alt="Pétanque Manager" class="logo">
+                <img src="logo.png" alt="Pétanque Manager" class="logo">
                 <span class="nav-title">Pétanque Manager</span>
             </div>
             <div class="nav-links">
                 <a href="#features" class="nav-link">Fonctionnalités</a>
+                <a href="#versions" class="nav-link">Versions</a>
                 <a href="#demo" class="nav-link">Démonstration</a>
                 <a href="#pricing" class="nav-link">Tarifs</a>
                 <a href="#contact" class="nav-link">Contact</a>
@@ -56,8 +57,8 @@
                     <button class="primary-button" onclick="scrollToSection('demo')">
                         Voir la démo
                     </button>
-                    <button class="secondary-button" onclick="scrollToSection('pricing')">
-                        Acheter maintenant
+                    <button class="secondary-button" onclick="scrollToSection('versions')">
+                        Découvrir les versions
                     </button>
                 </div>
                 <div class="hero-stats">
@@ -211,6 +212,232 @@
         </div>
     </section>
 
+    <!-- Versions Section -->
+    <section id="versions" class="versions">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">Choisissez votre version</h2>
+                <p class="section-subtitle">
+                    Des versions spécialisées pour chaque type de tournoi et besoin
+                </p>
+            </div>
+            
+            <div class="versions-grid">
+                <div class="version-card">
+                    <div class="version-icon">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
+                            <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/>
+                            <path d="M12 1v6m0 6v6m11-7h-6m-6 0H1" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                    </div>
+                    <h3 class="version-title">Pétanque Manager Tête-à-Tête</h3>
+                    <p class="version-description">
+                        Version spécialisée pour les tournois en tête-à-tête. Interface optimisée 
+                        pour la gestion des joueurs individuels et des duels.
+                    </p>
+                    <div class="version-features">
+                        <div class="version-feature">✓ Gestion des joueurs individuels</div>
+                        <div class="version-feature">✓ Algorithme de pairing optimisé</div>
+                        <div class="version-feature">✓ Statistiques personnelles</div>
+                        <div class="version-feature">✓ Classement ELO intégré</div>
+                    </div>
+                    <div class="version-price">29€</div>
+                    <button class="version-button" onclick="purchaseVersion('tete-a-tete')">
+                        Acheter cette version
+                    </button>
+                </div>
+
+                <div class="version-card">
+                    <div class="version-icon">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-width="2"/>
+                            <circle cx="9" cy="7" r="4" stroke="currentColor" stroke-width="2"/>
+                            <path d="M23 21v-2a4 4 0 0 0-3-3.87" stroke="currentColor" stroke-width="2"/>
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                    </div>
+                    <h3 class="version-title">Pétanque Manager Doublette</h3>
+                    <p class="version-description">
+                        Parfait pour les tournois de doublette. Gestion des équipes de 2 joueurs 
+                        avec formation automatique et rotation des partenaires.
+                    </p>
+                    <div class="version-features">
+                        <div class="version-feature">✓ Formation d'équipes automatique</div>
+                        <div class="version-feature">✓ Rotation des partenaires</div>
+                        <div class="version-feature">✓ Statistiques par équipe</div>
+                        <div class="version-feature">✓ Gestion des remplaçants</div>
+                    </div>
+                    <div class="version-price">29€</div>
+                    <button class="version-button" onclick="purchaseVersion('doublette')">
+                        Acheter cette version
+                    </button>
+                </div>
+
+                <div class="version-card">
+                    <div class="version-icon">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-width="2"/>
+                            <circle cx="9" cy="7" r="4" stroke="currentColor" stroke-width="2"/>
+                            <path d="M23 21v-2a4 4 0 0 0-3-3.87" stroke="currentColor" stroke-width="2"/>
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75" stroke="currentColor" stroke-width="2"/>
+                            <circle cx="20" cy="8" r="2" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                    </div>
+                    <h3 class="version-title">Pétanque Manager Triplette</h3>
+                    <p class="version-description">
+                        La version classique pour les tournois de triplette. Gestion complète 
+                        des équipes de 3 joueurs avec postes définis (pointeur, milieu, tireur).
+                    </p>
+                    <div class="version-features">
+                        <div class="version-feature">✓ Gestion des postes (P/M/T)</div>
+                        <div class="version-feature">✓ Formation d'équipes équilibrées</div>
+                        <div class="version-feature">✓ Statistiques par poste</div>
+                        <div class="version-feature">✓ Système de handicap</div>
+                    </div>
+                    <div class="version-price">29€</div>
+                    <button class="version-button" onclick="purchaseVersion('triplette')">
+                        Acheter cette version
+                    </button>
+                </div>
+
+                <div class="version-card featured">
+                    <div class="version-badge">Populaire</div>
+                    <div class="version-icon">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
+                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                    </div>
+                    <h3 class="version-title">Pétanque Manager Mêlée</h3>
+                    <p class="version-description">
+                        Version spécialisée pour les tournois en mêlée. Formation automatique 
+                        d'équipes variables, rotation optimisée et gestion des BYE.
+                    </p>
+                    <div class="version-features">
+                        <div class="version-feature">✓ Formation d'équipes variables</div>
+                        <div class="version-feature">✓ Algorithme de mêlée avancé</div>
+                        <div class="version-feature">✓ Rotation optimisée</div>
+                        <div class="version-feature">✓ Gestion automatique des BYE</div>
+                        <div class="version-feature">✓ Équilibrage des niveaux</div>
+                    </div>
+                    <div class="version-price">39€</div>
+                    <button class="version-button" onclick="purchaseVersion('melee')">
+                        Acheter cette version
+                    </button>
+                </div>
+
+                <div class="version-card premium">
+                    <div class="version-badge">Complet</div>
+                    <div class="version-icon">
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none">
+                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" fill="currentColor"/>
+                        </svg>
+                    </div>
+                    <h3 class="version-title">Pétanque Manager Complet</h3>
+                    <p class="version-description">
+                        La version complète avec tous les formats de tournoi. Idéal pour les clubs 
+                        et organisateurs qui gèrent différents types d'événements.
+                    </p>
+                    <div class="version-features">
+                        <div class="version-feature">✓ Tous les formats inclus</div>
+                        <div class="version-feature">✓ Gestion multi-tournois</div>
+                        <div class="version-feature">✓ Base de données joueurs</div>
+                        <div class="version-feature">✓ Statistiques avancées</div>
+                        <div class="version-feature">✓ Export vers Excel</div>
+                        <div class="version-feature">✓ Sauvegarde cloud</div>
+                    </div>
+                    <div class="version-price">49€</div>
+                    <button class="version-button" onclick="purchaseVersion('complet')">
+                        Acheter cette version
+                    </button>
+                </div>
+            </div>
+
+            <div class="version-comparison">
+                <h3 class="comparison-title">Comparaison des versions</h3>
+                <div class="comparison-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Fonctionnalité</th>
+                                <th>Tête-à-Tête</th>
+                                <th>Doublette</th>
+                                <th>Triplette</th>
+                                <th>Mêlée</th>
+                                <th>Complet</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Format tête-à-tête</td>
+                                <td class="check">✓</td>
+                                <td class="cross">✗</td>
+                                <td class="cross">✗</td>
+                                <td class="cross">✗</td>
+                                <td class="check">✓</td>
+                            </tr>
+                            <tr>
+                                <td>Format doublette</td>
+                                <td class="cross">✗</td>
+                                <td class="check">✓</td>
+                                <td class="cross">✗</td>
+                                <td class="cross">✗</td>
+                                <td class="check">✓</td>
+                            </tr>
+                            <tr>
+                                <td>Format triplette</td>
+                                <td class="cross">✗</td>
+                                <td class="cross">✗</td>
+                                <td class="check">✓</td>
+                                <td class="cross">✗</td>
+                                <td class="check">✓</td>
+                            </tr>
+                            <tr>
+                                <td>Format mêlée</td>
+                                <td class="cross">✗</td>
+                                <td class="cross">✗</td>
+                                <td class="cross">✗</td>
+                                <td class="check">✓</td>
+                                <td class="check">✓</td>
+                            </tr>
+                            <tr>
+                                <td>Impression</td>
+                                <td class="check">✓</td>
+                                <td class="check">✓</td>
+                                <td class="check">✓</td>
+                                <td class="check">✓</td>
+                                <td class="check">✓</td>
+                            </tr>
+                            <tr>
+                                <td>Statistiques</td>
+                                <td class="check">✓</td>
+                                <td class="check">✓</td>
+                                <td class="check">✓</td>
+                                <td class="check">✓</td>
+                                <td class="check">✓</td>
+                            </tr>
+                            <tr>
+                                <td>Multi-tournois</td>
+                                <td class="cross">✗</td>
+                                <td class="cross">✗</td>
+                                <td class="cross">✗</td>
+                                <td class="cross">✗</td>
+                                <td class="check">✓</td>
+                            </tr>
+                            <tr>
+                                <td>Export Excel</td>
+                                <td class="cross">✗</td>
+                                <td class="cross">✗</td>
+                                <td class="cross">✗</td>
+                                <td class="cross">✗</td>
+                                <td class="check">✓</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </section>
+
     <!-- Demo Section -->
     <section id="demo" class="demo">
         <div class="container">
@@ -296,8 +523,8 @@
                 <div class="testimonial-card">
                     <div class="testimonial-content">
                         <p class="testimonial-text">
-                            "Pétanque Manager a révolutionné l'organisation de nos tournois. 
-                            Fini les calculs à la main et les erreurs d'appariement !"
+                            "La version Mêlée est parfaite pour nos concours du dimanche. 
+                            L'algorithme forme des équipes équilibrées automatiquement !"
                         </p>
                         <div class="testimonial-author">
                             <img src="https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop" alt="Jean Dupont" class="author-avatar">
@@ -312,8 +539,8 @@
                 <div class="testimonial-card">
                     <div class="testimonial-content">
                         <p class="testimonial-text">
-                            "Interface très intuitive, même pour quelqu'un qui n'est pas à l'aise avec l'informatique. 
-                            Nos bénévoles l'ont adopté immédiatement."
+                            "J'ai acheté la version Tête-à-Tête pour mes tournois individuels. 
+                            Le système de classement ELO est un vrai plus !"
                         </p>
                         <div class="testimonial-author">
                             <img src="https://images.pexels.com/photos/415829/pexels-photo-415829.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop" alt="Marie Martin" class="author-avatar">
@@ -328,8 +555,8 @@
                 <div class="testimonial-card">
                     <div class="testimonial-content">
                         <p class="testimonial-text">
-                            "Le gain de temps est énorme ! Ce qui nous prenait 2 heures se fait maintenant en 10 minutes. 
-                            Excellent investissement."
+                            "La version Complète nous permet de gérer tous nos événements. 
+                            Excellent rapport qualité-prix pour notre club !"
                         </p>
                         <div class="testimonial-author">
                             <img src="https://images.pexels.com/photos/614810/pexels-photo-614810.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop" alt="Pierre Durand" class="author-avatar">
@@ -348,9 +575,9 @@
     <section id="pricing" class="pricing">
         <div class="container">
             <div class="section-header">
-                <h2 class="section-title">Choisissez votre formule</h2>
+                <h2 class="section-title">Tarifs des licences</h2>
                 <p class="section-subtitle">
-                    Des tarifs adaptés à tous les besoins, du club amateur au tournoi professionnel
+                    Licences à vie pour particuliers, clubs et fédérations
                 </p>
             </div>
             
@@ -359,8 +586,8 @@
                     <div class="pricing-header">
                         <h3 class="pricing-title">Licence Individuelle</h3>
                         <div class="pricing-price">
-                            <span class="price-amount">49€</span>
-                            <span class="price-period">licence à vie</span>
+                            <span class="price-amount">29-49€</span>
+                            <span class="price-period">selon la version</span>
                         </div>
                     </div>
                     <div class="pricing-features">
@@ -368,7 +595,7 @@
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
                                 <path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2"/>
                             </svg>
-                            <span>Tous les formats de tournoi</span>
+                            <span>1 format de tournoi au choix</span>
                         </div>
                         <div class="feature-item">
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
@@ -389,8 +616,8 @@
                             <span>Support par email</span>
                         </div>
                     </div>
-                    <button class="pricing-button" onclick="purchaseLicense('individual')">
-                        Acheter maintenant
+                    <button class="pricing-button" onclick="scrollToSection('versions')">
+                        Choisir une version
                     </button>
                 </div>
 
@@ -408,7 +635,7 @@
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
                                 <path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2"/>
                             </svg>
-                            <span>Tous les formats de tournoi</span>
+                            <span>Version Complète incluse</span>
                         </div>
                         <div class="feature-item">
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
@@ -545,6 +772,7 @@
                                 <option value="demo">Demande de démonstration</option>
                                 <option value="support">Support technique</option>
                                 <option value="sales">Question commerciale</option>
+                                <option value="version">Conseil sur les versions</option>
                                 <option value="other">Autre</option>
                             </select>
                         </div>
@@ -568,11 +796,12 @@
         <div class="container">
             <div class="footer-content">
                 <div class="footer-brand">
-                    <img src="https://images.pexels.com/photos/163064/play-stone-network-networked-interactive-163064.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop" alt="Pétanque Manager" class="footer-logo">
+                    <img src="logo.png" alt="Pétanque Manager" class="footer-logo">
                     <span class="footer-title">Pétanque Manager</span>
                 </div>
                 <div class="footer-links">
                     <a href="#features" class="footer-link">Fonctionnalités</a>
+                    <a href="#versions" class="footer-link">Versions</a>
                     <a href="#demo" class="footer-link">Démonstration</a>
                     <a href="#pricing" class="footer-link">Tarifs</a>
                     <a href="#contact" class="footer-link">Contact</a>
