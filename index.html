@@ -1,13 +1,609 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="fr">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/png" href="/logo1.png" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Pétanque Manager - Gestionnaire de Tournois</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pétanque Manager - Logiciel de Gestion de Tournois</title>
+    <link rel="icon" type="image/png" href="/logo1.png">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-logo">
+                <img src="https://images.pexels.com/photos/163064/play-stone-network-networked-interactive-163064.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop" alt="Pétanque Manager" class="logo">
+                <span class="nav-title">Pétanque Manager</span>
+            </div>
+            <div class="nav-links">
+                <a href="#features" class="nav-link">Fonctionnalités</a>
+                <a href="#demo" class="nav-link">Démonstration</a>
+                <a href="#pricing" class="nav-link">Tarifs</a>
+                <a href="#contact" class="nav-link">Contact</a>
+                <button class="cta-button" onclick="scrollToSection('pricing')">Acheter maintenant</button>
+            </div>
+            <div class="mobile-menu-toggle" onclick="toggleMobileMenu()">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="floating-petanque-balls">
+            <div class="petanque-ball"></div>
+            <div class="petanque-ball"></div>
+            <div class="petanque-ball"></div>
+            <div class="petanque-ball"></div>
+            <div class="petanque-ball"></div>
+            <div class="petanque-ball"></div>
+        </div>
+        
+        <div class="hero-container">
+            <div class="hero-content">
+                <h1 class="hero-title">
+                    Gérez vos tournois de pétanque
+                    <span class="gradient-text">comme un pro</span>
+                </h1>
+                <p class="hero-subtitle">
+                    Le logiciel de référence pour organiser et gérer vos tournois de pétanque. 
+                    Interface moderne, fonctionnalités complètes, simplicité d'utilisation.
+                </p>
+                <div class="hero-buttons">
+                    <button class="primary-button" onclick="scrollToSection('demo')">
+                        Voir la démo
+                    </button>
+                    <button class="secondary-button" onclick="scrollToSection('pricing')">
+                        Acheter maintenant
+                    </button>
+                </div>
+                <div class="hero-stats">
+                    <div class="stat">
+                        <span class="stat-number">500+</span>
+                        <span class="stat-label">Tournois organisés</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-number">50+</span>
+                        <span class="stat-label">Clubs utilisateurs</span>
+                    </div>
+                    <div class="stat">
+                        <span class="stat-number">5★</span>
+                        <span class="stat-label">Note moyenne</span>
+                    </div>
+                </div>
+            </div>
+            <div class="hero-image">
+                <div class="app-preview">
+                    <img src="https://images.pexels.com/photos/163064/play-stone-network-networked-interactive-163064.jpeg?auto=compress&cs=tinysrgb&w=600&h=400&fit=crop" alt="Aperçu de l'application" class="preview-image">
+                    <div class="preview-overlay">
+                        <div class="play-button" onclick="openVideoModal('hero-video')">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                                <path d="M8 5v14l11-7z" fill="currentColor"/>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="features">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">Fonctionnalités complètes</h2>
+                <p class="section-subtitle">
+                    Tout ce dont vous avez besoin pour organiser des tournois parfaits
+                </p>
+            </div>
+            
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+                            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-width="2"/>
+                            <circle cx="9" cy="7" r="4" stroke="currentColor" stroke-width="2"/>
+                            <path d="m22 21-3-3m0 0a5.5 5.5 0 1 0-7.78-7.78 5.5 5.5 0 0 0 7.78 7.78Z" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                    </div>
+                    <h3 class="feature-title">Gestion des équipes</h3>
+                    <p class="feature-description">
+                        Inscrivez facilement vos équipes et joueurs. Support complet pour tous les formats : 
+                        tête-à-tête, doublette, triplette, quadrette et mêlée.
+                    </p>
+                    <button class="feature-demo" onclick="openVideoModal('teams-video')">
+                        Voir la démo
+                    </button>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+                            <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                    </div>
+                    <h3 class="feature-title">Génération automatique</h3>
+                    <p class="feature-description">
+                        Algorithme intelligent pour créer les matchs automatiquement. 
+                        Évite les répétitions et optimise l'utilisation des terrains.
+                    </p>
+                    <button class="feature-demo" onclick="openVideoModal('matches-video')">
+                        Voir la démo
+                    </button>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+                            <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                    </div>
+                    <h3 class="feature-title">Classements en temps réel</h3>
+                    <p class="feature-description">
+                        Suivez les performances de chaque équipe avec des statistiques détaillées 
+                        et un classement mis à jour automatiquement.
+                    </p>
+                    <button class="feature-demo" onclick="openVideoModal('standings-video')">
+                        Voir la démo
+                    </button>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" stroke="currentColor" stroke-width="2"/>
+                            <polyline points="14,2 14,8 20,8" stroke="currentColor" stroke-width="2"/>
+                            <line x1="16" y1="13" x2="8" y2="13" stroke="currentColor" stroke-width="2"/>
+                            <line x1="16" y1="17" x2="8" y2="17" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                    </div>
+                    <h3 class="feature-title">Impression & Export</h3>
+                    <p class="feature-description">
+                        Imprimez facilement les feuilles de match, classements et listes d'équipes. 
+                        Format optimisé pour l'affichage.
+                    </p>
+                    <button class="feature-demo" onclick="openVideoModal('print-video')">
+                        Voir la démo
+                    </button>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2" stroke="currentColor" stroke-width="2"/>
+                            <circle cx="8.5" cy="8.5" r="1.5" stroke="currentColor" stroke-width="2"/>
+                            <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                    </div>
+                    <h3 class="feature-title">Interface moderne</h3>
+                    <p class="feature-description">
+                        Design élégant et intuitif avec effets visuels modernes. 
+                        Expérience utilisateur optimisée pour tous les niveaux.
+                    </p>
+                    <button class="feature-demo" onclick="openVideoModal('interface-video')">
+                        Voir la démo
+                    </button>
+                </div>
+
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+                            <path d="M9 12l2 2 4-4" stroke="currentColor" stroke-width="2"/>
+                            <path d="M21 12c-1 0-3-1-3-3s2-3 3-3 3 1 3 3-2 3-3 3" stroke="currentColor" stroke-width="2"/>
+                            <path d="M3 12c1 0 3-1 3-3s-2-3-3-3-3 1-3 3 2 3 3 3" stroke="currentColor" stroke-width="2"/>
+                            <path d="M12 3c0 1-1 3-3 3s-3-2-3-3 1-3 3-3 3 2 3 3" stroke="currentColor" stroke-width="2"/>
+                            <path d="M12 21c0-1 1-3 3-3s3 2 3 3-1 3-3 3-3-2-3-3" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                    </div>
+                    <h3 class="feature-title">Multi-plateforme</h3>
+                    <p class="feature-description">
+                        Fonctionne sur Windows, Mac et Linux. Version web et application desktop 
+                        pour une flexibilité maximale.
+                    </p>
+                    <button class="feature-demo" onclick="openVideoModal('platform-video')">
+                        Voir la démo
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Demo Section -->
+    <section id="demo" class="demo">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">Découvrez Pétanque Manager en action</h2>
+                <p class="section-subtitle">
+                    Regardez comment organiser un tournoi complet en quelques minutes
+                </p>
+            </div>
+            
+            <div class="demo-grid">
+                <div class="demo-card">
+                    <div class="demo-video">
+                        <img src="https://images.pexels.com/photos/163064/play-stone-network-networked-interactive-163064.jpeg?auto=compress&cs=tinysrgb&w=400&h=250&fit=crop" alt="Création de tournoi" class="demo-thumbnail">
+                        <div class="demo-overlay">
+                            <button class="play-button" onclick="openVideoModal('setup-demo')">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                                    <path d="M8 5v14l11-7z" fill="currentColor"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="demo-content">
+                        <h3 class="demo-title">Configuration du tournoi</h3>
+                        <p class="demo-description">
+                            Apprenez à créer un nouveau tournoi, choisir le format et configurer le nombre de terrains.
+                        </p>
+                        <span class="demo-duration">2:30 min</span>
+                    </div>
+                </div>
+
+                <div class="demo-card">
+                    <div class="demo-video">
+                        <img src="https://images.pexels.com/photos/163064/play-stone-network-networked-interactive-163064.jpeg?auto=compress&cs=tinysrgb&w=400&h=250&fit=crop" alt="Gestion des équipes" class="demo-thumbnail">
+                        <div class="demo-overlay">
+                            <button class="play-button" onclick="openVideoModal('teams-demo')">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                                    <path d="M8 5v14l11-7z" fill="currentColor"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="demo-content">
+                        <h3 class="demo-title">Inscription des équipes</h3>
+                        <p class="demo-description">
+                            Découvrez comment inscrire rapidement vos équipes et gérer les joueurs.
+                        </p>
+                        <span class="demo-duration">1:45 min</span>
+                    </div>
+                </div>
+
+                <div class="demo-card">
+                    <div class="demo-video">
+                        <img src="https://images.pexels.com/photos/163064/play-stone-network-networked-interactive-163064.jpeg?auto=compress&cs=tinysrgb&w=400&h=250&fit=crop" alt="Génération des matchs" class="demo-thumbnail">
+                        <div class="demo-overlay">
+                            <button class="play-button" onclick="openVideoModal('matches-demo')">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                                    <path d="M8 5v14l11-7z" fill="currentColor"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="demo-content">
+                        <h3 class="demo-title">Génération des matchs</h3>
+                        <p class="demo-description">
+                            Voyez comment l'algorithme génère automatiquement les matchs et optimise les terrains.
+                        </p>
+                        <span class="demo-duration">3:15 min</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Testimonials -->
+    <section class="testimonials">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">Ce que disent nos utilisateurs</h2>
+            </div>
+            
+            <div class="testimonials-grid">
+                <div class="testimonial-card">
+                    <div class="testimonial-content">
+                        <p class="testimonial-text">
+                            "Pétanque Manager a révolutionné l'organisation de nos tournois. 
+                            Fini les calculs à la main et les erreurs d'appariement !"
+                        </p>
+                        <div class="testimonial-author">
+                            <img src="https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop" alt="Jean Dupont" class="author-avatar">
+                            <div class="author-info">
+                                <span class="author-name">Jean Dupont</span>
+                                <span class="author-role">Président du Club de Marseille</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="testimonial-card">
+                    <div class="testimonial-content">
+                        <p class="testimonial-text">
+                            "Interface très intuitive, même pour quelqu'un qui n'est pas à l'aise avec l'informatique. 
+                            Nos bénévoles l'ont adopté immédiatement."
+                        </p>
+                        <div class="testimonial-author">
+                            <img src="https://images.pexels.com/photos/415829/pexels-photo-415829.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop" alt="Marie Martin" class="author-avatar">
+                            <div class="author-info">
+                                <span class="author-name">Marie Martin</span>
+                                <span class="author-role">Organisatrice de tournois</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="testimonial-card">
+                    <div class="testimonial-content">
+                        <p class="testimonial-text">
+                            "Le gain de temps est énorme ! Ce qui nous prenait 2 heures se fait maintenant en 10 minutes. 
+                            Excellent investissement."
+                        </p>
+                        <div class="testimonial-author">
+                            <img src="https://images.pexels.com/photos/614810/pexels-photo-614810.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop" alt="Pierre Durand" class="author-avatar">
+                            <div class="author-info">
+                                <span class="author-name">Pierre Durand</span>
+                                <span class="author-role">Club de Lyon</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing Section -->
+    <section id="pricing" class="pricing">
+        <div class="container">
+            <div class="section-header">
+                <h2 class="section-title">Choisissez votre formule</h2>
+                <p class="section-subtitle">
+                    Des tarifs adaptés à tous les besoins, du club amateur au tournoi professionnel
+                </p>
+            </div>
+            
+            <div class="pricing-grid">
+                <div class="pricing-card">
+                    <div class="pricing-header">
+                        <h3 class="pricing-title">Licence Individuelle</h3>
+                        <div class="pricing-price">
+                            <span class="price-amount">49€</span>
+                            <span class="price-period">licence à vie</span>
+                        </div>
+                    </div>
+                    <div class="pricing-features">
+                        <div class="feature-item">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                                <path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2"/>
+                            </svg>
+                            <span>Tous les formats de tournoi</span>
+                        </div>
+                        <div class="feature-item">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                                <path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2"/>
+                            </svg>
+                            <span>Jusqu'à 100 équipes</span>
+                        </div>
+                        <div class="feature-item">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                                <path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2"/>
+                            </svg>
+                            <span>Impression des documents</span>
+                        </div>
+                        <div class="feature-item">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                                <path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2"/>
+                            </svg>
+                            <span>Support par email</span>
+                        </div>
+                    </div>
+                    <button class="pricing-button" onclick="purchaseLicense('individual')">
+                        Acheter maintenant
+                    </button>
+                </div>
+
+                <div class="pricing-card featured">
+                    <div class="pricing-badge">Recommandé</div>
+                    <div class="pricing-header">
+                        <h3 class="pricing-title">Licence Club</h3>
+                        <div class="pricing-price">
+                            <span class="price-amount">99€</span>
+                            <span class="price-period">licence à vie</span>
+                        </div>
+                    </div>
+                    <div class="pricing-features">
+                        <div class="feature-item">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                                <path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2"/>
+                            </svg>
+                            <span>Tous les formats de tournoi</span>
+                        </div>
+                        <div class="feature-item">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                                <path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2"/>
+                            </svg>
+                            <span>Équipes illimitées</span>
+                        </div>
+                        <div class="feature-item">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                                <path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2"/>
+                            </svg>
+                            <span>Installation sur 5 postes</span>
+                        </div>
+                        <div class="feature-item">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                                <path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2"/>
+                            </svg>
+                            <span>Support prioritaire</span>
+                        </div>
+                        <div class="feature-item">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                                <path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2"/>
+                            </svg>
+                            <span>Mises à jour gratuites</span>
+                        </div>
+                    </div>
+                    <button class="pricing-button" onclick="purchaseLicense('club')">
+                        Acheter maintenant
+                    </button>
+                </div>
+
+                <div class="pricing-card">
+                    <div class="pricing-header">
+                        <h3 class="pricing-title">Licence Fédération</h3>
+                        <div class="pricing-price">
+                            <span class="price-amount">199€</span>
+                            <span class="price-period">licence à vie</span>
+                        </div>
+                    </div>
+                    <div class="pricing-features">
+                        <div class="feature-item">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                                <path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2"/>
+                            </svg>
+                            <span>Toutes les fonctionnalités</span>
+                        </div>
+                        <div class="feature-item">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                                <path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2"/>
+                            </svg>
+                            <span>Installation illimitée</span>
+                        </div>
+                        <div class="feature-item">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                                <path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2"/>
+                            </svg>
+                            <span>Personnalisation du logo</span>
+                        </div>
+                        <div class="feature-item">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                                <path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2"/>
+                            </svg>
+                            <span>Support téléphonique</span>
+                        </div>
+                        <div class="feature-item">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                                <path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2"/>
+                            </svg>
+                            <span>Formation incluse</span>
+                        </div>
+                    </div>
+                    <button class="pricing-button" onclick="purchaseLicense('federation')">
+                        Nous contacter
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact Section -->
+    <section id="contact" class="contact">
+        <div class="container">
+            <div class="contact-grid">
+                <div class="contact-info">
+                    <h2 class="contact-title">Besoin d'aide ?</h2>
+                    <p class="contact-description">
+                        Notre équipe est là pour vous accompagner dans l'utilisation de Pétanque Manager.
+                    </p>
+                    
+                    <div class="contact-methods">
+                        <div class="contact-method">
+                            <div class="method-icon">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" stroke="currentColor" stroke-width="2"/>
+                                    <polyline points="22,6 12,13 2,6" stroke="currentColor" stroke-width="2"/>
+                                </svg>
+                            </div>
+                            <div class="method-info">
+                                <span class="method-label">Email</span>
+                                <span class="method-value">support@petanque-manager.fr</span>
+                            </div>
+                        </div>
+                        
+                        <div class="contact-method">
+                            <div class="method-icon">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+                                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z" stroke="currentColor" stroke-width="2"/>
+                                </svg>
+                            </div>
+                            <div class="method-info">
+                                <span class="method-label">Téléphone</span>
+                                <span class="method-value">+33 1 23 45 67 89</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="contact-form">
+                    <form class="form" onsubmit="submitContactForm(event)">
+                        <div class="form-group">
+                            <label for="name" class="form-label">Nom</label>
+                            <input type="text" id="name" name="name" class="form-input" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="email" class="form-label">Email</label>
+                            <input type="email" id="email" name="email" class="form-input" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="subject" class="form-label">Sujet</label>
+                            <select id="subject" name="subject" class="form-select" required>
+                                <option value="">Choisissez un sujet</option>
+                                <option value="demo">Demande de démonstration</option>
+                                <option value="support">Support technique</option>
+                                <option value="sales">Question commerciale</option>
+                                <option value="other">Autre</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="message" class="form-label">Message</label>
+                            <textarea id="message" name="message" rows="4" class="form-textarea" required></textarea>
+                        </div>
+                        
+                        <button type="submit" class="form-submit">
+                            Envoyer le message
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-brand">
+                    <img src="https://images.pexels.com/photos/163064/play-stone-network-networked-interactive-163064.jpeg?auto=compress&cs=tinysrgb&w=100&h=100&fit=crop" alt="Pétanque Manager" class="footer-logo">
+                    <span class="footer-title">Pétanque Manager</span>
+                </div>
+                <div class="footer-links">
+                    <a href="#features" class="footer-link">Fonctionnalités</a>
+                    <a href="#demo" class="footer-link">Démonstration</a>
+                    <a href="#pricing" class="footer-link">Tarifs</a>
+                    <a href="#contact" class="footer-link">Contact</a>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p class="footer-copyright">
+                    © 2024 Pétanque Manager. Tous droits réservés.
+                </p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Video Modal -->
+    <div id="videoModal" class="video-modal" onclick="closeVideoModal()">
+        <div class="video-modal-content" onclick="event.stopPropagation()">
+            <button class="video-modal-close" onclick="closeVideoModal()">×</button>
+            <div class="video-container">
+                <div class="video-placeholder">
+                    <div class="video-placeholder-content">
+                        <svg width="64" height="64" viewBox="0 0 24 24" fill="none">
+                            <path d="M8 5v14l11-7z" fill="currentColor"/>
+                        </svg>
+                        <h3>Vidéo de démonstration</h3>
+                        <p>Cette vidéo montrera les fonctionnalités de Pétanque Manager</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
 </html>
