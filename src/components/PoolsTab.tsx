@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { Pool, Team, Tournament, Match } from '../types/tournament';
 import { Grid3X3, Users, Trophy, Shuffle, Printer, Play, Clock, CheckCircle, MapPin, Edit3 } from 'lucide-react';
 
@@ -12,22 +12,6 @@ interface PoolsTabProps {
 export function PoolsTab({ tournament, teams, pools, onGeneratePools }: PoolsTabProps) {
   const isSolo = tournament.type === 'melee' || tournament.type === 'tete-a-tete';
 
-  // Calculer les équipes qualifiées et les phases d'élimination
-  const eliminationData = useMemo(() => {
-    if (pools.length === 0) return null;
-
-    const qualifiedTeams = getQualifiedTeams(pools, teams, tournament.matches);
-    const totalQualified = pools.length * 2; // 2 qualifiés par poule
-    const eliminationPhases = generateEliminationPhases(totalQualified, qualifiedTeams, pools, teams);
-
-    return {
-      qualifiedTeams,
-      totalQualified,
-      eliminationPhases,
-      currentQualified: qualifiedTeams.length
-    };
-  }, [pools, teams, tournament.matches]);
-
   const handlePrint = () => {
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;
@@ -40,32 +24,40 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools }: PoolsTab
           <style>
             body { font-family: Arial, sans-serif; margin: 20px; }
             h1 { text-align: center; margin-bottom: 30px; }
-            .pools-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+            .pools-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 20px; }
             .pool { border: 2px solid #333; border-radius: 8px; padding: 15px; margin-bottom: 20px; }
             .pool-title { font-weight: bold; font-size: 18px; margin-bottom: 15px; text-align: center; background: #f0f0f0; padding: 10px; border-radius: 4px; }
-            .team { padding: 10px; border: 1px solid #ddd; border-radius: 4px; margin-bottom: 8px; background: #f9f9f9; }
-            .team-name { font-weight: bold; margin-bottom: 5px; }
-            .team-players { font-size: 14px; color: #666; }
+            .bracket { border: 1px solid #ddd; margin: 10px 0; }
+            .match-row { display: flex; align-items: center; padding: 8px; border-bottom: 1px solid #eee; }
+            .team { flex: 1; padding: 5px; }
+            .score { text-align: center; font-weight: bold; min-width: 60px; }
             @media print { body { margin: 0; } }
           </style>
         </head>
         <body>
           <h1>Poules - ${tournament.name}</h1>
           <div class="pools-container">
-            ${pools.map(pool => `
-              <div class="pool">
-                <div class="pool-title">${pool.name}</div>
-                ${pool.teamIds.map(teamId => {
-                  const team = teams.find(t => t.id === teamId);
-                  return team ? `
-                    <div class="team">
-                      <div class="team-name">${team.name}</div>
-                      <div class="team-players">${team.players.map(p => `${p.label ? `[${p.label}] ` : ''}${p.name}`).join(', ')}</div>
-                    </div>
-                  ` : '';
-                }).join('')}
-              </div>
-            `).join('')}
+            ${pools.map(pool => {
+              const poolMatches = tournament.matches.filter(m => m.poolId === pool.id);
+              return `
+                <div class="pool">
+                  <div class="pool-title">${pool.name}</div>
+                  <div class="bracket">
+                    ${poolMatches.map(match => {
+                      const team1 = teams.find(t => t.id === match.team1Id);
+                      const team2 = teams.find(t => t.id === match.team2Id);
+                      return `
+                        <div class="match-row">
+                          <div class="team">${team1?.name || 'Équipe 1'}</div>
+                          <div class="score">${match.completed ? `${match.team1Score} - ${match.team2Score}` : '- -'}</div>
+                          <div class="team">${team2?.name || 'Équipe 2'}</div>
+                        </div>
+                      `;
+                    }).join('')}
+                  </div>
+                </div>
+              `;
+            }).join('')}
           </div>
         </body>
       </html>
@@ -111,10 +103,10 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools }: PoolsTab
 
       {pools.length > 0 ? (
         <>
-          {/* Affichage des poules avec matchs */}
+          {/* Affichage des poules avec tableaux classiques */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
             {pools.map((pool) => (
-              <PoolCard 
+              <ClassicPoolBracket 
                 key={pool.id} 
                 pool={pool} 
                 teams={teams} 
@@ -125,7 +117,7 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools }: PoolsTab
           </div>
 
           {/* Statistiques des poules */}
-          <div className="glass-card p-6 mb-8">
+          <div className="glass-card p-6">
             <h3 className="text-xl font-bold text-white mb-4 tracking-wide flex items-center space-x-2">
               <Trophy className="w-5 h-5" />
               <span>Répartition des poules</span>
@@ -153,90 +145,6 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools }: PoolsTab
               </div>
             </div>
           </div>
-
-          {/* Phase d'élimination - Seulement si il y a des équipes qualifiées */}
-          {eliminationData && eliminationData.currentQualified > 0 && (
-            <div className="glass-card p-6">
-              <h3 className="text-xl font-bold text-white mb-6 tracking-wide flex items-center space-x-2">
-                <Trophy className="w-5 h-5" />
-                <span>Phase finale</span>
-              </h3>
-
-              {/* Progression des qualifications */}
-              <div className="mb-6">
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-white font-medium">
-                    Équipes qualifiées : {eliminationData.currentQualified} / {eliminationData.totalQualified}
-                  </span>
-                  <span className="text-white/70 text-sm">
-                    {Math.round((eliminationData.currentQualified / eliminationData.totalQualified) * 100)}%
-                  </span>
-                </div>
-                <div className="w-full bg-white/20 rounded-full h-2">
-                  <div 
-                    className="bg-gradient-to-r from-blue-500 to-green-500 h-2 rounded-full transition-all duration-500"
-                    style={{ width: `${(eliminationData.currentQualified / eliminationData.totalQualified) * 100}%` }}
-                  ></div>
-                </div>
-              </div>
-
-              {/* Phases d'élimination */}
-              <div className="space-y-6">
-                {eliminationData.eliminationPhases.map((phase, phaseIndex) => (
-                  <div key={phaseIndex} className="glass-card p-4">
-                    <div className="flex justify-between items-center mb-4">
-                      <h4 className="text-lg font-bold text-white">
-                        {getPhaseDisplayName(phase.name)}
-                      </h4>
-                      <div className="flex items-center space-x-2">
-                        {phase.matches.every(m => m.team1 && m.team2) ? (
-                          <CheckCircle className="w-5 h-5 text-green-400" />
-                        ) : phase.matches.some(m => m.team1 || m.team2) ? (
-                          <Clock className="w-5 h-5 text-yellow-400" />
-                        ) : (
-                          <Play className="w-5 h-5 text-white/50" />
-                        )}
-                        <span className="text-sm text-white/70">
-                          {phase.matches.filter(m => m.team1 && m.team2).length} / {phase.matches.length} matchs prêts
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {phase.matches.map((match, matchIndex) => (
-                        <div key={matchIndex} className="glass-card p-4">
-                          <div className="flex items-center justify-between">
-                            <div className="text-center flex-1">
-                              {match.team1 ? (
-                                <div className="text-white font-medium">{match.team1.name}</div>
-                              ) : (
-                                <div className="text-white/50 italic">En attente...</div>
-                              )}
-                            </div>
-                            <div className="mx-4 text-white/70 font-bold">VS</div>
-                            <div className="text-center flex-1">
-                              {match.team2 ? (
-                                <div className="text-white font-medium">{match.team2.name}</div>
-                              ) : (
-                                <div className="text-white/50 italic">En attente...</div>
-                              )}
-                            </div>
-                          </div>
-                          {match.team1 && match.team2 && (
-                            <div className="mt-2 text-center">
-                              <span className="px-2 py-1 bg-green-500/30 border border-green-400 text-green-400 rounded text-xs">
-                                Prêt à jouer
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
         </>
       ) : (
         <div className="text-center py-16">
@@ -253,25 +161,18 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools }: PoolsTab
   );
 }
 
-// Composant pour afficher une poule individuelle avec ses matchs
-interface PoolCardProps {
+// Composant pour afficher une poule avec tableau classique de pétanque
+interface ClassicPoolBracketProps {
   pool: Pool;
   teams: Team[];
   matches: Match[];
   isSolo: boolean;
 }
 
-function PoolCard({ pool, teams, matches, isSolo }: PoolCardProps) {
+function ClassicPoolBracket({ pool, teams, matches, isSolo }: ClassicPoolBracketProps) {
   const poolMatches = matches.filter(m => m.poolId === pool.id);
-  const completedMatches = poolMatches.filter(m => m.completed);
-  const totalMatches = pool.teamIds.length === 4 ? 6 : 3; // 4 équipes = 6 matchs, 3 équipes = 3 matchs
+  const poolTeams = pool.teamIds.map(id => teams.find(t => t.id === id)).filter(Boolean) as Team[];
   
-  const poolStandings = calculatePoolStandings(pool, teams, poolMatches);
-  
-  // Une poule est terminée seulement si TOUS les matchs sont joués
-  const isPoolCompleted = completedMatches.length === totalMatches && completedMatches.length > 0;
-  const qualifiedTeams = isPoolCompleted ? poolStandings.slice(0, 2) : []; // Top 2 qualifiés seulement si poule terminée
-
   const getTeamName = (teamId: string) => {
     const team = teams.find(t => t.id === teamId);
     return team?.name || 'Équipe inconnue';
@@ -285,6 +186,106 @@ function PoolCard({ pool, teams, matches, isSolo }: PoolCardProps) {
       .join(', ');
   };
 
+  // Organiser les matchs selon le système classique de pétanque
+  const organizeMatches = () => {
+    if (poolTeams.length === 4) {
+      // Poule de 4 : système classique
+      // 1er tour : A vs C, B vs D
+      // 2ème tour : Gagnants ensemble, Perdants ensemble  
+      // 3ème tour : Match de barrage si nécessaire
+      
+      const team1 = poolTeams[0]; // A
+      const team2 = poolTeams[1]; // B  
+      const team3 = poolTeams[2]; // C
+      const team4 = poolTeams[3]; // D
+
+      return {
+        firstRound: [
+          { team1: team1, team2: team3, label: "Match 1" },
+          { team1: team2, team2: team4, label: "Match 2" }
+        ],
+        secondRound: [
+          { team1: null, team2: null, label: "Gagnants", dependency: "winners" },
+          { team1: null, team2: null, label: "Perdants", dependency: "losers" }
+        ],
+        thirdRound: [
+          { team1: null, team2: null, label: "Barrage", dependency: "playoff" }
+        ]
+      };
+    } else if (poolTeams.length === 3) {
+      // Poule de 3 : tous contre tous
+      const team1 = poolTeams[0];
+      const team2 = poolTeams[1]; 
+      const team3 = poolTeams[2];
+
+      return {
+        firstRound: [
+          { team1: team1, team2: team2, label: "Match 1" },
+          { team1: team1, team2: team3, label: "Match 2" },
+          { team1: team2, team2: team3, label: "Match 3" }
+        ]
+      };
+    }
+    
+    return { firstRound: [] };
+  };
+
+  const matchStructure = organizeMatches();
+
+  // Trouver le match correspondant dans les données
+  const findMatch = (team1: Team | null, team2: Team | null) => {
+    if (!team1 || !team2) return null;
+    return poolMatches.find(m => 
+      (m.team1Id === team1.id && m.team2Id === team2.id) ||
+      (m.team1Id === team2.id && m.team2Id === team1.id)
+    );
+  };
+
+  // Calculer les statistiques pour déterminer les gagnants/perdants
+  const calculateStats = () => {
+    const stats = poolTeams.map(team => {
+      const teamMatches = poolMatches.filter(m => 
+        m.completed && (m.team1Id === team.id || m.team2Id === team.id)
+      );
+
+      let wins = 0;
+      let losses = 0;
+      let pointsFor = 0;
+      let pointsAgainst = 0;
+
+      teamMatches.forEach(match => {
+        const isTeam1 = match.team1Id === team.id;
+        const teamScore = isTeam1 ? (match.team1Score || 0) : (match.team2Score || 0);
+        const opponentScore = isTeam1 ? (match.team2Score || 0) : (match.team1Score || 0);
+
+        pointsFor += teamScore;
+        pointsAgainst += opponentScore;
+
+        if (teamScore > opponentScore) {
+          wins++;
+        } else {
+          losses++;
+        }
+      });
+
+      return {
+        team,
+        wins,
+        losses,
+        pointsFor,
+        pointsAgainst,
+        performance: pointsFor - pointsAgainst
+      };
+    });
+
+    return stats.sort((a, b) => {
+      if (b.wins !== a.wins) return b.wins - a.wins;
+      return b.performance - a.performance;
+    });
+  };
+
+  const stats = calculateStats();
+
   return (
     <div className="glass-card overflow-hidden">
       <div className="px-6 py-4 border-b border-white/20 bg-white/5">
@@ -294,284 +295,161 @@ function PoolCard({ pool, teams, matches, isSolo }: PoolCardProps) {
             <span>{pool.name}</span>
           </h3>
           <div className="text-sm text-white/70">
-            {completedMatches.length}/{totalMatches} matchs
+            {poolMatches.filter(m => m.completed).length}/{poolMatches.length} matchs
           </div>
         </div>
-        {isPoolCompleted && (
-          <div className="mt-2">
-            <span className="px-2 py-1 bg-green-500/30 border border-green-400 text-green-400 rounded text-xs font-bold">
-              Poule terminée
-            </span>
-          </div>
-        )}
       </div>
       
       <div className="p-6">
-        {/* Classement de la poule */}
-        <div className="mb-6">
-          <h4 className="text-lg font-bold text-white mb-4">Classement</h4>
-          <div className="space-y-2">
-            {poolStandings.map((team, index) => {
-              const isQualified = isPoolCompleted && index < 2;
-              return (
-                <div key={team.id} className={`glass-card p-3 ${isQualified ? 'border-green-400/40 bg-green-500/10' : ''}`}>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <span className={`w-6 h-6 rounded-full flex items-center justify-center text-sm font-bold ${
-                        isQualified ? 'bg-green-500 text-white' : 'bg-white/20 text-white/70'
-                      }`}>
-                        {index + 1}
-                      </span>
-                      <div>
-                        <div className="font-bold text-white">{team.name}</div>
-                        <div className="text-xs text-white/70">
-                          {team.players.map(p => `${p.label ? `[${p.label}] ` : ''}${p.name}`).join(', ')}
+        {/* Tableau classique de pétanque */}
+        <div className="space-y-6">
+          
+          {/* Premier tour */}
+          <div>
+            <h4 className="text-lg font-bold text-white mb-4">
+              {poolTeams.length === 4 ? "1er Tour" : "Matchs"}
+            </h4>
+            <div className="space-y-3">
+              {matchStructure.firstRound.map((matchInfo, index) => {
+                const match = findMatch(matchInfo.team1, matchInfo.team2);
+                return (
+                  <div key={index} className="glass-card border-2 border-white/20">
+                    <div className="p-4">
+                      <div className="flex items-center justify-between">
+                        {/* Équipe 1 */}
+                        <div className="flex-1 text-center">
+                          <div className="font-bold text-white text-lg">
+                            {matchInfo.team1?.name}
+                          </div>
+                          <div className="text-xs text-white/70 mt-1">
+                            {matchInfo.team1 ? getTeamPlayers(matchInfo.team1.id) : ''}
+                          </div>
+                        </div>
+
+                        {/* Score */}
+                        <div className="mx-6 text-center">
+                          {match?.completed ? (
+                            <div className="text-2xl font-bold text-white">
+                              {match.team1Id === matchInfo.team1?.id 
+                                ? `${match.team1Score} - ${match.team2Score}`
+                                : `${match.team2Score} - ${match.team1Score}`
+                              }
+                            </div>
+                          ) : (
+                            <div className="text-white/50 text-lg">- - -</div>
+                          )}
+                          <div className="text-xs text-white/60 mt-1">
+                            {matchInfo.label}
+                          </div>
+                        </div>
+
+                        {/* Équipe 2 */}
+                        <div className="flex-1 text-center">
+                          <div className="font-bold text-white text-lg">
+                            {matchInfo.team2?.name}
+                          </div>
+                          <div className="text-xs text-white/70 mt-1">
+                            {matchInfo.team2 ? getTeamPlayers(matchInfo.team2.id) : ''}
+                          </div>
                         </div>
                       </div>
-                      {isQualified && (
-                        <span className="px-2 py-1 bg-green-500/30 border border-green-400 text-green-400 rounded text-xs font-bold">
-                          Qualifié
-                        </span>
+
+                      {/* Terrain */}
+                      {match && (
+                        <div className="mt-3 text-center">
+                          <span className="px-2 py-1 bg-blue-500/30 border border-blue-400 text-blue-400 rounded text-xs font-bold">
+                            <MapPin className="w-3 h-3 inline mr-1" />
+                            Terrain {match.court}
+                          </span>
+                        </div>
                       )}
                     </div>
-                    <div className="text-right">
-                      <div className="text-white font-bold text-sm">{team.wins}V - {team.losses}D</div>
-                      <div className="text-white/70 text-xs">+{team.performance}</div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Deuxième tour pour poules de 4 */}
+          {poolTeams.length === 4 && matchStructure.secondRound && (
+            <div>
+              <h4 className="text-lg font-bold text-white mb-4">2ème Tour</h4>
+              <div className="space-y-3">
+                {matchStructure.secondRound.map((matchInfo, index) => (
+                  <div key={index} className="glass-card border-2 border-white/20">
+                    <div className="p-4">
+                      <div className="text-center">
+                        <div className="font-bold text-white text-lg mb-2">
+                          {matchInfo.label}
+                        </div>
+                        <div className="text-white/70 text-sm">
+                          {matchInfo.dependency === 'winners' 
+                            ? "Gagnants du 1er tour"
+                            : "Perdants du 1er tour"
+                          }
+                        </div>
+                        <div className="mt-2 text-white/50">
+                          À déterminer selon les résultats
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Troisième tour (barrage) pour poules de 4 */}
+          {poolTeams.length === 4 && matchStructure.thirdRound && (
+            <div>
+              <h4 className="text-lg font-bold text-white mb-4">Match de barrage</h4>
+              <div className="glass-card border-2 border-orange-400/40 bg-orange-500/10">
+                <div className="p-4">
+                  <div className="text-center">
+                    <div className="font-bold text-white text-lg mb-2">
+                      Match de barrage
+                    </div>
+                    <div className="text-orange-200 text-sm">
+                      Si deux équipes ont 1 victoire chacune
+                    </div>
+                    <div className="mt-2 text-white/50">
+                      À jouer si nécessaire
                     </div>
                   </div>
                 </div>
-              );
-            })}
-          </div>
-        </div>
+              </div>
+            </div>
+          )}
 
-        {/* Matchs de la poule */}
-        <div>
-          <h4 className="text-lg font-bold text-white mb-4">Matchs</h4>
-          {poolMatches.length > 0 ? (
-            <div className="space-y-3">
-              {poolMatches.map((match) => (
-                <div key={match.id} className="pool-match-card">
-                  <div className="grid grid-cols-5 items-center h-20">
-                    {/* Terrain */}
-                    <div className="court-badge">
-                      <div className="flex items-center justify-center space-x-1">
-                        <MapPin className="w-4 h-4" />
-                        <span className="text-sm font-bold">{match.court}</span>
-                      </div>
-                    </div>
-
-                    {/* Équipe 1 */}
-                    <div className="team-section">
-                      <div className="team-header">
-                        <Users className="w-4 h-4 text-white" />
-                      </div>
-                      <div className="team-name text-sm">{getTeamName(match.team1Id)}</div>
-                      <div className="text-xs text-white/70 mt-1 truncate">
-                        {getTeamPlayers(match.team1Id)}
-                      </div>
-                    </div>
-
-                    {/* Score */}
-                    <div className="text-center">
-                      {match.completed ? (
-                        <div className="text-xl font-bold text-white">
-                          {match.team1Score} - {match.team2Score}
+          {/* Classement actuel */}
+          <div>
+            <h4 className="text-lg font-bold text-white mb-4">Classement provisoire</h4>
+            <div className="space-y-2">
+              {stats.map((stat, index) => (
+                <div key={stat.team.id} className="glass-card p-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <span className="w-6 h-6 bg-white/20 text-white rounded-full flex items-center justify-center text-sm font-bold">
+                        {index + 1}
+                      </span>
+                      <div>
+                        <div className="font-bold text-white">{stat.team.name}</div>
+                        <div className="text-xs text-white/70">
+                          {stat.team.players.map(p => `${p.label ? `[${p.label}] ` : ''}${p.name}`).join(', ')}
                         </div>
-                      ) : (
-                        <div className="vs-separator text-sm">VS</div>
-                      )}
-                    </div>
-
-                    {/* Équipe 2 */}
-                    <div className="team-section">
-                      <div className="team-header">
-                        <Users className="w-4 h-4 text-white" />
-                      </div>
-                      <div className="team-name text-sm">{getTeamName(match.team2Id)}</div>
-                      <div className="text-xs text-white/70 mt-1 truncate">
-                        {getTeamPlayers(match.team2Id)}
                       </div>
                     </div>
-
-                    {/* Statut */}
-                    <div className="text-center">
-                      {match.completed ? (
-                        <CheckCircle className="w-6 h-6 text-green-400 mx-auto" />
-                      ) : (
-                        <Clock className="w-6 h-6 text-yellow-400 mx-auto" />
-                      )}
+                    <div className="text-right">
+                      <div className="text-white font-bold text-sm">{stat.wins}V - {stat.losses}D</div>
+                      <div className="text-white/70 text-xs">+{stat.performance}</div>
                     </div>
                   </div>
                 </div>
               ))}
             </div>
-          ) : (
-            <div className="text-center py-8 text-white/60">
-              <Play className="w-8 h-8 mx-auto mb-2" />
-              <p>Aucun match généré</p>
-              <p className="text-sm">Allez dans l'onglet "Matchs" pour générer les rencontres</p>
-            </div>
-          )}
+          </div>
         </div>
       </div>
     </div>
   );
-}
-
-// Fonction pour calculer le classement d'une poule
-function calculatePoolStandings(pool: Pool, teams: Team[], matches: Match[]): Team[] {
-  const poolTeams = pool.teamIds.map(id => teams.find(t => t.id === id)).filter(Boolean) as Team[];
-  
-  return poolTeams.map(team => {
-    const teamMatches = matches.filter(m => 
-      m.completed && (m.team1Id === team.id || m.team2Id === team.id)
-    );
-
-    let wins = 0;
-    let losses = 0;
-    let pointsFor = 0;
-    let pointsAgainst = 0;
-
-    teamMatches.forEach(match => {
-      const isTeam1 = match.team1Id === team.id;
-      const teamScore = isTeam1 ? (match.team1Score || 0) : (match.team2Score || 0);
-      const opponentScore = isTeam1 ? (match.team2Score || 0) : (match.team1Score || 0);
-
-      pointsFor += teamScore;
-      pointsAgainst += opponentScore;
-
-      if (teamScore > opponentScore) {
-        wins++;
-      } else {
-        losses++;
-      }
-    });
-
-    return {
-      ...team,
-      wins,
-      losses,
-      pointsFor,
-      pointsAgainst,
-      performance: pointsFor - pointsAgainst
-    };
-  }).sort((a, b) => {
-    if (b.wins !== a.wins) return b.wins - a.wins;
-    return b.performance - a.performance;
-  });
-}
-
-// Fonction pour obtenir les équipes qualifiées - CORRIGÉE
-function getQualifiedTeams(pools: Pool[], teams: Team[], matches: Match[]): Team[] {
-  const qualified: Team[] = [];
-  
-  pools.forEach(pool => {
-    const poolMatches = matches.filter(m => m.poolId === pool.id);
-    const totalMatches = pool.teamIds.length === 4 ? 6 : 3;
-    const completedMatches = poolMatches.filter(m => m.completed);
-    
-    // CORRECTION : Vérifier qu'il y a vraiment des matchs joués ET que tous sont terminés
-    if (completedMatches.length === totalMatches && completedMatches.length > 0) {
-      const standings = calculatePoolStandings(pool, teams, poolMatches);
-      qualified.push(...standings.slice(0, 2));
-    }
-  });
-  
-  return qualified;
-}
-
-// Fonction pour générer les phases d'élimination
-function generateEliminationPhases(totalQualified: number, qualifiedTeams: Team[], pools: Pool[], allTeams: Team[]) {
-  const phases = [];
-  let currentTeamCount = totalQualified;
-  let phaseTeams = [...qualifiedTeams];
-  
-  // Déterminer la première phase en fonction du nombre total de qualifiés
-  const getFirstPhase = (count: number) => {
-    if (count <= 2) return 'finale';
-    if (count <= 4) return 'demi-finale';
-    if (count <= 8) return 'quart-de-finale';
-    if (count <= 16) return 'huitieme-de-finale';
-    if (count <= 32) return 'seizieme-de-finale';
-    return 'trente-deuxieme-de-finale';
-  };
-
-  const phaseNames = [
-    'trente-deuxieme-de-finale',
-    'seizieme-de-finale', 
-    'huitieme-de-finale',
-    'quart-de-finale',
-    'demi-finale',
-    'finale'
-  ];
-
-  let startPhaseIndex = phaseNames.indexOf(getFirstPhase(totalQualified));
-
-  while (currentTeamCount > 1 && startPhaseIndex < phaseNames.length) {
-    const phaseName = phaseNames[startPhaseIndex];
-    const matchCount = Math.floor(currentTeamCount / 2);
-    const matches = [];
-
-    // Créer les matchs pour cette phase
-    for (let i = 0; i < matchCount; i++) {
-      const team1Index = i * 2;
-      const team2Index = i * 2 + 1;
-      
-      const team1 = team1Index < phaseTeams.length ? phaseTeams[team1Index] : null;
-      const team2 = team2Index < phaseTeams.length ? phaseTeams[team2Index] : null;
-
-      // Vérifier qu'ils ne viennent pas de la même poule
-      if (team1 && team2) {
-        const team1Pool = pools.find(p => p.teamIds.includes(team1.id));
-        const team2Pool = pools.find(p => p.teamIds.includes(team2.id));
-        
-        // Si ils sont de la même poule, essayer de réorganiser
-        if (team1Pool?.id === team2Pool?.id && phaseTeams.length > 2) {
-          // Chercher une équipe d'une autre poule pour team2
-          for (let j = team2Index + 1; j < phaseTeams.length; j++) {
-            const alternativeTeam = phaseTeams[j];
-            const alternativePool = pools.find(p => p.teamIds.includes(alternativeTeam.id));
-            
-            if (alternativePool?.id !== team1Pool?.id) {
-              // Échanger les équipes
-              phaseTeams[team2Index] = alternativeTeam;
-              phaseTeams[j] = team2;
-              break;
-            }
-          }
-        }
-      }
-
-      matches.push({
-        team1: team1Index < phaseTeams.length ? phaseTeams[team1Index] : null,
-        team2: team2Index < phaseTeams.length ? phaseTeams[team2Index] : null
-      });
-    }
-
-    phases.push({
-      name: phaseName,
-      matches
-    });
-
-    // Préparer pour la phase suivante
-    currentTeamCount = matchCount;
-    phaseTeams = []; // Les gagnants seront déterminés plus tard
-    startPhaseIndex++;
-  }
-
-  return phases;
-}
-
-// Fonction pour obtenir le nom d'affichage d'une phase
-function getPhaseDisplayName(phaseName: string): string {
-  const names: { [key: string]: string } = {
-    'trente-deuxieme-de-finale': '32èmes de finale',
-    'seizieme-de-finale': '16èmes de finale',
-    'huitieme-de-finale': '8èmes de finale',
-    'quart-de-finale': 'Quarts de finale',
-    'demi-finale': 'Demi-finales',
-    'finale': 'Finale'
-  };
-  return names[phaseName] || phaseName;
 }
