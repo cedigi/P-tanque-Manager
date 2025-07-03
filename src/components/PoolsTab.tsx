@@ -154,8 +154,8 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools }: PoolsTab
             </div>
           </div>
 
-          {/* Phase d'élimination */}
-          {eliminationData && (
+          {/* Phase d'élimination - Seulement si il y a des équipes qualifiées */}
+          {eliminationData && eliminationData.currentQualified > 0 && (
             <div className="glass-card p-6">
               <h3 className="text-xl font-bold text-white mb-6 tracking-wide flex items-center space-x-2">
                 <Trophy className="w-5 h-5" />
@@ -267,7 +267,10 @@ function PoolCard({ pool, teams, matches, isSolo }: PoolCardProps) {
   const totalMatches = pool.teamIds.length === 4 ? 6 : 3; // 4 équipes = 6 matchs, 3 équipes = 3 matchs
   
   const poolStandings = calculatePoolStandings(pool, teams, poolMatches);
-  const qualifiedTeams = poolStandings.slice(0, 2); // Top 2 qualifiés
+  
+  // Une poule est terminée seulement si TOUS les matchs sont joués
+  const isPoolCompleted = completedMatches.length === totalMatches && completedMatches.length > 0;
+  const qualifiedTeams = isPoolCompleted ? poolStandings.slice(0, 2) : []; // Top 2 qualifiés seulement si poule terminée
 
   return (
     <div className="glass-card overflow-hidden">
@@ -281,11 +284,18 @@ function PoolCard({ pool, teams, matches, isSolo }: PoolCardProps) {
             {completedMatches.length}/{totalMatches} matchs
           </div>
         </div>
+        {isPoolCompleted && (
+          <div className="mt-2">
+            <span className="px-2 py-1 bg-green-500/30 border border-green-400 text-green-400 rounded text-xs font-bold">
+              Poule terminée
+            </span>
+          </div>
+        )}
       </div>
       
       <div className="p-6 space-y-4">
         {poolStandings.map((team, index) => {
-          const isQualified = index < 2;
+          const isQualified = isPoolCompleted && index < 2;
           return (
             <div key={team.id} className={`glass-card p-4 ${isQualified ? 'border-green-400/40 bg-green-500/10' : ''}`}>
               <div className="flex items-center justify-between mb-2">
@@ -371,18 +381,18 @@ function calculatePoolStandings(pool: Pool, teams: Team[], matches: Match[]): Te
   });
 }
 
-// Fonction pour obtenir les équipes qualifiées
+// Fonction pour obtenir les équipes qualifiées - CORRIGÉE
 function getQualifiedTeams(pools: Pool[], teams: Team[], matches: Match[]): Team[] {
   const qualified: Team[] = [];
   
   pools.forEach(pool => {
-    const standings = calculatePoolStandings(pool, teams, matches);
     const poolMatches = matches.filter(m => m.poolId === pool.id);
     const totalMatches = pool.teamIds.length === 4 ? 6 : 3;
-    const completedMatches = poolMatches.filter(m => m.completed).length;
+    const completedMatches = poolMatches.filter(m => m.completed);
     
-    // Si tous les matchs de la poule sont terminés, on qualifie les 2 premiers
-    if (completedMatches === totalMatches) {
+    // CORRECTION : Vérifier qu'il y a vraiment des matchs joués ET que tous sont terminés
+    if (completedMatches.length === totalMatches && completedMatches.length > 0) {
+      const standings = calculatePoolStandings(pool, teams, poolMatches);
       qualified.push(...standings.slice(0, 2));
     }
   });
