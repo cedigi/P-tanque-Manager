@@ -774,34 +774,39 @@ function CompactMatchCard({ match, courtNumber, winner, onSelectWinner, disabled
             
             {showWinnerSelection && (
               <div 
-                className="absolute right-0 top-12 bg-slate-800 border border-white/20 rounded-lg p-3 shadow-xl min-w-[150px]"
-                style={{ zIndex: 9999 }}
+                className="fixed bg-slate-900/95 backdrop-blur-sm border border-white/30 rounded-lg p-2 shadow-2xl min-w-[120px] z-[9999]"
+                style={{ 
+                  top: '50%', 
+                  left: '50%', 
+                  transform: 'translate(-50%, -50%)',
+                  maxWidth: '200px'
+                }}
               >
-                <div className="text-white font-bold mb-2 text-center text-sm">Gagnant ?</div>
+                <div className="text-white font-bold mb-2 text-center text-xs">Gagnant ?</div>
                 <div className="space-y-1">
                   <button
                     onClick={() => {
                       onSelectWinner(match.team1.id, match.team2.id);
                       setShowWinnerSelection(false);
                     }}
-                    className="w-full glass-button p-2 text-xs"
+                    className="w-full bg-green-600 hover:bg-green-700 text-white p-1 rounded text-xs font-medium transition-colors"
                   >
-                    {match.team1.name}
+                    {match.team1.name.length > 12 ? match.team1.name.substring(0, 12) + '...' : match.team1.name}
                   </button>
                   <button
                     onClick={() => {
                       onSelectWinner(match.team2.id, match.team1.id);
                       setShowWinnerSelection(false);
                     }}
-                    className="w-full glass-button p-2 text-xs"
+                    className="w-full bg-green-600 hover:bg-green-700 text-white p-1 rounded text-xs font-medium transition-colors"
                   >
-                    {match.team2.name}
+                    {match.team2.name.length > 12 ? match.team2.name.substring(0, 12) + '...' : match.team2.name}
                   </button>
                   <button
                     onClick={() => setShowWinnerSelection(false)}
-                    className="w-full glass-button-secondary p-2 text-xs"
+                    className="w-full bg-gray-600 hover:bg-gray-700 text-white p-1 rounded text-xs font-medium transition-colors"
                   >
-                    Annuler
+                    ✕
                   </button>
                 </div>
               </div>
@@ -892,11 +897,16 @@ function EliminationMatchCard({ match, courtNumber, onSelectWinner, isFinale = f
           
           {showWinnerSelection && (
             <div 
-              className="absolute left-1/2 transform -translate-x-1/2 top-12 bg-slate-800 border border-white/20 rounded-lg p-4 shadow-xl min-w-[200px]"
-              style={{ zIndex: 9999 }}
+              className="fixed bg-slate-900/95 backdrop-blur-sm border border-white/30 rounded-lg p-3 shadow-2xl min-w-[160px] z-[9999]"
+              style={{ 
+                top: '50%', 
+                left: '50%', 
+                transform: 'translate(-50%, -50%)',
+                maxWidth: '250px'
+              }}
             >
-              <div className="text-white font-bold mb-3 text-center">
-                {isFinale ? '🏆 Qui est le Champion ?' : 'Qui a gagné ?'}
+              <div className="text-white font-bold mb-3 text-center text-sm">
+                {isFinale ? '🏆 Champion ?' : 'Gagnant ?'}
               </div>
               <div className="space-y-2">
                 <button
@@ -904,7 +914,7 @@ function EliminationMatchCard({ match, courtNumber, onSelectWinner, isFinale = f
                     onSelectWinner(match.team1!.id);
                     setShowWinnerSelection(false);
                   }}
-                  className="w-full glass-button p-2 text-sm"
+                  className="w-full bg-green-600 hover:bg-green-700 text-white p-2 rounded text-sm font-medium transition-colors"
                 >
                   {match.team1!.name}
                 </button>
@@ -913,13 +923,13 @@ function EliminationMatchCard({ match, courtNumber, onSelectWinner, isFinale = f
                     onSelectWinner(match.team2!.id);
                     setShowWinnerSelection(false);
                   }}
-                  className="w-full glass-button p-2 text-sm"
+                  className="w-full bg-green-600 hover:bg-green-700 text-white p-2 rounded text-sm font-medium transition-colors"
                 >
                   {match.team2!.name}
                 </button>
                 <button
                   onClick={() => setShowWinnerSelection(false)}
-                  className="w-full glass-button-secondary p-2 text-sm"
+                  className="w-full bg-gray-600 hover:bg-gray-700 text-white p-2 rounded text-sm font-medium transition-colors"
                 >
                   Annuler
                 </button>
