@@ -16,51 +16,52 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools }: PoolsTab
   const generateTournamentPhases = (pool: Pool) => {
     const poolTeams = pool.teamIds.map(id => teams.find(t => t.id === id)).filter(Boolean);
     
-    if (poolTeams.length < 2) return { phase1: [], phase2: [], phase3: [] };
+    if (poolTeams.length < 4) return { phase1: [], phase2: [], phase3: [] };
 
-    // Phase 1: Premier match (2 premières équipes)
-    const phase1 = poolTeams.length >= 2 ? [{
-      id: `phase1-${pool.id}`,
-      team1: poolTeams[0]!,
-      team2: poolTeams[1]!,
-      type: 'premier-match' as const,
-      description: 'Premier match'
-    }] : [];
+    // Phase 1: Tous les matchs simultanés (équipe 1 vs 3, équipe 2 vs 4)
+    const phase1 = [
+      {
+        id: `phase1-match1-${pool.id}`,
+        team1: poolTeams[0]!, // Équipe 1
+        team2: poolTeams[2]!, // Équipe 3
+        type: 'premier-match' as const,
+        description: 'Match 1'
+      },
+      {
+        id: `phase1-match2-${pool.id}`,
+        team1: poolTeams[1]!, // Équipe 2
+        team2: poolTeams[3]!, // Équipe 4
+        type: 'premier-match' as const,
+        description: 'Match 2'
+      }
+    ];
 
-    // Phase 2: Match des gagnants et match des perdants
-    const phase2 = poolTeams.length >= 4 ? [
+    // Phase 2: Gagnants vs Gagnants et Perdants vs Perdants
+    const phase2 = [
       {
         id: `phase2-winners-${pool.id}`,
         team1: { name: 'Gagnant Match 1', players: [] } as Team,
-        team2: poolTeams[2]!,
+        team2: { name: 'Gagnant Match 2', players: [] } as Team,
         type: 'match-gagnants' as const,
         description: 'Match des gagnants'
       },
       {
         id: `phase2-losers-${pool.id}`,
         team1: { name: 'Perdant Match 1', players: [] } as Team,
-        team2: poolTeams[3]!,
+        team2: { name: 'Perdant Match 2', players: [] } as Team,
         type: 'match-perdants' as const,
         description: 'Match des perdants'
       }
-    ] : poolTeams.length === 3 ? [
-      {
-        id: `phase2-final-${pool.id}`,
-        team1: { name: 'Gagnant Match 1', players: [] } as Team,
-        team2: poolTeams[2]!,
-        type: 'match-gagnants' as const,
-        description: 'Match final'
-      }
-    ] : [];
+    ];
 
-    // Phase 3: Match de barrage (si 4 équipes)
-    const phase3 = poolTeams.length >= 4 ? [{
+    // Phase 3: Match de barrage (équipes à 1 victoire)
+    const phase3 = [{
       id: `phase3-barrage-${pool.id}`,
       team1: { name: 'Gagnant match perdants', players: [] } as Team,
       team2: { name: 'Perdant match gagnants', players: [] } as Team,
       type: 'match-barrage' as const,
       description: 'Match de barrage'
-    }] : [];
+    }];
 
     return { phase1, phase2, phase3 };
   };
@@ -214,7 +215,7 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools }: PoolsTab
           <h1>🏆 Tournoi par Élimination - ${tournament.name}</h1>
           ${pools.map((pool, poolIndex) => {
             const phases = generateTournamentPhases(pool);
-            let courtCounter = poolIndex * 10 + 1;
+            let courtCounter = 1; // Seulement 2 terrains par poule
             
             return `
               <div class="pool-section">
@@ -222,7 +223,7 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools }: PoolsTab
                 
                 ${phases.phase1.length > 0 ? `
                   <div class="phase-section">
-                    <div class="phase-title">🎯 Phase 1 - Premier Match</div>
+                    <div class="phase-title">🎯 Phase 1 - Premiers Matchs (Simultanés)</div>
                     <div class="matches-grid">
                       ${phases.phase1.map((match) => `
                         <div class="match-row">
@@ -246,9 +247,11 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools }: PoolsTab
                 
                 ${phases.phase2.length > 0 ? `
                   <div class="phase-section">
-                    <div class="phase-title">⚔️ Phase 2 - Matchs de Qualification</div>
+                    <div class="phase-title">⚔️ Phase 2 - Gagnants vs Gagnants / Perdants vs Perdants</div>
                     <div class="matches-grid">
-                      ${phases.phase2.map((match) => `
+                      ${phases.phase2.map((match) => {
+                        courtCounter = 1; // Reset pour réutiliser les terrains
+                        return `
                         <div class="match-row">
                           <div class="court-number">T${courtCounter++}</div>
                           <div class="match-card">
@@ -263,16 +266,18 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools }: PoolsTab
                             </div>
                           </div>
                         </div>
-                      `).join('')}
+                      `;}).join('')}
                     </div>
                   </div>
                 ` : ''}
                 
                 ${phases.phase3.length > 0 ? `
                   <div class="phase-section">
-                    <div class="phase-title">⚡ Phase 3 - Match de Barrage</div>
+                    <div class="phase-title">⚡ Phase 3 - Match de Barrage (Équipes à 1 victoire)</div>
                     <div class="matches-grid">
-                      ${phases.phase3.map((match) => `
+                      ${phases.phase3.map((match) => {
+                        courtCounter = 1; // Reset pour réutiliser les terrains
+                        return `
                         <div class="match-row">
                           <div class="court-number">T${courtCounter++}</div>
                           <div class="match-card">
@@ -285,7 +290,7 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools }: PoolsTab
                             </div>
                           </div>
                         </div>
-                      `).join('')}
+                      `;}).join('')}
                     </div>
                   </div>
                 ` : ''}
@@ -295,7 +300,8 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools }: PoolsTab
                   <div class="qualification-text">
                     • Le gagnant avec 2 victoires est automatiquement qualifié<br/>
                     • Le gagnant du match de barrage (1 victoire chacun) est également qualifié<br/>
-                    • 2 équipes par poule accèdent au tour suivant
+                    • 2 équipes par poule accèdent au tour suivant<br/>
+                    • Les terrains sont réutilisés après chaque phase
                   </div>
                 </div>
               </div>
@@ -347,7 +353,7 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools }: PoolsTab
         <div className="space-y-8">
           {pools.map((pool, poolIndex) => {
             const phases = generateTournamentPhases(pool);
-            let courtCounter = poolIndex * 10 + 1;
+            let courtCounter = 1; // Seulement 2 terrains par poule
             
             return (
               <div key={pool.id} className="glass-card overflow-hidden">
@@ -358,16 +364,16 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools }: PoolsTab
                     <h3 className="text-3xl font-bold text-white tracking-wide">{pool.name}</h3>
                   </div>
                   <div className="text-center text-white/90 mt-2 font-medium">
-                    {pool.teamIds.length} {isSolo ? 'joueur' : 'équipe'}{pool.teamIds.length > 1 ? 's' : ''} • Système d'élimination
+                    {pool.teamIds.length} {isSolo ? 'joueur' : 'équipe'}{pool.teamIds.length > 1 ? 's' : ''} • Système d'élimination • 2 terrains
                   </div>
                 </div>
 
-                {/* Phase 1 - Premier Match */}
+                {/* Phase 1 - Premiers Matchs (Simultanés) */}
                 {phases.phase1.length > 0 && (
                   <div className="p-8 border-b border-white/10">
                     <div className="text-center mb-6">
-                      <h4 className="text-2xl font-bold text-white mb-2">🎯 Phase 1 - Premier Match</h4>
-                      <p className="text-white/70">Les 2 premières équipes s'affrontent</p>
+                      <h4 className="text-2xl font-bold text-white mb-2">🎯 Phase 1 - Premiers Matchs (Simultanés)</h4>
+                      <p className="text-white/70">Équipe 1 vs Équipe 3 et Équipe 2 vs Équipe 4</p>
                     </div>
                     <div className="space-y-4">
                       {phases.phase1.map((match) => (
@@ -413,55 +419,60 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools }: PoolsTab
                   </div>
                 )}
 
-                {/* Phase 2 - Matchs de Qualification */}
+                {/* Phase 2 - Gagnants vs Gagnants / Perdants vs Perdants */}
                 {phases.phase2.length > 0 && (
                   <div className="p-8 border-b border-white/10">
                     <div className="text-center mb-6">
-                      <h4 className="text-2xl font-bold text-white mb-2">⚔️ Phase 2 - Matchs de Qualification</h4>
-                      <p className="text-white/70">Gagnants et perdants jouent leurs matchs respectifs</p>
+                      <h4 className="text-2xl font-bold text-white mb-2">⚔️ Phase 2 - Gagnants vs Gagnants / Perdants vs Perdants</h4>
+                      <p className="text-white/70">Les gagnants s'affrontent et les perdants aussi (terrains réutilisés)</p>
                     </div>
                     <div className="space-y-4">
-                      {phases.phase2.map((match) => (
-                        <div key={match.id} className="grid grid-cols-[100px_1fr] gap-6 items-center">
-                          <div className={`bg-gradient-to-br ${getMatchTypeColor(match.type)} text-white rounded-xl p-4 text-center shadow-lg`}>
-                            <div className="flex items-center justify-center space-x-2">
-                              <MapPin className="w-5 h-5" />
-                              <span className="font-bold text-lg">T{courtCounter++}</span>
+                      {phases.phase2.map((match, index) => {
+                        const terrainNumber = (index % 2) + 1; // Alterne entre T1 et T2
+                        return (
+                          <div key={match.id} className="grid grid-cols-[100px_1fr] gap-6 items-center">
+                            <div className={`bg-gradient-to-br ${getMatchTypeColor(match.type)} text-white rounded-xl p-4 text-center shadow-lg`}>
+                              <div className="flex items-center justify-center space-x-2">
+                                <MapPin className="w-5 h-5" />
+                                <span className="font-bold text-lg">T{terrainNumber}</span>
+                              </div>
                             </div>
-                          </div>
-                          <div className="glass-card p-6 bg-white/5 hover:bg-white/10 transition-all duration-300">
-                            <div className="grid grid-cols-[1fr_auto_1fr] gap-6 items-center">
-                              <div className="text-center">
-                                <div className="flex items-center justify-center space-x-2 mb-3">
-                                  {getMatchTypeIcon(match.type)}
-                                  <h4 className="font-bold text-white text-lg">{match.team1.name}</h4>
-                                </div>
-                                {match.team1.players.length > 0 && (
-                                  <div className="space-y-1">
-                                    {match.team1.players.map((player) => (
-                                      <div key={player.id} className="text-sm text-white/80">{player.name}</div>
-                                    ))}
+                            <div className="glass-card p-6 bg-white/5 hover:bg-white/10 transition-all duration-300">
+                              <div className="grid grid-cols-[1fr_auto_1fr] gap-6 items-center">
+                                <div className="text-center">
+                                  <div className="flex items-center justify-center space-x-2 mb-3">
+                                    {getMatchTypeIcon(match.type)}
+                                    <h4 className="font-bold text-white text-lg">{match.team1.name}</h4>
                                   </div>
-                                )}
-                              </div>
-                              <div className={`bg-gradient-to-r ${getMatchTypeColor(match.type)} text-white rounded-full w-16 h-16 flex items-center justify-center font-bold text-xl shadow-lg`}>
-                                VS
-                              </div>
-                              <div className="text-center">
-                                <div className="flex items-center justify-center space-x-2 mb-3">
-                                  <Users className="w-5 h-5 text-green-400" />
-                                  <h4 className="font-bold text-white text-lg">{match.team2.name}</h4>
+                                  {match.team1.players.length > 0 && (
+                                    <div className="space-y-1">
+                                      {match.team1.players.map((player) => (
+                                        <div key={player.id} className="text-sm text-white/80">{player.name}</div>
+                                      ))}
+                                    </div>
+                                  )}
                                 </div>
-                                <div className="space-y-1">
-                                  {match.team2.players.map((player) => (
-                                    <div key={player.id} className="text-sm text-white/80">{player.name}</div>
-                                  ))}
+                                <div className={`bg-gradient-to-r ${getMatchTypeColor(match.type)} text-white rounded-full w-16 h-16 flex items-center justify-center font-bold text-xl shadow-lg`}>
+                                  VS
+                                </div>
+                                <div className="text-center">
+                                  <div className="flex items-center justify-center space-x-2 mb-3">
+                                    {getMatchTypeIcon(match.type)}
+                                    <h4 className="font-bold text-white text-lg">{match.team2.name}</h4>
+                                  </div>
+                                  {match.team2.players.length > 0 && (
+                                    <div className="space-y-1">
+                                      {match.team2.players.map((player) => (
+                                        <div key={player.id} className="text-sm text-white/80">{player.name}</div>
+                                      ))}
+                                    </div>
+                                  )}
                                 </div>
                               </div>
                             </div>
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   </div>
                 )}
@@ -471,7 +482,7 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools }: PoolsTab
                   <div className="p-8 border-b border-white/10">
                     <div className="text-center mb-6">
                       <h4 className="text-2xl font-bold text-white mb-2">⚡ Phase 3 - Match de Barrage</h4>
-                      <p className="text-white/70">Match décisif entre les équipes à 1 victoire</p>
+                      <p className="text-white/70">Match décisif entre les équipes à 1 victoire (terrain réutilisé)</p>
                     </div>
                     <div className="space-y-4">
                       {phases.phase3.map((match) => (
@@ -479,7 +490,7 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools }: PoolsTab
                           <div className={`bg-gradient-to-br ${getMatchTypeColor(match.type)} text-white rounded-xl p-4 text-center shadow-lg`}>
                             <div className="flex items-center justify-center space-x-2">
                               <MapPin className="w-5 h-5" />
-                              <span className="font-bold text-lg">T{courtCounter++}</span>
+                              <span className="font-bold text-lg">T1</span>
                             </div>
                           </div>
                           <div className="glass-card p-6 bg-white/5 hover:bg-white/10 transition-all duration-300">
@@ -514,7 +525,7 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools }: PoolsTab
                       <Trophy className="w-6 h-6" />
                       <span>Règles de Qualification</span>
                     </h4>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-white/90">
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm text-white/90">
                       <div className="glass-card p-4">
                         <div className="font-bold text-green-400 mb-2">🏆 Qualification Directe</div>
                         <div>Équipe avec 2 victoires</div>
@@ -526,6 +537,10 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools }: PoolsTab
                       <div className="glass-card p-4">
                         <div className="font-bold text-blue-400 mb-2">🎯 Résultat</div>
                         <div>2 qualifiés par poule</div>
+                      </div>
+                      <div className="glass-card p-4">
+                        <div className="font-bold text-orange-400 mb-2">🏟️ Terrains</div>
+                        <div>2 terrains réutilisés</div>
                       </div>
                     </div>
                   </div>
@@ -552,7 +567,7 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools }: PoolsTab
             <Trophy className="w-5 h-5" />
             <span>Statistiques du Tournoi</span>
           </h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-center">
             <div className="glass-card p-4">
               <div className="text-2xl font-bold text-blue-400">{pools.length}</div>
               <div className="text-white/70 text-sm">Poules</div>
@@ -571,6 +586,10 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools }: PoolsTab
                 }, 0)}
               </div>
               <div className="text-white/70 text-sm">Matchs total</div>
+            </div>
+            <div className="glass-card p-4">
+              <div className="text-2xl font-bold text-orange-400">2</div>
+              <div className="text-white/70 text-sm">Terrains/Poule</div>
             </div>
             <div className="glass-card p-4">
               <div className="text-2xl font-bold text-white">{teams.length}</div>
