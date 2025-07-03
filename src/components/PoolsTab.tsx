@@ -274,6 +274,27 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools }: PoolsTab
     return qualified;
   }, [pools, teams, getMatchWinner, getMatchLoser, generateTournamentPhases]);
 
+  // Vérifier si toutes les poules sont terminées
+  const areAllPoolsCompleted = useMemo((): boolean => {
+    return pools.every(pool => {
+      const poolTeams = pool.teamIds.map(id => teams.find(t => t.id === id)).filter(Boolean);
+      const phases = generateTournamentPhases(pool, poolTeams, getMatchWinner, getMatchLoser, teams);
+      
+      if (poolTeams.length === 3) {
+        // Pour une poule de 3 : finale + barrage doivent être joués
+        const finaleMatch = phases.phase2[0];
+        const barrageMatch = phases.phase3[0];
+        return !!(getMatchWinner(finaleMatch?.id) && getMatchWinner(barrageMatch?.id));
+      } else if (poolTeams.length === 4) {
+        // Pour une poule de 4 : match des gagnants + barrage doivent être joués
+        const winnersMatch = phases.phase2.find(m => m.type === 'match-gagnants');
+        const barrageMatch = phases.phase3[0];
+        return !!(getMatchWinner(winnersMatch?.id) && getMatchWinner(barrageMatch?.id));
+      }
+      return false;
+    });
+  }, [pools, teams, getMatchWinner, getMatchLoser, generateTournamentPhases]);
+
   // Calculer les phases d'élimination dynamiquement
   const calculateEliminationPhases = useMemo(() => (qualifiedCount: number): string[] => {
     if (qualifiedCount <= 2) return ['finale'];
@@ -296,8 +317,13 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools }: PoolsTab
     return phases.reverse();
   }, []);
 
-  // Générer les matchs d'élimination dynamiquement (version pure)
+  // Générer les matchs d'élimination dynamiquement (version pure) - SEULEMENT si toutes les poules sont terminées
   const generateEliminationMatchesPure = useMemo(() => {
+    // Ne générer les phases d'élimination que si toutes les poules sont terminées
+    if (!areAllPoolsCompleted) {
+      return { phases: [], byeWinners: {} };
+    }
+
     const qualifiedTeams = getQualifiedTeams;
     const totalQualified = pools.length * 2; // 2 qualifiés par poule
     const phaseNames = calculateEliminationPhases(totalQualified);
@@ -330,8 +356,8 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools }: PoolsTab
         } else {
           // Phases suivantes : utiliser les gagnants de la phase précédente
           const prevPhase = phases[phaseIndex - 1];
-          const prevMatch1 = prevPhase.matches[team1Index / 2];
-          const prevMatch2 = prevPhase.matches[team2Index / 2];
+          const prevMatch1 = prevPhase?.matches[Math.floor(team1Index / 2)];
+          const prevMatch2 = prevPhase?.matches[Math.floor(team2Index / 2)];
           
           if (prevMatch1?.winner) {
             team1 = teams.find(t => t.id === prevMatch1.winner) || null;
@@ -343,16 +369,18 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools }: PoolsTab
 
         const matchId = `${phaseName}-match-${i + 1}`;
         
-        // Gestion des BYE automatiques
+        // Gestion des BYE automatiques SEULEMENT pour la première phase
         let winner = eliminationResults[matchId] || null;
-        if (team1 && !team2) {
-          // Team1 passe automatiquement
-          winner = team1.id;
-          byeWinners[matchId] = team1.id;
-        } else if (!team1 && team2) {
-          // Team2 passe automatiquement
-          winner = team2.id;
-          byeWinners[matchId] = team2.id;
+        if (isFirstPhase) {
+          if (team1 && !team2) {
+            // Team1 passe automatiquement
+            winner = team1.id;
+            byeWinners[matchId] = team1.id;
+          } else if (!team1 && team2) {
+            // Team2 passe automatiquement
+            winner = team2.id;
+            byeWinners[matchId] = team2.id;
+          }
         }
 
         matches.push({
@@ -382,10 +410,12 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools }: PoolsTab
     });
 
     return { phases, byeWinners };
-  }, [getQualifiedTeams, pools.length, calculateEliminationPhases, teams, eliminationResults]);
+  }, [areAllPoolsCompleted, getQualifiedTeams, pools.length, calculateEliminationPhases, teams, eliminationResults]);
 
-  // Effect to handle BYE winners
+  // Effect to handle BYE winners - seulement si les poules sont terminées
   useEffect(() => {
+    if (!areAllPoolsCompleted) return;
+    
     const { byeWinners } = generateEliminationMatchesPure;
     if (Object.keys(byeWinners).length > 0) {
       setEliminationResults(prev => {
@@ -402,7 +432,7 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools }: PoolsTab
         return hasChanges ? newResults : prev;
       });
     }
-  }, [generateEliminationMatchesPure]);
+  }, [areAllPoolsCompleted, generateEliminationMatchesPure]);
 
   const handlePrint = () => {
     const printWindow = window.open('', '_blank');
@@ -544,6 +574,7 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools }: PoolsTab
             </div>
           </div>
 
+          ${areAllPoolsCompleted ? `
           <div class="section">
             <div class="section-header">Phase Éliminatoire (${totalQualified} qualifiés)</div>
             <div class="elimination-section">
@@ -592,6 +623,16 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools }: PoolsTab
               `).join('')}
             </div>
           </div>
+          ` : `
+          <div class="section">
+            <div class="section-header">Phase Éliminatoire</div>
+            <div style="padding: 40px; text-align: center;">
+              <h3 style="color: #f59e0b; margin-bottom: 20px;">⏳ En attente de la fin des poules</h3>
+              <p style="color: #6b7280;">La phase éliminatoire sera générée automatiquement une fois que tous les matchs de poules seront terminés.</p>
+              <p style="color: #6b7280; margin-top: 10px;">Équipes qualifiées actuellement : <strong>${qualifiedTeams.length}/${totalQualified}</strong></p>
+            </div>
+          </div>
+          `}
         </body>
       </html>
     `;
@@ -727,83 +768,120 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools }: PoolsTab
             </div>
           </div>
 
-          {/* Phase Éliminatoire Dynamique */}
-          <div className="glass-card overflow-hidden" style={{ position: 'relative', zIndex: 1 }}>
-            <div className="bg-gradient-to-r from-yellow-600/80 to-orange-600/80 backdrop-filter backdrop-blur-10 px-6 py-4 border-b border-white/20">
-              <div className="flex items-center justify-center space-x-3">
-                <Trophy className="w-6 h-6 text-white" />
-                <h3 className="text-2xl font-bold text-white tracking-wide">Phase Éliminatoire</h3>
-                <span className="px-3 py-1 bg-white/20 rounded-full text-sm font-bold">
-                  {qualifiedTeams.length}/{totalQualified} qualifiés
-                </span>
-              </div>
-            </div>
-
-            <div className="p-6">
-              {/* Équipes Qualifiées */}
-              <div className="mb-8">
-                <h4 className="text-xl font-bold text-white mb-4 text-center">🌟 Équipes Qualifiées</h4>
-                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
-                  {Array.from({ length: totalQualified }, (_, index) => {
-                    const team = qualifiedTeams[index];
-                    return (
-                      <div key={index} className={`glass-card p-3 text-center text-sm ${team ? 'bg-green-500/20 border-green-400/40' : 'bg-gray-500/20 border-gray-400/40'}`}>
-                        {team ? (
-                          <>
-                            <div className="font-bold text-white">{team.name}</div>
-                            <div className="mt-1">
-                              <Crown className="w-4 h-4 text-yellow-400 mx-auto" />
-                            </div>
-                          </>
-                        ) : (
-                          <>
-                            <div className="font-bold text-white/50">En attente</div>
-                            <div className="text-white/30 text-xs">#{index + 1}</div>
-                          </>
-                        )}
-                      </div>
-                    );
-                  })}
+          {/* Phase Éliminatoire Dynamique - Seulement si toutes les poules sont terminées */}
+          {areAllPoolsCompleted ? (
+            <div className="glass-card overflow-hidden" style={{ position: 'relative', zIndex: 1 }}>
+              <div className="bg-gradient-to-r from-yellow-600/80 to-orange-600/80 backdrop-filter backdrop-blur-10 px-6 py-4 border-b border-white/20">
+                <div className="flex items-center justify-center space-x-3">
+                  <Trophy className="w-6 h-6 text-white" />
+                  <h3 className="text-2xl font-bold text-white tracking-wide">Phase Éliminatoire</h3>
+                  <span className="px-3 py-1 bg-white/20 rounded-full text-sm font-bold">
+                    {qualifiedTeams.length}/{totalQualified} qualifiés
+                  </span>
                 </div>
               </div>
 
-              {/* Phases d'Élimination Dynamiques */}
-              {eliminationPhases.map((phase, phaseIndex) => (
-                <div key={phase.name} className="mb-8">
-                  <div className="flex items-center justify-center space-x-3 mb-6">
-                    {phase.name === 'finale' ? (
-                      <Trophy className="w-6 h-6 text-yellow-400" />
-                    ) : (
-                      <Target className="w-6 h-6 text-white" />
-                    )}
-                    <h4 className="text-xl font-bold text-white text-center">
-                      {getPhaseDisplayName(phase.name)}
-                    </h4>
-                    <span className="px-3 py-1 bg-white/20 rounded-full text-sm font-bold">
-                      {phase.matches.length} match{phase.matches.length > 1 ? 's' : ''}
-                    </span>
-                  </div>
-                  
-                  <div className={`grid gap-4 ${
-                    phase.name === 'finale' ? 'grid-cols-1 max-w-md mx-auto' :
-                    phase.matches.length <= 2 ? 'grid-cols-1 md:grid-cols-2' :
-                    phase.matches.length <= 4 ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-4' :
-                    'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
-                  }`}>
-                    {phase.matches.map((match, matchIndex) => (
-                      <EliminationMatchCard
-                        key={match.id}
-                        match={match}
-                        courtNumber={`T${(matchIndex % 2) + 1}`}
-                        onSelectWinner={(winnerId) => recordEliminationResult(match.id, winnerId)}
-                        isFinale={phase.name === 'finale'}
-                      />
-                    ))}
+              <div className="p-6">
+                {/* Équipes Qualifiées */}
+                <div className="mb-8">
+                  <h4 className="text-xl font-bold text-white mb-4 text-center">🌟 Équipes Qualifiées</h4>
+                  <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
+                    {Array.from({ length: totalQualified }, (_, index) => {
+                      const team = qualifiedTeams[index];
+                      return (
+                        <div key={index} className={`glass-card p-3 text-center text-sm ${team ? 'bg-green-500/20 border-green-400/40' : 'bg-gray-500/20 border-gray-400/40'}`}>
+                          {team ? (
+                            <>
+                              <div className="font-bold text-white">{team.name}</div>
+                              <div className="mt-1">
+                                <Crown className="w-4 h-4 text-yellow-400 mx-auto" />
+                              </div>
+                            </>
+                          ) : (
+                            <>
+                              <div className="font-bold text-white/50">En attente</div>
+                              <div className="text-white/30 text-xs">#{index + 1}</div>
+                            </>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
-              ))}
+
+                {/* Phases d'Élimination Dynamiques */}
+                {eliminationPhases.map((phase, phaseIndex) => (
+                  <div key={phase.name} className="mb-8">
+                    <div className="flex items-center justify-center space-x-3 mb-6">
+                      {phase.name === 'finale' ? (
+                        <Trophy className="w-6 h-6 text-yellow-400" />
+                      ) : (
+                        <Target className="w-6 h-6 text-white" />
+                      )}
+                      <h4 className="text-xl font-bold text-white text-center">
+                        {getPhaseDisplayName(phase.name)}
+                      </h4>
+                      <span className="px-3 py-1 bg-white/20 rounded-full text-sm font-bold">
+                        {phase.matches.length} match{phase.matches.length > 1 ? 's' : ''}
+                      </span>
+                    </div>
+                    
+                    <div className={`grid gap-4 ${
+                      phase.name === 'finale' ? 'grid-cols-1 max-w-md mx-auto' :
+                      phase.matches.length <= 2 ? 'grid-cols-1 md:grid-cols-2' :
+                      phase.matches.length <= 4 ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-4' :
+                      'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
+                    }`}>
+                      {phase.matches.map((match, matchIndex) => (
+                        <EliminationMatchCard
+                          key={match.id}
+                          match={match}
+                          courtNumber={`T${(matchIndex % 2) + 1}`}
+                          onSelectWinner={(winnerId) => recordEliminationResult(match.id, winnerId)}
+                          isFinale={phase.name === 'finale'}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
-          </div>
+          ) : (
+            /* Message d'attente si les poules ne sont pas terminées */
+            <div className="glass-card overflow-hidden">
+              <div className="bg-gradient-to-r from-yellow-600/80 to-orange-600/80 backdrop-filter backdrop-blur-10 px-6 py-4 border-b border-white/20">
+                <div className="flex items-center justify-center space-x-3">
+                  <Trophy className="w-6 h-6 text-white" />
+                  <h3 className="text-2xl font-bold text-white tracking-wide">Phase Éliminatoire</h3>
+                  <span className="px-3 py-1 bg-white/20 rounded-full text-sm font-bold">
+                    En attente
+                  </span>
+                </div>
+              </div>
+
+              <div className="p-12 text-center">
+                <div className="mb-6">
+                  <Zap className="w-16 h-16 text-yellow-400 mx-auto animate-pulse" />
+                </div>
+                <h4 className="text-2xl font-bold text-white mb-4">⏳ En attente de la fin des poules</h4>
+                <p className="text-white/70 text-lg mb-6">
+                  La phase éliminatoire sera générée automatiquement une fois que tous les matchs de poules seront terminés.
+                </p>
+                <div className="glass-card p-4 max-w-md mx-auto">
+                  <div className="text-lg font-bold text-white mb-2">Progression</div>
+                  <div className="text-white/80">
+                    Équipes qualifiées : <span className="font-bold text-green-400">{qualifiedTeams.length}</span> / <span className="font-bold text-white">{totalQualified}</span>
+                  </div>
+                  <div className="mt-3 bg-white/20 rounded-full h-2">
+                    <div 
+                      className="bg-gradient-to-r from-green-400 to-blue-500 h-2 rounded-full transition-all duration-500"
+                      style={{ width: `${(qualifiedTeams.length / totalQualified) * 100}%` }}
+                    ></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Statistiques */}
           <div className="glass-card p-6">
@@ -825,11 +903,11 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools }: PoolsTab
                 <div className="text-white/70 text-sm">Matchs joués</div>
               </div>
               <div className="glass-card p-4">
-                <div className="text-2xl font-bold text-orange-400">{eliminationPhases.length}</div>
+                <div className="text-2xl font-bold text-orange-400">{areAllPoolsCompleted ? eliminationPhases.length : 0}</div>
                 <div className="text-white/70 text-sm">Phases élim.</div>
               </div>
               <div className="glass-card p-4">
-                <div className="text-2xl font-bold text-yellow-400">{eliminationPhases.reduce((acc, phase) => acc + phase.matches.length, 0)}</div>
+                <div className="text-2xl font-bold text-yellow-400">{areAllPoolsCompleted ? eliminationPhases.reduce((acc, phase) => acc + phase.matches.length, 0) : 0}</div>
                 <div className="text-white/70 text-sm">Matchs élim.</div>
               </div>
               <div className="glass-card p-4">
