@@ -1,6 +1,6 @@
 import React from 'react';
 import { Pool, Team, Tournament, Match } from '../types/tournament';
-import { Grid3X3, Users, Trophy, Shuffle, Printer, Play, Clock, CheckCircle, MapPin, Edit3 } from 'lucide-react';
+import { Grid3X3, Users, Trophy, Shuffle, Printer, MapPin } from 'lucide-react';
 
 interface PoolsTabProps {
   tournament: Tournament;
@@ -24,13 +24,13 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools }: PoolsTab
           <style>
             body { font-family: Arial, sans-serif; margin: 20px; }
             h1 { text-align: center; margin-bottom: 30px; }
-            .pools-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 20px; }
+            .pools-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
             .pool { border: 2px solid #333; border-radius: 8px; padding: 15px; margin-bottom: 20px; }
             .pool-title { font-weight: bold; font-size: 18px; margin-bottom: 15px; text-align: center; background: #f0f0f0; padding: 10px; border-radius: 4px; }
-            .bracket { border: 1px solid #ddd; margin: 10px 0; }
-            .match-row { display: flex; align-items: center; padding: 8px; border-bottom: 1px solid #eee; }
-            .team { flex: 1; padding: 5px; }
-            .score { text-align: center; font-weight: bold; min-width: 60px; }
+            .team { padding: 10px; border: 1px solid #ddd; border-radius: 4px; margin-bottom: 8px; background: #f9f9f9; }
+            .team-name { font-weight: bold; margin-bottom: 5px; }
+            .team-players { font-size: 14px; color: #666; }
+            .match { display: flex; justify-content: space-between; align-items: center; padding: 8px; border: 1px solid #ddd; margin: 4px 0; background: #f9f9f9; }
             @media print { body { margin: 0; } }
           </style>
         </head>
@@ -42,19 +42,28 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools }: PoolsTab
               return `
                 <div class="pool">
                   <div class="pool-title">${pool.name}</div>
-                  <div class="bracket">
-                    ${poolMatches.map(match => {
-                      const team1 = teams.find(t => t.id === match.team1Id);
-                      const team2 = teams.find(t => t.id === match.team2Id);
-                      return `
-                        <div class="match-row">
-                          <div class="team">${team1?.name || 'Équipe 1'}</div>
-                          <div class="score">${match.completed ? `${match.team1Score} - ${match.team2Score}` : '- -'}</div>
-                          <div class="team">${team2?.name || 'Équipe 2'}</div>
-                        </div>
-                      `;
-                    }).join('')}
-                  </div>
+                  ${pool.teamIds.map(teamId => {
+                    const team = teams.find(t => t.id === teamId);
+                    return team ? `
+                      <div class="team">
+                        <div class="team-name">${team.name}</div>
+                        <div class="team-players">${team.players.map(p => `${p.label ? `[${p.label}] ` : ''}${p.name}`).join(', ')}</div>
+                      </div>
+                    ` : '';
+                  }).join('')}
+                  
+                  <h4>Matchs</h4>
+                  ${poolMatches.map(match => {
+                    const team1 = teams.find(t => t.id === match.team1Id);
+                    const team2 = teams.find(t => t.id === match.team2Id);
+                    return `
+                      <div class="match">
+                        <span>${team1?.name || 'Équipe 1'}</span>
+                        <span>${match.completed ? `${match.team1Score} - ${match.team2Score}` : '- -'}</span>
+                        <span>${team2?.name || 'Équipe 2'}</span>
+                      </div>
+                    `;
+                  }).join('')}
                 </div>
               `;
             }).join('')}
@@ -103,10 +112,10 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools }: PoolsTab
 
       {pools.length > 0 ? (
         <>
-          {/* Affichage des poules avec tableaux classiques */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          {/* Affichage compact des poules avec matchs intégrés */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
             {pools.map((pool) => (
-              <ClassicPoolBracket 
+              <CompactPoolCard 
                 key={pool.id} 
                 pool={pool} 
                 teams={teams} 
@@ -161,15 +170,15 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools }: PoolsTab
   );
 }
 
-// Composant pour afficher une poule avec tableau classique de pétanque
-interface ClassicPoolBracketProps {
+// Composant compact pour afficher une poule avec ses matchs
+interface CompactPoolCardProps {
   pool: Pool;
   teams: Team[];
   matches: Match[];
   isSolo: boolean;
 }
 
-function ClassicPoolBracket({ pool, teams, matches, isSolo }: ClassicPoolBracketProps) {
+function CompactPoolCard({ pool, teams, matches, isSolo }: CompactPoolCardProps) {
   const poolMatches = matches.filter(m => m.poolId === pool.id);
   const poolTeams = pool.teamIds.map(id => teams.find(t => t.id === id)).filter(Boolean) as Team[];
   
@@ -178,70 +187,7 @@ function ClassicPoolBracket({ pool, teams, matches, isSolo }: ClassicPoolBracket
     return team?.name || 'Équipe inconnue';
   };
 
-  const getTeamPlayers = (teamId: string) => {
-    const team = teams.find(t => t.id === teamId);
-    if (!team) return '';
-    return team.players
-      .map(player => (player.label ? `[${player.label}] ${player.name}` : player.name))
-      .join(', ');
-  };
-
-  // Organiser les matchs selon le système classique de pétanque
-  const organizeMatches = () => {
-    if (poolTeams.length === 4) {
-      // Poule de 4 : système classique
-      // 1er tour : A vs C, B vs D
-      // 2ème tour : Gagnants ensemble, Perdants ensemble  
-      // 3ème tour : Match de barrage si nécessaire
-      
-      const team1 = poolTeams[0]; // A
-      const team2 = poolTeams[1]; // B  
-      const team3 = poolTeams[2]; // C
-      const team4 = poolTeams[3]; // D
-
-      return {
-        firstRound: [
-          { team1: team1, team2: team3, label: "Match 1" },
-          { team1: team2, team2: team4, label: "Match 2" }
-        ],
-        secondRound: [
-          { team1: null, team2: null, label: "Gagnants", dependency: "winners" },
-          { team1: null, team2: null, label: "Perdants", dependency: "losers" }
-        ],
-        thirdRound: [
-          { team1: null, team2: null, label: "Barrage", dependency: "playoff" }
-        ]
-      };
-    } else if (poolTeams.length === 3) {
-      // Poule de 3 : tous contre tous
-      const team1 = poolTeams[0];
-      const team2 = poolTeams[1]; 
-      const team3 = poolTeams[2];
-
-      return {
-        firstRound: [
-          { team1: team1, team2: team2, label: "Match 1" },
-          { team1: team1, team2: team3, label: "Match 2" },
-          { team1: team2, team2: team3, label: "Match 3" }
-        ]
-      };
-    }
-    
-    return { firstRound: [] };
-  };
-
-  const matchStructure = organizeMatches();
-
-  // Trouver le match correspondant dans les données
-  const findMatch = (team1: Team | null, team2: Team | null) => {
-    if (!team1 || !team2) return null;
-    return poolMatches.find(m => 
-      (m.team1Id === team1.id && m.team2Id === team2.id) ||
-      (m.team1Id === team2.id && m.team2Id === team1.id)
-    );
-  };
-
-  // Calculer les statistiques pour déterminer les gagnants/perdants
+  // Calculer les statistiques pour le classement
   const calculateStats = () => {
     const stats = poolTeams.map(team => {
       const teamMatches = poolMatches.filter(m => 
@@ -289,164 +235,77 @@ function ClassicPoolBracket({ pool, teams, matches, isSolo }: ClassicPoolBracket
   return (
     <div className="glass-card overflow-hidden">
       <div className="px-6 py-4 border-b border-white/20 bg-white/5">
-        <div className="flex justify-between items-center">
-          <h3 className="text-xl font-bold text-white tracking-wide flex items-center space-x-2">
-            <Grid3X3 className="w-5 h-5" />
-            <span>{pool.name}</span>
-          </h3>
-          <div className="text-sm text-white/70">
-            {poolMatches.filter(m => m.completed).length}/{poolMatches.length} matchs
-          </div>
+        <h3 className="text-xl font-bold text-white tracking-wide flex items-center space-x-2">
+          <Grid3X3 className="w-5 h-5" />
+          <span>{pool.name}</span>
+        </h3>
+        <div className="text-sm text-white/70 mt-1">
+          {poolMatches.filter(m => m.completed).length}/{poolMatches.length} matchs joués
         </div>
       </div>
       
-      <div className="p-6">
-        {/* Tableau classique de pétanque */}
-        <div className="space-y-6">
-          
-          {/* Premier tour */}
-          <div>
-            <h4 className="text-lg font-bold text-white mb-4">
-              {poolTeams.length === 4 ? "1er Tour" : "Matchs"}
-            </h4>
-            <div className="space-y-3">
-              {matchStructure.firstRound.map((matchInfo, index) => {
-                const match = findMatch(matchInfo.team1, matchInfo.team2);
-                return (
-                  <div key={index} className="glass-card border-2 border-white/20">
-                    <div className="p-4">
-                      <div className="flex items-center justify-between">
-                        {/* Équipe 1 */}
-                        <div className="flex-1 text-center">
-                          <div className="font-bold text-white text-lg">
-                            {matchInfo.team1?.name}
-                          </div>
-                          <div className="text-xs text-white/70 mt-1">
-                            {matchInfo.team1 ? getTeamPlayers(matchInfo.team1.id) : ''}
-                          </div>
-                        </div>
-
-                        {/* Score */}
-                        <div className="mx-6 text-center">
-                          {match?.completed ? (
-                            <div className="text-2xl font-bold text-white">
-                              {match.team1Id === matchInfo.team1?.id 
-                                ? `${match.team1Score} - ${match.team2Score}`
-                                : `${match.team2Score} - ${match.team1Score}`
-                              }
-                            </div>
-                          ) : (
-                            <div className="text-white/50 text-lg">- - -</div>
-                          )}
-                          <div className="text-xs text-white/60 mt-1">
-                            {matchInfo.label}
-                          </div>
-                        </div>
-
-                        {/* Équipe 2 */}
-                        <div className="flex-1 text-center">
-                          <div className="font-bold text-white text-lg">
-                            {matchInfo.team2?.name}
-                          </div>
-                          <div className="text-xs text-white/70 mt-1">
-                            {matchInfo.team2 ? getTeamPlayers(matchInfo.team2.id) : ''}
-                          </div>
-                        </div>
+      <div className="p-6 space-y-4">
+        {/* Équipes de la poule */}
+        <div>
+          <h4 className="text-sm font-bold text-white/80 mb-3 uppercase tracking-wider">Équipes</h4>
+          <div className="space-y-2">
+            {stats.map((stat, index) => (
+              <div key={stat.team.id} className="glass-card p-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <span className="w-5 h-5 bg-white/20 text-white rounded-full flex items-center justify-center text-xs font-bold">
+                      {index + 1}
+                    </span>
+                    <div>
+                      <div className="font-bold text-white text-sm">{stat.team.name}</div>
+                      <div className="text-xs text-white/70">
+                        {stat.team.players.map(p => `${p.label ? `[${p.label}] ` : ''}${p.name}`).join(', ')}
                       </div>
-
-                      {/* Terrain */}
-                      {match && (
-                        <div className="mt-3 text-center">
-                          <span className="px-2 py-1 bg-blue-500/30 border border-blue-400 text-blue-400 rounded text-xs font-bold">
-                            <MapPin className="w-3 h-3 inline mr-1" />
-                            Terrain {match.court}
-                          </span>
-                        </div>
-                      )}
                     </div>
                   </div>
-                );
-              })}
-            </div>
+                  <div className="text-right">
+                    <div className="text-white font-bold text-xs">{stat.wins}V-{stat.losses}D</div>
+                    <div className="text-white/70 text-xs">+{stat.performance}</div>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
+        </div>
 
-          {/* Deuxième tour pour poules de 4 */}
-          {poolTeams.length === 4 && matchStructure.secondRound && (
-            <div>
-              <h4 className="text-lg font-bold text-white mb-4">2ème Tour</h4>
-              <div className="space-y-3">
-                {matchStructure.secondRound.map((matchInfo, index) => (
-                  <div key={index} className="glass-card border-2 border-white/20">
-                    <div className="p-4">
-                      <div className="text-center">
-                        <div className="font-bold text-white text-lg mb-2">
-                          {matchInfo.label}
-                        </div>
-                        <div className="text-white/70 text-sm">
-                          {matchInfo.dependency === 'winners' 
-                            ? "Gagnants du 1er tour"
-                            : "Perdants du 1er tour"
-                          }
-                        </div>
-                        <div className="mt-2 text-white/50">
-                          À déterminer selon les résultats
-                        </div>
-                      </div>
-                    </div>
+        {/* Matchs de la poule */}
+        <div>
+          <h4 className="text-sm font-bold text-white/80 mb-3 uppercase tracking-wider">Matchs</h4>
+          <div className="space-y-2">
+            {poolMatches.map((match) => (
+              <div key={match.id} className="glass-card p-3">
+                <div className="flex items-center justify-between text-sm">
+                  <div className="flex-1 text-white font-medium">
+                    {getTeamName(match.team1Id)}
                   </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Troisième tour (barrage) pour poules de 4 */}
-          {poolTeams.length === 4 && matchStructure.thirdRound && (
-            <div>
-              <h4 className="text-lg font-bold text-white mb-4">Match de barrage</h4>
-              <div className="glass-card border-2 border-orange-400/40 bg-orange-500/10">
-                <div className="p-4">
-                  <div className="text-center">
-                    <div className="font-bold text-white text-lg mb-2">
-                      Match de barrage
-                    </div>
-                    <div className="text-orange-200 text-sm">
-                      Si deux équipes ont 1 victoire chacune
-                    </div>
-                    <div className="mt-2 text-white/50">
-                      À jouer si nécessaire
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Classement actuel */}
-          <div>
-            <h4 className="text-lg font-bold text-white mb-4">Classement provisoire</h4>
-            <div className="space-y-2">
-              {stats.map((stat, index) => (
-                <div key={stat.team.id} className="glass-card p-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-3">
-                      <span className="w-6 h-6 bg-white/20 text-white rounded-full flex items-center justify-center text-sm font-bold">
-                        {index + 1}
+                  <div className="mx-3 text-center">
+                    {match.completed ? (
+                      <span className="text-white font-bold">
+                        {match.team1Score} - {match.team2Score}
                       </span>
-                      <div>
-                        <div className="font-bold text-white">{stat.team.name}</div>
-                        <div className="text-xs text-white/70">
-                          {stat.team.players.map(p => `${p.label ? `[${p.label}] ` : ''}${p.name}`).join(', ')}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-white font-bold text-sm">{stat.wins}V - {stat.losses}D</div>
-                      <div className="text-white/70 text-xs">+{stat.performance}</div>
-                    </div>
+                    ) : (
+                      <span className="text-white/50">- -</span>
+                    )}
+                  </div>
+                  <div className="flex-1 text-right text-white font-medium">
+                    {getTeamName(match.team2Id)}
                   </div>
                 </div>
-              ))}
-            </div>
+                {match.court && (
+                  <div className="mt-2 text-center">
+                    <span className="px-2 py-1 bg-blue-500/30 border border-blue-400 text-blue-400 rounded text-xs font-bold">
+                      <MapPin className="w-3 h-3 inline mr-1" />
+                      T{match.court}
+                    </span>
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
         </div>
       </div>
