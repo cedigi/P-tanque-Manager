@@ -22,8 +22,15 @@ interface EliminationMatch {
   team1: Team | null;
   team2: Team | null;
   winner: string | null;
-  phase: 'semi-final' | 'final';
+  phase: string;
   description: string;
+  round: number;
+}
+
+interface EliminationPhase {
+  name: string;
+  matches: EliminationMatch[];
+  round: number;
 }
 
 export function PoolsTab({ tournament, teams, pools, onGeneratePools }: PoolsTabProps) {
@@ -113,44 +120,131 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools }: PoolsTab
     return qualified;
   };
 
-  // Générer les matchs d'élimination
-  const generateEliminationMatches = (): { semiFinals: EliminationMatch[], final: EliminationMatch } => {
+  // Calculer les phases d'élimination dynamiquement
+  const calculateEliminationPhases = (qualifiedCount: number): string[] => {
+    if (qualifiedCount <= 2) return ['finale'];
+    if (qualifiedCount <= 4) return ['demi-finale', 'finale'];
+    if (qualifiedCount <= 8) return ['quart-de-finale', 'demi-finale', 'finale'];
+    if (qualifiedCount <= 16) return ['8eme-de-finale', 'quart-de-finale', 'demi-finale', 'finale'];
+    if (qualifiedCount <= 32) return ['16eme-de-finale', '8eme-de-finale', 'quart-de-finale', 'demi-finale', 'finale'];
+    if (qualifiedCount <= 64) return ['32eme-de-finale', '16eme-de-finale', '8eme-de-finale', 'quart-de-finale', 'demi-finale', 'finale'];
+    
+    // Pour plus de 64 équipes, on continue la progression
+    const phases = ['finale', 'demi-finale', 'quart-de-finale', '8eme-de-finale', '16eme-de-finale', '32eme-de-finale'];
+    let currentSize = 64;
+    
+    while (currentSize < qualifiedCount) {
+      currentSize *= 2;
+      const phaseName = `${currentSize}eme-de-finale`;
+      phases.push(phaseName);
+    }
+    
+    return phases.reverse();
+  };
+
+  // Générer les matchs d'élimination dynamiquement
+  const generateEliminationMatches = (): EliminationPhase[] => {
     const qualifiedTeams = getQualifiedTeams();
+    const totalQualified = pools.length * 2; // 2 qualifiés par poule
+    const phaseNames = calculateEliminationPhases(totalQualified);
     
-    // Demi-finales
-    const semiFinals: EliminationMatch[] = [
-      {
-        id: 'semi-final-1',
-        team1: qualifiedTeams[0] || null,
-        team2: qualifiedTeams[1] || null,
-        winner: eliminationResults['semi-final-1'] || null,
-        phase: 'semi-final',
-        description: 'Demi-finale 1'
-      },
-      {
-        id: 'semi-final-2',
-        team1: qualifiedTeams[2] || null,
-        team2: qualifiedTeams[3] || null,
-        winner: eliminationResults['semi-final-2'] || null,
-        phase: 'semi-final',
-        description: 'Demi-finale 2'
+    const phases: EliminationPhase[] = [];
+    let currentTeams = [...qualifiedTeams];
+    
+    // Compléter avec des équipes vides si nécessaire
+    while (currentTeams.length < totalQualified) {
+      currentTeams.push(null as any);
+    }
+
+    phaseNames.forEach((phaseName, phaseIndex) => {
+      const isFirstPhase = phaseIndex === 0;
+      const matchCount = Math.ceil(currentTeams.length / 2);
+      const matches: EliminationMatch[] = [];
+
+      for (let i = 0; i < matchCount; i++) {
+        const team1Index = i * 2;
+        const team2Index = i * 2 + 1;
+        
+        let team1: Team | null = null;
+        let team2: Team | null = null;
+
+        if (isFirstPhase) {
+          // Première phase : utiliser les équipes qualifiées
+          team1 = currentTeams[team1Index] || null;
+          team2 = currentTeams[team2Index] || null;
+        } else {
+          // Phases suivantes : utiliser les gagnants de la phase précédente
+          const prevPhase = phases[phaseIndex - 1];
+          const prevMatch1 = prevPhase.matches[team1Index / 2];
+          const prevMatch2 = prevPhase.matches[team2Index / 2];
+          
+          if (prevMatch1?.winner) {
+            team1 = teams.find(t => t.id === prevMatch1.winner) || null;
+          }
+          if (prevMatch2?.winner) {
+            team2 = teams.find(t => t.id === prevMatch2.winner) || null;
+          }
+        }
+
+        const matchId = `${phaseName}-match-${i + 1}`;
+        
+        // Gestion des BYE automatiques
+        if (team1 && !team2) {
+          // Team1 passe automatiquement
+          setEliminationResults(prev => ({
+            ...prev,
+            [matchId]: team1!.id
+          }));
+        } else if (!team1 && team2) {
+          // Team2 passe automatiquement
+          setEliminationResults(prev => ({
+            ...prev,
+            [matchId]: team2!.id
+          }));
+        }
+
+        matches.push({
+          id: matchId,
+          team1,
+          team2,
+          winner: eliminationResults[matchId] || (team1 && !team2 ? team1.id : !team1 && team2 ? team2.id : null),
+          phase: phaseName,
+          description: `${getPhaseDisplayName(phaseName)} - Match ${i + 1}`,
+          round: phaseIndex + 1
+        });
       }
-    ];
 
-    // Finale
-    const semi1Winner = eliminationResults['semi-final-1'];
-    const semi2Winner = eliminationResults['semi-final-2'];
-    
-    const final: EliminationMatch = {
-      id: 'final',
-      team1: semi1Winner ? teams.find(t => t.id === semi1Winner) || null : null,
-      team2: semi2Winner ? teams.find(t => t.id === semi2Winner) || null : null,
-      winner: eliminationResults['final'] || null,
-      phase: 'final',
-      description: 'Finale'
+      phases.push({
+        name: phaseName,
+        matches,
+        round: phaseIndex + 1
+      });
+
+      // Préparer les équipes pour la phase suivante
+      currentTeams = matches.map(match => {
+        if (match.winner) {
+          return teams.find(t => t.id === match.winner) || null;
+        }
+        return null;
+      }).filter(Boolean) as Team[];
+    });
+
+    return phases;
+  };
+
+  // Obtenir le nom d'affichage d'une phase
+  const getPhaseDisplayName = (phaseName: string): string => {
+    const phaseNames: { [key: string]: string } = {
+      '128eme-de-finale': '128èmes de finale',
+      '64eme-de-finale': '64èmes de finale',
+      '32eme-de-finale': '32èmes de finale',
+      '16eme-de-finale': '16èmes de finale',
+      '8eme-de-finale': '8èmes de finale',
+      'quart-de-finale': 'Quarts de finale',
+      'demi-finale': 'Demi-finales',
+      'finale': 'Finale'
     };
-
-    return { semiFinals, final };
+    return phaseNames[phaseName] || phaseName;
   };
 
   // Générer les phases du tournoi pour chaque poule avec progression automatique
@@ -292,8 +386,9 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools }: PoolsTab
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;
 
-    const { semiFinals, final } = generateEliminationMatches();
+    const eliminationPhases = generateEliminationMatches();
     const qualifiedTeams = getQualifiedTeams();
+    const totalQualified = pools.length * 2;
 
     const printContent = `
       <!DOCTYPE html>
@@ -348,11 +443,24 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools }: PoolsTab
             .elimination-section {
               padding: 20px;
             }
-            .elimination-grid {
+            .phase-section {
+              margin-bottom: 30px;
+              border: 2px solid #e2e8f0;
+              border-radius: 12px;
+              overflow: hidden;
+            }
+            .phase-header {
+              background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+              color: white;
+              padding: 12px 20px;
+              font-weight: bold;
+              text-align: center;
+            }
+            .matches-grid {
               display: grid;
               grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-              gap: 20px;
-              margin-bottom: 30px;
+              gap: 15px;
+              padding: 20px;
             }
             .match-card {
               background: #f8fafc;
@@ -364,8 +472,6 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools }: PoolsTab
             .final-card {
               background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
               color: white;
-              max-width: 400px;
-              margin: 0 auto;
             }
             .team-name {
               font-weight: bold;
@@ -378,6 +484,13 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools }: PoolsTab
               border-radius: 4px;
               font-size: 12px;
               margin-left: 5px;
+            }
+            .bye-badge {
+              background: #f59e0b;
+              color: white;
+              padding: 2px 6px;
+              border-radius: 4px;
+              font-size: 12px;
             }
             @media print { 
               body { margin: 0; background: white; } 
@@ -410,49 +523,51 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools }: PoolsTab
           </div>
 
           <div class="section">
-            <div class="section-header">Phase Éliminatoire</div>
+            <div class="section-header">Phase Éliminatoire (${totalQualified} qualifiés)</div>
             <div class="elimination-section">
-              <h3 style="text-align: center; margin-bottom: 20px;">Équipes Qualifiées (${qualifiedTeams.length}/4)</h3>
+              <h3 style="text-align: center; margin-bottom: 20px;">Équipes Qualifiées (${qualifiedTeams.length}/${totalQualified})</h3>
               <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin-bottom: 30px;">
-                ${qualifiedTeams.map((team, index) => `
-                  <div style="background: #ecfdf5; border: 2px solid #10b981; border-radius: 8px; padding: 10px; text-align: center;">
-                    <strong>${team.name}</strong><br>
-                    <small>${team.players.map(p => p.name).join(', ')}</small>
-                  </div>
-                `).join('')}
+                ${Array.from({ length: totalQualified }, (_, index) => {
+                  const team = qualifiedTeams[index];
+                  return `
+                    <div style="background: ${team ? '#ecfdf5; border: 2px solid #10b981' : '#f3f4f6; border: 2px solid #d1d5db'}; border-radius: 8px; padding: 10px; text-align: center;">
+                      ${team ? `
+                        <strong>${team.name}</strong><br>
+                        <small>${team.players.map(p => p.name).join(', ')}</small>
+                      ` : `
+                        <strong style="color: #9ca3af;">En attente</strong><br>
+                        <small style="color: #9ca3af;">Qualification #${index + 1}</small>
+                      `}
+                    </div>
+                  `;
+                }).join('')}
               </div>
 
-              <h3 style="text-align: center; margin-bottom: 20px;">Demi-finales</h3>
-              <div class="elimination-grid">
-                ${semiFinals.map(match => `
-                  <div class="match-card">
-                    <h4>${match.description}</h4>
-                    <div class="team-name">
-                      ${match.team1?.name || 'En attente'}
-                      ${match.winner === match.team1?.id ? '<span class="winner-badge">GAGNANT</span>' : ''}
-                    </div>
-                    <div style="margin: 10px 0; font-weight: bold;">VS</div>
-                    <div class="team-name">
-                      ${match.team2?.name || 'En attente'}
-                      ${match.winner === match.team2?.id ? '<span class="winner-badge">GAGNANT</span>' : ''}
-                    </div>
+              ${eliminationPhases.map(phase => `
+                <div class="phase-section">
+                  <div class="phase-header">
+                    ${getPhaseDisplayName(phase.name)} (${phase.matches.length} match${phase.matches.length > 1 ? 's' : ''})
                   </div>
-                `).join('')}
-              </div>
-
-              <h3 style="text-align: center; margin-bottom: 20px;">Finale</h3>
-              <div class="match-card final-card">
-                <h4>🏆 ${final.description}</h4>
-                <div class="team-name">
-                  ${final.team1?.name || 'Gagnant Demi-finale 1'}
-                  ${final.winner === final.team1?.id ? '<span class="winner-badge">CHAMPION</span>' : ''}
+                  <div class="matches-grid">
+                    ${phase.matches.map(match => `
+                      <div class="match-card ${phase.name === 'finale' ? 'final-card' : ''}">
+                        <h4>${match.description}</h4>
+                        <div class="team-name">
+                          ${match.team1?.name || 'En attente'}
+                          ${match.winner === match.team1?.id ? '<span class="winner-badge">GAGNANT</span>' : ''}
+                          ${match.team1 && !match.team2 ? '<span class="bye-badge">BYE</span>' : ''}
+                        </div>
+                        <div style="margin: 10px 0; font-weight: bold;">VS</div>
+                        <div class="team-name">
+                          ${match.team2?.name || 'En attente'}
+                          ${match.winner === match.team2?.id ? '<span class="winner-badge">GAGNANT</span>' : ''}
+                          ${!match.team1 && match.team2 ? '<span class="bye-badge">BYE</span>' : ''}
+                        </div>
+                      </div>
+                    `).join('')}
+                  </div>
                 </div>
-                <div style="margin: 10px 0; font-weight: bold;">VS</div>
-                <div class="team-name">
-                  ${final.team2?.name || 'Gagnant Demi-finale 2'}
-                  ${final.winner === final.team2?.id ? '<span class="winner-badge">CHAMPION</span>' : ''}
-                </div>
-              </div>
+              `).join('')}
             </div>
           </div>
         </body>
@@ -464,8 +579,9 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools }: PoolsTab
     printWindow.print();
   };
 
-  const { semiFinals, final } = generateEliminationMatches();
+  const eliminationPhases = generateEliminationMatches();
   const qualifiedTeams = getQualifiedTeams();
+  const totalQualified = pools.length * 2;
 
   return (
     <div className="p-6">
@@ -589,14 +705,14 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools }: PoolsTab
             </div>
           </div>
 
-          {/* Phase Éliminatoire - Positionnement fixe */}
+          {/* Phase Éliminatoire Dynamique */}
           <div className="glass-card overflow-hidden" style={{ position: 'relative', zIndex: 1 }}>
             <div className="bg-gradient-to-r from-yellow-600/80 to-orange-600/80 backdrop-filter backdrop-blur-10 px-6 py-4 border-b border-white/20">
               <div className="flex items-center justify-center space-x-3">
                 <Trophy className="w-6 h-6 text-white" />
                 <h3 className="text-2xl font-bold text-white tracking-wide">Phase Éliminatoire</h3>
                 <span className="px-3 py-1 bg-white/20 rounded-full text-sm font-bold">
-                  {qualifiedTeams.length}/4 qualifiés
+                  {qualifiedTeams.length}/{totalQualified} qualifiés
                 </span>
               </div>
             </div>
@@ -605,25 +721,22 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools }: PoolsTab
               {/* Équipes Qualifiées */}
               <div className="mb-8">
                 <h4 className="text-xl font-bold text-white mb-4 text-center">🌟 Équipes Qualifiées</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                  {Array.from({ length: 4 }, (_, index) => {
+                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
+                  {Array.from({ length: totalQualified }, (_, index) => {
                     const team = qualifiedTeams[index];
                     return (
-                      <div key={index} className={`glass-card p-4 text-center ${team ? 'bg-green-500/20 border-green-400/40' : 'bg-gray-500/20 border-gray-400/40'}`}>
+                      <div key={index} className={`glass-card p-3 text-center text-sm ${team ? 'bg-green-500/20 border-green-400/40' : 'bg-gray-500/20 border-gray-400/40'}`}>
                         {team ? (
                           <>
-                            <div className="font-bold text-white text-lg">{team.name}</div>
-                            <div className="text-white/70 text-sm">
-                              {team.players.map(p => p.name).join(', ')}
-                            </div>
-                            <div className="mt-2">
-                              <Crown className="w-5 h-5 text-yellow-400 mx-auto" />
+                            <div className="font-bold text-white">{team.name}</div>
+                            <div className="mt-1">
+                              <Crown className="w-4 h-4 text-yellow-400 mx-auto" />
                             </div>
                           </>
                         ) : (
                           <>
-                            <div className="font-bold text-white/50 text-lg">En attente</div>
-                            <div className="text-white/30 text-sm">Qualification #{index + 1}</div>
+                            <div className="font-bold text-white/50">En attente</div>
+                            <div className="text-white/30 text-xs">#{index + 1}</div>
                           </>
                         )}
                       </div>
@@ -632,33 +745,41 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools }: PoolsTab
                 </div>
               </div>
 
-              {/* Demi-finales */}
-              <div className="mb-8">
-                <h4 className="text-xl font-bold text-white mb-4 text-center">⚔️ Demi-finales</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {semiFinals.map((match, index) => (
-                    <EliminationMatchCard
-                      key={match.id}
-                      match={match}
-                      courtNumber={`T${index + 1}`}
-                      onSelectWinner={(winnerId) => recordEliminationResult(match.id, winnerId)}
-                    />
-                  ))}
+              {/* Phases d'Élimination Dynamiques */}
+              {eliminationPhases.map((phase, phaseIndex) => (
+                <div key={phase.name} className="mb-8">
+                  <div className="flex items-center justify-center space-x-3 mb-6">
+                    {phase.name === 'finale' ? (
+                      <Trophy className="w-6 h-6 text-yellow-400" />
+                    ) : (
+                      <Target className="w-6 h-6 text-white" />
+                    )}
+                    <h4 className="text-xl font-bold text-white text-center">
+                      {getPhaseDisplayName(phase.name)}
+                    </h4>
+                    <span className="px-3 py-1 bg-white/20 rounded-full text-sm font-bold">
+                      {phase.matches.length} match{phase.matches.length > 1 ? 's' : ''}
+                    </span>
+                  </div>
+                  
+                  <div className={`grid gap-4 ${
+                    phase.name === 'finale' ? 'grid-cols-1 max-w-md mx-auto' :
+                    phase.matches.length <= 2 ? 'grid-cols-1 md:grid-cols-2' :
+                    phase.matches.length <= 4 ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-4' :
+                    'grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'
+                  }`}>
+                    {phase.matches.map((match, matchIndex) => (
+                      <EliminationMatchCard
+                        key={match.id}
+                        match={match}
+                        courtNumber={`T${(matchIndex % 2) + 1}`}
+                        onSelectWinner={(winnerId) => recordEliminationResult(match.id, winnerId)}
+                        isFinale={phase.name === 'finale'}
+                      />
+                    ))}
+                  </div>
                 </div>
-              </div>
-
-              {/* Finale */}
-              <div>
-                <h4 className="text-xl font-bold text-white mb-4 text-center">🏆 Finale</h4>
-                <div className="max-w-md mx-auto">
-                  <EliminationMatchCard
-                    match={final}
-                    courtNumber="T1"
-                    onSelectWinner={(winnerId) => recordEliminationResult(final.id, winnerId)}
-                    isFinale={true}
-                  />
-                </div>
-              </div>
+              ))}
             </div>
           </div>
 
@@ -682,12 +803,12 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools }: PoolsTab
                 <div className="text-white/70 text-sm">Matchs joués</div>
               </div>
               <div className="glass-card p-4">
-                <div className="text-2xl font-bold text-orange-400">2</div>
-                <div className="text-white/70 text-sm">Demi-finales</div>
+                <div className="text-2xl font-bold text-orange-400">{eliminationPhases.length}</div>
+                <div className="text-white/70 text-sm">Phases élim.</div>
               </div>
               <div className="glass-card p-4">
-                <div className="text-2xl font-bold text-yellow-400">1</div>
-                <div className="text-white/70 text-sm">Finale</div>
+                <div className="text-2xl font-bold text-yellow-400">{eliminationPhases.reduce((acc, phase) => acc + phase.matches.length, 0)}</div>
+                <div className="text-white/70 text-sm">Matchs élim.</div>
               </div>
               <div className="glass-card p-4">
                 <div className="text-2xl font-bold text-white">{teams.length}</div>
@@ -830,13 +951,14 @@ function EliminationMatchCard({ match, courtNumber, onSelectWinner, isFinale = f
   const [showWinnerSelection, setShowWinnerSelection] = useState(false);
 
   const canPlay = match.team1 && match.team2;
+  const isBye = (match.team1 && !match.team2) || (!match.team1 && match.team2);
 
   return (
     <div className={`glass-card p-4 ${isFinale ? 'bg-gradient-to-br from-yellow-500/20 to-orange-500/20 border-yellow-400/40' : ''}`}>
       <div className="text-center mb-4">
         <div className="flex items-center justify-center space-x-2 mb-2">
           {isFinale ? <Trophy className="w-5 h-5 text-yellow-400" /> : <Target className="w-5 h-5 text-white" />}
-          <h4 className="font-bold text-white">{match.description}</h4>
+          <h4 className="font-bold text-white text-sm">{match.description}</h4>
         </div>
         <div className={`inline-block px-3 py-1 rounded-lg text-sm font-bold ${isFinale ? 'bg-yellow-500 text-white' : 'bg-blue-500 text-white'}`}>
           {courtNumber}
@@ -845,55 +967,36 @@ function EliminationMatchCard({ match, courtNumber, onSelectWinner, isFinale = f
 
       <div className="grid grid-cols-[1fr_auto_1fr] gap-4 items-center mb-4">
         <div className="text-center">
-          <div className={`font-bold ${match.winner === match.team1?.id ? 'text-green-400' : 'text-white'}`}>
+          <div className={`font-bold text-sm ${match.winner === match.team1?.id ? 'text-green-400' : 'text-white'}`}>
             {match.team1?.name || 'En attente'}
             {match.winner === match.team1?.id && <Crown className="w-4 h-4 inline ml-1 text-yellow-400" />}
+            {match.team1 && !match.team2 && <span className="ml-1 text-xs bg-yellow-500 text-white px-1 rounded">BYE</span>}
           </div>
-          {match.team1 && (
-            <div className="text-white/70 text-xs mt-1">
-              {match.team1.players.map(p => p.name).join(', ')}
-            </div>
-          )}
         </div>
 
-        <div className={`rounded-full w-12 h-12 flex items-center justify-center font-bold text-white ${isFinale ? 'bg-gradient-to-r from-yellow-500 to-orange-500' : 'bg-gradient-to-r from-blue-500 to-purple-500'}`}>
+        <div className={`rounded-full w-10 h-10 flex items-center justify-center font-bold text-white text-sm ${isFinale ? 'bg-gradient-to-r from-yellow-500 to-orange-500' : 'bg-gradient-to-r from-blue-500 to-purple-500'}`}>
           VS
         </div>
 
         <div className="text-center">
-          <div className={`font-bold ${match.winner === match.team2?.id ? 'text-green-400' : 'text-white'}`}>
+          <div className={`font-bold text-sm ${match.winner === match.team2?.id ? 'text-green-400' : 'text-white'}`}>
             {match.team2?.name || 'En attente'}
             {match.winner === match.team2?.id && <Crown className="w-4 h-4 inline ml-1 text-yellow-400" />}
+            {!match.team1 && match.team2 && <span className="ml-1 text-xs bg-yellow-500 text-white px-1 rounded">BYE</span>}
           </div>
-          {match.team2 && (
-            <div className="text-white/70 text-xs mt-1">
-              {match.team2.players.map(p => p.name).join(', ')}
-            </div>
-          )}
         </div>
       </div>
 
-      {canPlay && (
+      {canPlay && !match.winner && (
         <div className="text-center relative">
-          {match.winner ? (
-            <button
-              onClick={() => setShowWinnerSelection(true)}
-              className="glass-button-secondary px-4 py-2 text-sm"
-              title="Modifier le gagnant"
-            >
-              <Edit3 className="w-4 h-4 inline mr-2" />
-              Modifier
-            </button>
-          ) : (
-            <button
-              onClick={() => setShowWinnerSelection(true)}
-              className={`px-4 py-2 text-sm ${isFinale ? 'bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600' : 'glass-button'}`}
-              title="Sélectionner le gagnant"
-            >
-              <Trophy className="w-4 h-4 inline mr-2" />
-              {isFinale ? 'Couronner le Champion' : 'Sélectionner le gagnant'}
-            </button>
-          )}
+          <button
+            onClick={() => setShowWinnerSelection(true)}
+            className={`px-4 py-2 text-sm ${isFinale ? 'bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600' : 'glass-button'}`}
+            title="Sélectionner le gagnant"
+          >
+            <Trophy className="w-4 h-4 inline mr-2" />
+            {isFinale ? 'Couronner' : 'Gagnant'}
+          </button>
           
           {showWinnerSelection && (
             <div 
@@ -936,6 +1039,69 @@ function EliminationMatchCard({ match, courtNumber, onSelectWinner, isFinale = f
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {match.winner && (
+        <div className="text-center">
+          <button
+            onClick={() => setShowWinnerSelection(true)}
+            className="glass-button-secondary px-4 py-2 text-sm"
+            title="Modifier le gagnant"
+          >
+            <Edit3 className="w-4 h-4 inline mr-2" />
+            Modifier
+          </button>
+          
+          {showWinnerSelection && (
+            <div 
+              className="fixed bg-slate-900/95 backdrop-blur-sm border border-white/30 rounded-lg p-3 shadow-2xl min-w-[160px] z-[9999]"
+              style={{ 
+                top: '50%', 
+                left: '50%', 
+                transform: 'translate(-50%, -50%)',
+                maxWidth: '250px'
+              }}
+            >
+              <div className="text-white font-bold mb-3 text-center text-sm">
+                Modifier le gagnant
+              </div>
+              <div className="space-y-2">
+                <button
+                  onClick={() => {
+                    onSelectWinner(match.team1!.id);
+                    setShowWinnerSelection(false);
+                  }}
+                  className="w-full bg-green-600 hover:bg-green-700 text-white p-2 rounded text-sm font-medium transition-colors"
+                >
+                  {match.team1!.name}
+                </button>
+                <button
+                  onClick={() => {
+                    onSelectWinner(match.team2!.id);
+                    setShowWinnerSelection(false);
+                  }}
+                  className="w-full bg-green-600 hover:bg-green-700 text-white p-2 rounded text-sm font-medium transition-colors"
+                >
+                  {match.team2!.name}
+                </button>
+                <button
+                  onClick={() => setShowWinnerSelection(false)}
+                  className="w-full bg-gray-600 hover:bg-gray-700 text-white p-2 rounded text-sm font-medium transition-colors"
+                >
+                  Annuler
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {isBye && (
+        <div className="text-center">
+          <div className="bg-yellow-500/20 border border-yellow-400 text-yellow-400 px-3 py-2 rounded-lg text-sm font-bold">
+            🌟 Qualifié automatiquement
+          </div>
         </div>
       )}
     </div>
