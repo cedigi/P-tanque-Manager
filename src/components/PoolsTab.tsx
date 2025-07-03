@@ -68,7 +68,7 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools }: PoolsTab
       const phases = generateTournamentPhases(pool);
       
       if (poolTeams.length === 3) {
-        // Pour une poule de 3 : le gagnant de la finale
+        // Pour une poule de 3 : le gagnant de la finale (Phase 2)
         const finaleMatch = phases.phase2[0];
         if (finaleMatch) {
           const winner = getMatchWinner(finaleMatch.id);
