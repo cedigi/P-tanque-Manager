@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { Pool, Team, Tournament } from '../types/tournament';
 import { Grid3X3, Users, Trophy, Shuffle, Printer, MapPin, Crown, Zap, Star, Check, Edit3, Target, Award } from 'lucide-react';
 
@@ -39,40 +39,40 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools }: PoolsTab
   const [eliminationResults, setEliminationResults] = useState<{[matchId: string]: string}>({});
 
   // Fonction pour enregistrer le résultat d'un match
-  const recordMatchResult = (poolId: string, matchId: string, winnerId: string, loserId: string, phase: number) => {
+  const recordMatchResult = useCallback((poolId: string, matchId: string, winnerId: string, loserId: string, phase: number) => {
     setMatchResults(prev => {
       const filtered = prev.filter(r => r.matchId !== matchId);
       return [...filtered, { poolId, matchId, winnerId, loserId, phase }];
     });
-  };
+  }, []);
 
   // Fonction pour enregistrer le résultat d'un match d'élimination
-  const recordEliminationResult = (matchId: string, winnerId: string) => {
+  const recordEliminationResult = useCallback((matchId: string, winnerId: string) => {
     setEliminationResults(prev => ({
       ...prev,
       [matchId]: winnerId
     }));
-  };
+  }, []);
 
   // Fonction pour obtenir le gagnant d'un match
-  const getMatchWinner = (matchId: string): string | null => {
+  const getMatchWinner = useCallback((matchId: string): string | null => {
     const result = matchResults.find(r => r.matchId === matchId);
     return result?.winnerId || null;
-  };
+  }, [matchResults]);
 
   // Fonction pour obtenir le perdant d'un match
-  const getMatchLoser = (matchId: string): string | null => {
+  const getMatchLoser = useCallback((matchId: string): string | null => {
     const result = matchResults.find(r => r.matchId === matchId);
     return result?.loserId || null;
-  };
+  }, [matchResults]);
 
   // Obtenir les équipes qualifiées de chaque poule
-  const getQualifiedTeams = (): Team[] => {
+  const getQualifiedTeams = useMemo((): Team[] => {
     const qualified: Team[] = [];
     
     pools.forEach(pool => {
       const poolTeams = pool.teamIds.map(id => teams.find(t => t.id === id)).filter(Boolean);
-      const phases = generateTournamentPhases(pool);
+      const phases = generateTournamentPhases(pool, poolTeams, getMatchWinner, getMatchLoser, teams);
       
       if (poolTeams.length === 3) {
         // Pour une poule de 3 : le gagnant de la finale (Phase 2) + le gagnant du barrage (Phase 3)
@@ -118,10 +118,10 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools }: PoolsTab
     });
     
     return qualified;
-  };
+  }, [pools, teams, getMatchWinner, getMatchLoser]);
 
   // Calculer les phases d'élimination dynamiquement
-  const calculateEliminationPhases = (qualifiedCount: number): string[] => {
+  const calculateEliminationPhases = useMemo(() => (qualifiedCount: number): string[] => {
     if (qualifiedCount <= 2) return ['finale'];
     if (qualifiedCount <= 4) return ['demi-finale', 'finale'];
     if (qualifiedCount <= 8) return ['quart-de-finale', 'demi-finale', 'finale'];
@@ -140,15 +140,16 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools }: PoolsTab
     }
     
     return phases.reverse();
-  };
+  }, []);
 
-  // Générer les matchs d'élimination dynamiquement
-  const generateEliminationMatches = (): EliminationPhase[] => {
-    const qualifiedTeams = getQualifiedTeams();
+  // Générer les matchs d'élimination dynamiquement (version pure)
+  const generateEliminationMatchesPure = useMemo(() => {
+    const qualifiedTeams = getQualifiedTeams;
     const totalQualified = pools.length * 2; // 2 qualifiés par poule
     const phaseNames = calculateEliminationPhases(totalQualified);
     
     const phases: EliminationPhase[] = [];
+    const byeWinners: {[matchId: string]: string} = {};
     let currentTeams = [...qualifiedTeams];
     
     // Compléter avec des équipes vides si nécessaire
@@ -189,25 +190,22 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools }: PoolsTab
         const matchId = `${phaseName}-match-${i + 1}`;
         
         // Gestion des BYE automatiques
+        let winner = eliminationResults[matchId] || null;
         if (team1 && !team2) {
           // Team1 passe automatiquement
-          setEliminationResults(prev => ({
-            ...prev,
-            [matchId]: team1!.id
-          }));
+          winner = team1.id;
+          byeWinners[matchId] = team1.id;
         } else if (!team1 && team2) {
           // Team2 passe automatiquement
-          setEliminationResults(prev => ({
-            ...prev,
-            [matchId]: team2!.id
-          }));
+          winner = team2.id;
+          byeWinners[matchId] = team2.id;
         }
 
         matches.push({
           id: matchId,
           team1,
           team2,
-          winner: eliminationResults[matchId] || (team1 && !team2 ? team1.id : !team1 && team2 ? team2.id : null),
+          winner,
           phase: phaseName,
           description: `${getPhaseDisplayName(phaseName)} - Match ${i + 1}`,
           round: phaseIndex + 1
@@ -229,11 +227,31 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools }: PoolsTab
       }).filter(Boolean) as Team[];
     });
 
-    return phases;
-  };
+    return { phases, byeWinners };
+  }, [getQualifiedTeams, pools.length, calculateEliminationPhases, teams, eliminationResults]);
+
+  // Effect to handle BYE winners
+  useEffect(() => {
+    const { byeWinners } = generateEliminationMatchesPure;
+    if (Object.keys(byeWinners).length > 0) {
+      setEliminationResults(prev => {
+        const newResults = { ...prev };
+        let hasChanges = false;
+        
+        Object.entries(byeWinners).forEach(([matchId, winnerId]) => {
+          if (!newResults[matchId]) {
+            newResults[matchId] = winnerId;
+            hasChanges = true;
+          }
+        });
+        
+        return hasChanges ? newResults : prev;
+      });
+    }
+  }, [generateEliminationMatchesPure]);
 
   // Obtenir le nom d'affichage d'une phase
-  const getPhaseDisplayName = (phaseName: string): string => {
+  const getPhaseDisplayName = useCallback((phaseName: string): string => {
     const phaseNames: { [key: string]: string } = {
       '128eme-de-finale': '128èmes de finale',
       '64eme-de-finale': '64èmes de finale',
@@ -245,12 +263,16 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools }: PoolsTab
       'finale': 'Finale'
     };
     return phaseNames[phaseName] || phaseName;
-  };
+  }, []);
 
-  // Générer les phases du tournoi pour chaque poule avec progression automatique
-  const generateTournamentPhases = (pool: Pool) => {
-    const poolTeams = pool.teamIds.map(id => teams.find(t => t.id === id)).filter(Boolean);
-    
+  // Générer les phases du tournoi pour chaque poule avec progression automatique (version pure)
+  const generateTournamentPhases = useCallback((
+    pool: Pool, 
+    poolTeams: Team[], 
+    getMatchWinner: (matchId: string) => string | null,
+    getMatchLoser: (matchId: string) => string | null,
+    teams: Team[]
+  ) => {
     if (poolTeams.length < 3) return { phase1: [], phase2: [], phase3: [] };
 
     // Poule de 3 équipes
@@ -380,14 +402,14 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools }: PoolsTab
     }
 
     return { phase1: [], phase2: [], phase3: [] };
-  };
+  }, []);
 
   const handlePrint = () => {
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;
 
-    const eliminationPhases = generateEliminationMatches();
-    const qualifiedTeams = getQualifiedTeams();
+    const eliminationPhases = generateEliminationMatchesPure.phases;
+    const qualifiedTeams = getQualifiedTeams;
     const totalQualified = pools.length * 2;
 
     const printContent = `
@@ -579,8 +601,8 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools }: PoolsTab
     printWindow.print();
   };
 
-  const eliminationPhases = generateEliminationMatches();
-  const qualifiedTeams = getQualifiedTeams();
+  const eliminationPhases = generateEliminationMatchesPure.phases;
+  const qualifiedTeams = getQualifiedTeams;
   const totalQualified = pools.length * 2;
 
   return (
@@ -633,8 +655,8 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools }: PoolsTab
             <div className="p-6">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {pools.map((pool, index) => {
-                  const phases = generateTournamentPhases(pool);
                   const poolTeams = pool.teamIds.map(id => teams.find(t => t.id === id)).filter(Boolean);
+                  const phases = generateTournamentPhases(pool, poolTeams, getMatchWinner, getMatchLoser, teams);
                   
                   return (
                     <div key={pool.id} className="glass-card p-4">
