@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Pool, Team, Tournament } from '../types/tournament';
-import { Grid3X3, Users, Trophy, Shuffle, Printer, MapPin, Crown, Zap, Star, Check, Edit3 } from 'lucide-react';
+import { Grid3X3, Users, Trophy, Shuffle, Printer, MapPin, Crown, Zap, Star, Check, Edit3, Target, Award } from 'lucide-react';
 
 interface PoolsTabProps {
   tournament: Tournament;
@@ -17,9 +17,19 @@ interface MatchResult {
   phase: number;
 }
 
+interface EliminationMatch {
+  id: string;
+  team1: Team | null;
+  team2: Team | null;
+  winner: string | null;
+  phase: 'semi-final' | 'final';
+  description: string;
+}
+
 export function PoolsTab({ tournament, teams, pools, onGeneratePools }: PoolsTabProps) {
   const isSolo = tournament.type === 'melee' || tournament.type === 'tete-a-tete';
   const [matchResults, setMatchResults] = useState<MatchResult[]>([]);
+  const [eliminationResults, setEliminationResults] = useState<{[matchId: string]: string}>({});
 
   // Fonction pour enregistrer le résultat d'un match
   const recordMatchResult = (poolId: string, matchId: string, winnerId: string, loserId: string, phase: number) => {
@@ -27,6 +37,14 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools }: PoolsTab
       const filtered = prev.filter(r => r.matchId !== matchId);
       return [...filtered, { poolId, matchId, winnerId, loserId, phase }];
     });
+  };
+
+  // Fonction pour enregistrer le résultat d'un match d'élimination
+  const recordEliminationResult = (matchId: string, winnerId: string) => {
+    setEliminationResults(prev => ({
+      ...prev,
+      [matchId]: winnerId
+    }));
   };
 
   // Fonction pour obtenir le gagnant d'un match
@@ -41,6 +59,90 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools }: PoolsTab
     return result?.loserId || null;
   };
 
+  // Obtenir les équipes qualifiées de chaque poule
+  const getQualifiedTeams = (): Team[] => {
+    const qualified: Team[] = [];
+    
+    pools.forEach(pool => {
+      const poolTeams = pool.teamIds.map(id => teams.find(t => t.id === id)).filter(Boolean);
+      const phases = generateTournamentPhases(pool);
+      
+      if (poolTeams.length === 3) {
+        // Pour une poule de 3 : le gagnant de la finale
+        const finaleMatch = phases.phase2[0];
+        if (finaleMatch) {
+          const winner = getMatchWinner(finaleMatch.id);
+          if (winner) {
+            const winnerTeam = teams.find(t => t.id === winner);
+            if (winnerTeam) qualified.push(winnerTeam);
+          }
+        }
+      } else if (poolTeams.length === 4) {
+        // Pour une poule de 4 : l'équipe avec 2 victoires + le gagnant du barrage
+        const winnersMatch = phases.phase2.find(m => m.type === 'match-gagnants');
+        const barrageMatch = phases.phase3[0];
+        
+        if (winnersMatch) {
+          const directQualified = getMatchWinner(winnersMatch.id);
+          if (directQualified) {
+            const team = teams.find(t => t.id === directQualified);
+            if (team) qualified.push(team);
+          }
+        }
+        
+        if (barrageMatch) {
+          const barrageWinner = getMatchWinner(barrageMatch.id);
+          if (barrageWinner) {
+            const team = teams.find(t => t.id === barrageWinner);
+            if (team) qualified.push(team);
+          }
+        }
+      }
+    });
+    
+    return qualified;
+  };
+
+  // Générer les matchs d'élimination
+  const generateEliminationMatches = (): { semiFinals: EliminationMatch[], final: EliminationMatch } => {
+    const qualifiedTeams = getQualifiedTeams();
+    
+    // Demi-finales
+    const semiFinals: EliminationMatch[] = [
+      {
+        id: 'semi-final-1',
+        team1: qualifiedTeams[0] || null,
+        team2: qualifiedTeams[1] || null,
+        winner: eliminationResults['semi-final-1'] || null,
+        phase: 'semi-final',
+        description: 'Demi-finale 1'
+      },
+      {
+        id: 'semi-final-2',
+        team1: qualifiedTeams[2] || null,
+        team2: qualifiedTeams[3] || null,
+        winner: eliminationResults['semi-final-2'] || null,
+        phase: 'semi-final',
+        description: 'Demi-finale 2'
+      }
+    ];
+
+    // Finale
+    const semi1Winner = eliminationResults['semi-final-1'];
+    const semi2Winner = eliminationResults['semi-final-2'];
+    
+    const final: EliminationMatch = {
+      id: 'final',
+      team1: semi1Winner ? teams.find(t => t.id === semi1Winner) || null : null,
+      team2: semi2Winner ? teams.find(t => t.id === semi2Winner) || null : null,
+      winner: eliminationResults['final'] || null,
+      phase: 'final',
+      description: 'Finale'
+    };
+
+    return { semiFinals, final };
+  };
+
   // Générer les phases du tournoi pour chaque poule avec progression automatique
   const generateTournamentPhases = (pool: Pool) => {
     const poolTeams = pool.teamIds.map(id => teams.find(t => t.id === id)).filter(Boolean);
@@ -49,33 +151,31 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools }: PoolsTab
 
     // Poule de 3 équipes
     if (poolTeams.length === 3) {
-      // Phase 1: Une équipe seule (BYE automatique) et un match entre les 2 autres
       const phase1Match = `phase1-match-${pool.id}`;
       const phase1 = [
         {
           id: `phase1-bye-${pool.id}`,
-          team1: poolTeams[0]!, // Équipe 1 - BYE automatique
+          team1: poolTeams[0]!,
           team2: null,
           type: 'bye-automatique' as const,
           description: 'BYE automatique'
         },
         {
           id: phase1Match,
-          team1: poolTeams[1]!, // Équipe 2
-          team2: poolTeams[2]!, // Équipe 3
+          team1: poolTeams[1]!,
+          team2: poolTeams[2]!,
           type: 'premier-match' as const,
           description: 'Match unique'
         }
       ];
 
-      // Phase 2: L'équipe en BYE joue contre le gagnant du match
       const phase1Winner = getMatchWinner(phase1Match);
       const winnerTeam = phase1Winner ? teams.find(t => t.id === phase1Winner) : null;
       
       const phase2 = [
         {
           id: `phase2-finale-${pool.id}`,
-          team1: poolTeams[0]!, // Équipe qui avait le BYE
+          team1: poolTeams[0]!,
           team2: winnerTeam || { name: 'Gagnant du match', players: [] } as Team,
           type: 'finale-poule-3' as const,
           description: 'Finale de poule',
@@ -88,28 +188,26 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools }: PoolsTab
 
     // Poule de 4 équipes
     if (poolTeams.length === 4) {
-      // Phase 1: Tous les matchs simultanés
       const match1Id = `phase1-match1-${pool.id}`;
       const match2Id = `phase1-match2-${pool.id}`;
       
       const phase1 = [
         {
           id: match1Id,
-          team1: poolTeams[0]!, // Équipe 1
-          team2: poolTeams[2]!, // Équipe 3
+          team1: poolTeams[0]!,
+          team2: poolTeams[2]!,
           type: 'premier-match' as const,
           description: 'Match 1'
         },
         {
           id: match2Id,
-          team1: poolTeams[1]!, // Équipe 2
-          team2: poolTeams[3]!, // Équipe 4
+          team1: poolTeams[1]!,
+          team2: poolTeams[3]!,
           type: 'premier-match' as const,
           description: 'Match 2'
         }
       ];
 
-      // Phase 2: Gagnants vs Gagnants et Perdants vs Perdants
       const match1Winner = getMatchWinner(match1Id);
       const match1Loser = getMatchLoser(match1Id);
       const match2Winner = getMatchWinner(match2Id);
@@ -142,7 +240,6 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools }: PoolsTab
         }
       ];
 
-      // Phase 3: Match de barrage
       const winnersWinner = getMatchWinner(winnersMatchId);
       const winnersLoser = getMatchLoser(winnersMatchId);
       const losersWinner = getMatchWinner(losersMatchId);
@@ -165,39 +262,18 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools }: PoolsTab
     return { phase1: [], phase2: [], phase3: [] };
   };
 
-  const getMatchTypeColor = (type: string) => {
-    switch (type) {
-      case 'premier-match': return 'from-blue-500 to-blue-600';
-      case 'match-gagnants': return 'from-green-500 to-green-600';
-      case 'match-perdants': return 'from-orange-500 to-orange-600';
-      case 'match-barrage': return 'from-purple-500 to-purple-600';
-      case 'bye-automatique': return 'from-yellow-500 to-yellow-600';
-      case 'finale-poule-3': return 'from-red-500 to-red-600';
-      default: return 'from-gray-500 to-gray-600';
-    }
-  };
-
-  const getMatchTypeIcon = (type: string) => {
-    switch (type) {
-      case 'premier-match': return <Users className="w-5 h-5" />;
-      case 'match-gagnants': return <Crown className="w-5 h-5" />;
-      case 'match-perdants': return <Users className="w-5 h-5" />;
-      case 'match-barrage': return <Zap className="w-5 h-5" />;
-      case 'bye-automatique': return <Star className="w-5 h-5" />;
-      case 'finale-poule-3': return <Trophy className="w-5 h-5" />;
-      default: return <Users className="w-5 h-5" />;
-    }
-  };
-
   const handlePrint = () => {
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;
+
+    const { semiFinals, final } = generateEliminationMatches();
+    const qualifiedTeams = getQualifiedTeams();
 
     const printContent = `
       <!DOCTYPE html>
       <html>
         <head>
-          <title>Tournoi par Élimination - ${tournament.name}</title>
+          <title>Tournoi Complet - ${tournament.name}</title>
           <style>
             body { 
               font-family: Arial, sans-serif; 
@@ -210,243 +286,149 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools }: PoolsTab
               color: #333;
               font-size: 28px;
             }
-            .pool-section {
-              margin-bottom: 50px;
+            .section {
+              margin-bottom: 40px;
               background: white;
               border-radius: 12px;
               overflow: hidden;
               box-shadow: 0 4px 12px rgba(0,0,0,0.1);
               page-break-inside: avoid;
             }
-            .pool-header { 
+            .section-header { 
               background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
               color: white;
-              padding: 20px;
+              padding: 15px 20px;
               text-align: center;
               font-weight: bold; 
-              font-size: 24px;
-            }
-            .phase-section {
-              padding: 25px;
-              border-bottom: 2px solid #e5e7eb;
-            }
-            .phase-section:last-child {
-              border-bottom: none;
-            }
-            .phase-title {
               font-size: 20px;
-              font-weight: bold;
-              color: #1f2937;
-              margin-bottom: 20px;
-              text-align: center;
-              padding: 10px;
+            }
+            .pools-grid {
+              display: grid;
+              grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+              gap: 20px;
+              padding: 20px;
+            }
+            .pool-card {
+              border: 2px solid #e5e7eb;
+              border-radius: 8px;
+              overflow: hidden;
+            }
+            .pool-header {
               background: #f3f4f6;
-              border-radius: 8px;
-            }
-            .matches-grid {
-              display: grid;
-              gap: 15px;
-            }
-            .match-row {
-              display: grid;
-              grid-template-columns: 80px 1fr;
-              gap: 15px;
-              align-items: center;
-            }
-            .court-number {
-              background: #2563eb;
-              color: white;
-              padding: 12px;
-              border-radius: 8px;
-              text-align: center;
+              padding: 10px;
               font-weight: bold;
-              font-size: 16px;
-            }
-            .bye-badge {
-              background: #f59e0b;
-              color: white;
-              padding: 12px;
-              border-radius: 8px;
               text-align: center;
-              font-weight: bold;
-              font-size: 16px;
+            }
+            .elimination-section {
+              padding: 20px;
+            }
+            .elimination-grid {
+              display: grid;
+              grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+              gap: 20px;
+              margin-bottom: 30px;
             }
             .match-card {
               background: #f8fafc;
               border: 2px solid #e2e8f0;
-              border-radius: 12px;
-              padding: 15px;
-              display: flex;
-              align-items: center;
-              justify-content: space-between;
-            }
-            .bye-card {
-              background: #fef3c7;
-              border: 2px solid #f59e0b;
-              border-radius: 12px;
+              border-radius: 8px;
               padding: 15px;
               text-align: center;
             }
-            .team-info {
-              flex: 1;
-              text-align: center;
+            .final-card {
+              background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+              color: white;
+              max-width: 400px;
+              margin: 0 auto;
             }
             .team-name {
               font-weight: bold;
-              font-size: 16px;
-              color: #1f2937;
-              margin-bottom: 5px;
-            }
-            .team-players {
-              font-size: 12px;
-              color: #6b7280;
-            }
-            .vs-divider {
-              font-size: 20px;
-              font-weight: bold;
-              color: #2563eb;
-              margin: 0 15px;
+              margin: 5px 0;
             }
             .winner-badge {
               background: #10b981;
               color: white;
-              padding: 4px 8px;
+              padding: 2px 6px;
               border-radius: 4px;
               font-size: 12px;
-              font-weight: bold;
+              margin-left: 5px;
             }
             @media print { 
               body { margin: 0; background: white; } 
-              .pool-section { break-inside: avoid; }
             }
           </style>
         </head>
         <body>
-          <h1>🏆 Tournoi par Élimination - ${tournament.name}</h1>
-          ${pools.map((pool, poolIndex) => {
-            const phases = generateTournamentPhases(pool);
-            const poolTeams = pool.teamIds.map(id => teams.find(t => t.id === id)).filter(Boolean);
-            let courtCounter = 1;
-            
-            return `
-              <div class="pool-section">
-                <div class="pool-header">${pool.name} (${poolTeams.length} équipes)</div>
-                
-                ${phases.phase1.length > 0 ? `
-                  <div class="phase-section">
-                    <div class="phase-title">
-                      ${poolTeams.length === 3 ? '🌟 Phase 1 - BYE Automatique + Match' : '🎯 Phase 1 - Premiers Matchs (Simultanés)'}
-                    </div>
-                    <div class="matches-grid">
-                      ${phases.phase1.map((match) => {
-                        const winner = getMatchWinner(match.id);
-                        if (match.type === 'bye-automatique') {
-                          return `
-                            <div class="match-row">
-                              <div class="bye-badge">BYE</div>
-                              <div class="bye-card">
-                                <div class="team-name">🌟 ${match.team1.name} - Qualification automatique</div>
-                                <div class="team-players">${match.team1.players.map(p => p.name).join(', ')}</div>
-                              </div>
-                            </div>
-                          `;
-                        } else {
-                          return `
-                            <div class="match-row">
-                              <div class="court-number">T${courtCounter++}</div>
-                              <div class="match-card">
-                                <div class="team-info">
-                                  <div class="team-name">
-                                    ${match.team1.name}
-                                    ${winner === match.team1.id ? '<span class="winner-badge">GAGNANT</span>' : ''}
-                                  </div>
-                                  <div class="team-players">${match.team1.players.map(p => p.name).join(', ')}</div>
-                                </div>
-                                <div class="vs-divider">VS</div>
-                                <div class="team-info">
-                                  <div class="team-name">
-                                    ${match.team2.name}
-                                    ${winner === match.team2.id ? '<span class="winner-badge">GAGNANT</span>' : ''}
-                                  </div>
-                                  <div class="team-players">${match.team2.players.map(p => p.name).join(', ')}</div>
-                                </div>
-                              </div>
-                            </div>
-                          `;
-                        }
-                      }).join('')}
-                    </div>
-                  </div>
-                ` : ''}
-                
-                ${phases.phase2.length > 0 ? `
-                  <div class="phase-section">
-                    <div class="phase-title">
-                      ${poolTeams.length === 3 ? '🏆 Phase 2 - Finale de Poule' : '⚔️ Phase 2 - Gagnants vs Gagnants / Perdants vs Perdants'}
-                    </div>
-                    <div class="matches-grid">
-                      ${phases.phase2.map((match) => {
-                        const winner = getMatchWinner(match.id);
-                        courtCounter = 1;
-                        return `
-                        <div class="match-row">
-                          <div class="court-number">T${courtCounter++}</div>
-                          <div class="match-card">
-                            <div class="team-info">
-                              <div class="team-name">
-                                ${match.team1.name}
-                                ${winner === match.team1.id ? '<span class="winner-badge">GAGNANT</span>' : ''}
-                              </div>
-                              <div class="team-players">${match.team1.players.map(p => p.name).join(', ')}</div>
-                            </div>
-                            <div class="vs-divider">VS</div>
-                            <div class="team-info">
-                              <div class="team-name">
-                                ${match.team2.name}
-                                ${winner === match.team2.id ? '<span class="winner-badge">GAGNANT</span>' : ''}
-                              </div>
-                              <div class="team-players">${match.team2.players.map(p => p.name).join(', ')}</div>
-                            </div>
-                          </div>
+          <h1>🏆 Tournoi Complet - ${tournament.name}</h1>
+          
+          <div class="section">
+            <div class="section-header">Phase de Poules</div>
+            <div class="pools-grid">
+              ${pools.map(pool => {
+                const poolTeams = pool.teamIds.map(id => teams.find(t => t.id === id)).filter(Boolean);
+                return `
+                  <div class="pool-card">
+                    <div class="pool-header">${pool.name} (${poolTeams.length} équipes)</div>
+                    <div style="padding: 10px;">
+                      ${poolTeams.map(team => `
+                        <div style="margin: 5px 0; padding: 5px; background: #f9fafb; border-radius: 4px;">
+                          <strong>${team.name}</strong><br>
+                          <small>${team.players.map(p => p.name).join(', ')}</small>
                         </div>
-                      `;}).join('')}
+                      `).join('')}
                     </div>
                   </div>
-                ` : ''}
-                
-                ${phases.phase3.length > 0 ? `
-                  <div class="phase-section">
-                    <div class="phase-title">⚡ Phase 3 - Match de Barrage (Équipes à 1 victoire)</div>
-                    <div class="matches-grid">
-                      ${phases.phase3.map((match) => {
-                        const winner = getMatchWinner(match.id);
-                        courtCounter = 1;
-                        return `
-                        <div class="match-row">
-                          <div class="court-number">T${courtCounter++}</div>
-                          <div class="match-card">
-                            <div class="team-info">
-                              <div class="team-name">
-                                ${match.team1.name}
-                                ${winner === match.team1.id ? '<span class="winner-badge">GAGNANT</span>' : ''}
-                              </div>
-                            </div>
-                            <div class="vs-divider">VS</div>
-                            <div class="team-info">
-                              <div class="team-name">
-                                ${match.team2.name}
-                                ${winner === match.team2.id ? '<span class="winner-badge">GAGNANT</span>' : ''}
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      `;}).join('')}
-                    </div>
+                `;
+              }).join('')}
+            </div>
+          </div>
+
+          <div class="section">
+            <div class="section-header">Phase Éliminatoire</div>
+            <div class="elimination-section">
+              <h3 style="text-align: center; margin-bottom: 20px;">Équipes Qualifiées (${qualifiedTeams.length}/4)</h3>
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin-bottom: 30px;">
+                ${qualifiedTeams.map((team, index) => `
+                  <div style="background: #ecfdf5; border: 2px solid #10b981; border-radius: 8px; padding: 10px; text-align: center;">
+                    <strong>${team.name}</strong><br>
+                    <small>${team.players.map(p => p.name).join(', ')}</small>
                   </div>
-                ` : ''}
+                `).join('')}
               </div>
-            `;
-          }).join('')}
+
+              <h3 style="text-align: center; margin-bottom: 20px;">Demi-finales</h3>
+              <div class="elimination-grid">
+                ${semiFinals.map(match => `
+                  <div class="match-card">
+                    <h4>${match.description}</h4>
+                    <div class="team-name">
+                      ${match.team1?.name || 'En attente'}
+                      ${match.winner === match.team1?.id ? '<span class="winner-badge">GAGNANT</span>' : ''}
+                    </div>
+                    <div style="margin: 10px 0; font-weight: bold;">VS</div>
+                    <div class="team-name">
+                      ${match.team2?.name || 'En attente'}
+                      ${match.winner === match.team2?.id ? '<span class="winner-badge">GAGNANT</span>' : ''}
+                    </div>
+                  </div>
+                `).join('')}
+              </div>
+
+              <h3 style="text-align: center; margin-bottom: 20px;">Finale</h3>
+              <div class="match-card final-card">
+                <h4>🏆 ${final.description}</h4>
+                <div class="team-name">
+                  ${final.team1?.name || 'Gagnant Demi-finale 1'}
+                  ${final.winner === final.team1?.id ? '<span class="winner-badge">CHAMPION</span>' : ''}
+                </div>
+                <div style="margin: 10px 0; font-weight: bold;">VS</div>
+                <div class="team-name">
+                  ${final.team2?.name || 'Gagnant Demi-finale 2'}
+                  ${final.winner === final.team2?.id ? '<span class="winner-badge">CHAMPION</span>' : ''}
+                </div>
+              </div>
+            </div>
+          </div>
         </body>
       </html>
     `;
@@ -456,10 +438,13 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools }: PoolsTab
     printWindow.print();
   };
 
+  const { semiFinals, final } = generateEliminationMatches();
+  const qualifiedTeams = getQualifiedTeams();
+
   return (
     <div className="p-6">
       <div className="flex justify-between items-center mb-8">
-        <h2 className="text-3xl font-bold text-white tracking-wider">Tournoi par Élimination</h2>
+        <h2 className="text-3xl font-bold text-white tracking-wider">Tournoi Complet</h2>
         <div className="flex space-x-4">
           {pools.length > 0 && (
             <button
@@ -491,156 +476,199 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools }: PoolsTab
 
       {pools.length > 0 ? (
         <div className="space-y-8">
-          {pools.map((pool, poolIndex) => {
-            const phases = generateTournamentPhases(pool);
-            const poolTeams = pool.teamIds.map(id => teams.find(t => t.id === id)).filter(Boolean);
-            let courtCounter = 1;
-            
-            return (
-              <div key={pool.id} className="glass-card overflow-hidden">
-                {/* En-tête de la poule */}
-                <div className="bg-gradient-to-r from-blue-600/80 to-blue-700/80 backdrop-filter backdrop-blur-10 px-8 py-6 border-b border-white/20">
-                  <div className="flex items-center justify-center space-x-3">
-                    <Grid3X3 className="w-8 h-8 text-white" />
-                    <h3 className="text-3xl font-bold text-white tracking-wide">{pool.name}</h3>
-                    <span className="px-3 py-1 bg-white/20 rounded-full text-sm font-bold">
-                      {poolTeams.length} équipe{poolTeams.length > 1 ? 's' : ''}
-                    </span>
-                  </div>
-                  <div className="text-center text-white/90 mt-2 font-medium">
-                    {poolTeams.length === 3 ? 'Système BYE + Finale' : 'Système d\'élimination'} • 2 terrains max
-                  </div>
-                </div>
+          {/* Phase de Poules - Version Compacte */}
+          <div className="glass-card overflow-hidden">
+            <div className="bg-gradient-to-r from-blue-600/80 to-blue-700/80 backdrop-filter backdrop-blur-10 px-6 py-4 border-b border-white/20">
+              <div className="flex items-center justify-center space-x-3">
+                <Grid3X3 className="w-6 h-6 text-white" />
+                <h3 className="text-2xl font-bold text-white tracking-wide">Phase de Poules</h3>
+                <span className="px-3 py-1 bg-white/20 rounded-full text-sm font-bold">
+                  {pools.length} poule{pools.length > 1 ? 's' : ''}
+                </span>
+              </div>
+            </div>
 
-                {/* Phase 1 */}
-                {phases.phase1.length > 0 && (
-                  <div className="p-8 border-b border-white/10">
-                    <div className="text-center mb-6">
-                      <h4 className="text-2xl font-bold text-white mb-2">
-                        {poolTeams.length === 3 ? '🌟 Phase 1 - BYE Automatique + Match' : '🎯 Phase 1 - Premiers Matchs (Simultanés)'}
-                      </h4>
-                      <p className="text-white/70">
-                        {poolTeams.length === 3 ? 
-                          'Une équipe a un BYE automatique, les 2 autres s\'affrontent' : 
-                          'Équipe 1 vs Équipe 3 et Équipe 2 vs Équipe 4'
-                        }
-                      </p>
-                    </div>
-                    <div className="space-y-4">
-                      {phases.phase1.map((match) => (
-                        <MatchCard
-                          key={match.id}
-                          match={match}
-                          courtNumber={match.type === 'bye-automatique' ? 'BYE' : `T${courtCounter++}`}
-                          winner={getMatchWinner(match.id)}
-                          onSelectWinner={(winnerId, loserId) => recordMatchResult(pool.id, match.id, winnerId, loserId, 1)}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Phase 2 */}
-                {phases.phase2.length > 0 && (
-                  <div className="p-8 border-b border-white/10">
-                    <div className="text-center mb-6">
-                      <h4 className="text-2xl font-bold text-white mb-2">
-                        {poolTeams.length === 3 ? '🏆 Phase 2 - Finale de Poule' : '⚔️ Phase 2 - Gagnants vs Gagnants / Perdants vs Perdants'}
-                      </h4>
-                      <p className="text-white/70">
-                        {poolTeams.length === 3 ? 
-                          'L\'équipe en BYE joue contre le gagnant du match' : 
-                          'Les gagnants s\'affrontent et les perdants aussi (terrains réutilisés)'
-                        }
-                      </p>
-                    </div>
-                    <div className="space-y-4">
-                      {phases.phase2.map((match, index) => {
-                        const terrainNumber = poolTeams.length === 3 ? 1 : (index % 2) + 1;
-                        return (
-                          <MatchCard
-                            key={match.id}
-                            match={match}
-                            courtNumber={`T${terrainNumber}`}
-                            winner={getMatchWinner(match.id)}
-                            onSelectWinner={(winnerId, loserId) => recordMatchResult(pool.id, match.id, winnerId, loserId, 2)}
-                            disabled={!match.canPlay}
-                          />
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-
-                {/* Phase 3 - Seulement pour les poules de 4 */}
-                {phases.phase3.length > 0 && (
-                  <div className="p-8 border-b border-white/10">
-                    <div className="text-center mb-6">
-                      <h4 className="text-2xl font-bold text-white mb-2">⚡ Phase 3 - Match de Barrage</h4>
-                      <p className="text-white/70">Match décisif entre les équipes à 1 victoire (terrain réutilisé)</p>
-                    </div>
-                    <div className="space-y-4">
-                      {phases.phase3.map((match) => (
-                        <MatchCard
-                          key={match.id}
-                          match={match}
-                          courtNumber="T1"
-                          winner={getMatchWinner(match.id)}
-                          onSelectWinner={(winnerId, loserId) => recordMatchResult(pool.id, match.id, winnerId, loserId, 3)}
-                          disabled={!match.canPlay}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Règles de qualification */}
-                <div className="p-8 bg-gradient-to-r from-green-500/20 to-blue-500/20">
-                  <div className="text-center">
-                    <h4 className="text-xl font-bold text-white mb-4 flex items-center justify-center space-x-2">
-                      <Trophy className="w-6 h-6" />
-                      <span>Règles de Qualification</span>
-                    </h4>
-                    {poolTeams.length === 3 ? (
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-white/90">
-                        <div className="glass-card p-4">
-                          <div className="font-bold text-yellow-400 mb-2">🌟 BYE Automatique</div>
-                          <div>Une équipe qualifiée d'office</div>
-                        </div>
-                        <div className="glass-card p-4">
-                          <div className="font-bold text-red-400 mb-2">🏆 Finale</div>
-                          <div>BYE vs Gagnant du match</div>
-                        </div>
-                        <div className="glass-card p-4">
-                          <div className="font-bold text-blue-400 mb-2">🎯 Résultat</div>
-                          <div>1 qualifié par poule</div>
-                        </div>
+            <div className="p-6">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {pools.map((pool) => {
+                  const phases = generateTournamentPhases(pool);
+                  const poolTeams = pool.teamIds.map(id => teams.find(t => t.id === id)).filter(Boolean);
+                  
+                  return (
+                    <div key={pool.id} className="glass-card p-4">
+                      <div className="text-center mb-4">
+                        <h4 className="text-xl font-bold text-white">{pool.name}</h4>
+                        <p className="text-white/70 text-sm">{poolTeams.length} équipes • 2 terrains</p>
                       </div>
-                    ) : (
-                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm text-white/90">
-                        <div className="glass-card p-4">
-                          <div className="font-bold text-green-400 mb-2">🏆 Qualification Directe</div>
-                          <div>Équipe avec 2 victoires</div>
+
+                      {/* Phase 1 Compacte */}
+                      {phases.phase1.length > 0 && (
+                        <div className="mb-4">
+                          <h5 className="text-sm font-bold text-white/90 mb-2 text-center">Phase 1</h5>
+                          <div className="space-y-2">
+                            {phases.phase1.map((match, index) => (
+                              <CompactMatchCard
+                                key={match.id}
+                                match={match}
+                                courtNumber={match.type === 'bye-automatique' ? 'BYE' : `T${index + 1}`}
+                                winner={getMatchWinner(match.id)}
+                                onSelectWinner={(winnerId, loserId) => recordMatchResult(pool.id, match.id, winnerId, loserId, 1)}
+                              />
+                            ))}
+                          </div>
                         </div>
-                        <div className="glass-card p-4">
-                          <div className="font-bold text-purple-400 mb-2">⚡ Match de Barrage</div>
-                          <div>Entre les équipes à 1 victoire</div>
+                      )}
+
+                      {/* Phase 2 Compacte */}
+                      {phases.phase2.length > 0 && (
+                        <div className="mb-4">
+                          <h5 className="text-sm font-bold text-white/90 mb-2 text-center">Phase 2</h5>
+                          <div className="space-y-2">
+                            {phases.phase2.map((match, index) => (
+                              <CompactMatchCard
+                                key={match.id}
+                                match={match}
+                                courtNumber={`T${(index % 2) + 1}`}
+                                winner={getMatchWinner(match.id)}
+                                onSelectWinner={(winnerId, loserId) => recordMatchResult(pool.id, match.id, winnerId, loserId, 2)}
+                                disabled={!match.canPlay}
+                              />
+                            ))}
+                          </div>
                         </div>
-                        <div className="glass-card p-4">
-                          <div className="font-bold text-blue-400 mb-2">🎯 Résultat</div>
-                          <div>2 qualifiés par poule</div>
+                      )}
+
+                      {/* Phase 3 Compacte */}
+                      {phases.phase3.length > 0 && (
+                        <div>
+                          <h5 className="text-sm font-bold text-white/90 mb-2 text-center">Phase 3 - Barrage</h5>
+                          <div className="space-y-2">
+                            {phases.phase3.map((match) => (
+                              <CompactMatchCard
+                                key={match.id}
+                                match={match}
+                                courtNumber="T1"
+                                winner={getMatchWinner(match.id)}
+                                onSelectWinner={(winnerId, loserId) => recordMatchResult(pool.id, match.id, winnerId, loserId, 3)}
+                                disabled={!match.canPlay}
+                              />
+                            ))}
+                          </div>
                         </div>
-                        <div className="glass-card p-4">
-                          <div className="font-bold text-orange-400 mb-2">🏟️ Terrains</div>
-                          <div>2 terrains réutilisés</div>
-                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          {/* Phase Éliminatoire */}
+          <div className="glass-card overflow-hidden">
+            <div className="bg-gradient-to-r from-yellow-600/80 to-orange-600/80 backdrop-filter backdrop-blur-10 px-6 py-4 border-b border-white/20">
+              <div className="flex items-center justify-center space-x-3">
+                <Trophy className="w-6 h-6 text-white" />
+                <h3 className="text-2xl font-bold text-white tracking-wide">Phase Éliminatoire</h3>
+                <span className="px-3 py-1 bg-white/20 rounded-full text-sm font-bold">
+                  {qualifiedTeams.length}/4 qualifiés
+                </span>
+              </div>
+            </div>
+
+            <div className="p-6">
+              {/* Équipes Qualifiées */}
+              <div className="mb-8">
+                <h4 className="text-xl font-bold text-white mb-4 text-center">🌟 Équipes Qualifiées</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {Array.from({ length: 4 }, (_, index) => {
+                    const team = qualifiedTeams[index];
+                    return (
+                      <div key={index} className={`glass-card p-4 text-center ${team ? 'bg-green-500/20 border-green-400/40' : 'bg-gray-500/20 border-gray-400/40'}`}>
+                        {team ? (
+                          <>
+                            <div className="font-bold text-white text-lg">{team.name}</div>
+                            <div className="text-white/70 text-sm">
+                              {team.players.map(p => p.name).join(', ')}
+                            </div>
+                            <div className="mt-2">
+                              <Crown className="w-5 h-5 text-yellow-400 mx-auto" />
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            <div className="font-bold text-white/50 text-lg">En attente</div>
+                            <div className="text-white/30 text-sm">Qualification #{index + 1}</div>
+                          </>
+                        )}
                       </div>
-                    )}
-                  </div>
+                    );
+                  })}
                 </div>
               </div>
-            );
-          })}
+
+              {/* Demi-finales */}
+              <div className="mb-8">
+                <h4 className="text-xl font-bold text-white mb-4 text-center">⚔️ Demi-finales</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {semiFinals.map((match, index) => (
+                    <EliminationMatchCard
+                      key={match.id}
+                      match={match}
+                      courtNumber={`T${index + 1}`}
+                      onSelectWinner={(winnerId) => recordEliminationResult(match.id, winnerId)}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              {/* Finale */}
+              <div>
+                <h4 className="text-xl font-bold text-white mb-4 text-center">🏆 Finale</h4>
+                <div className="max-w-md mx-auto">
+                  <EliminationMatchCard
+                    match={final}
+                    courtNumber="T1"
+                    onSelectWinner={(winnerId) => recordEliminationResult(final.id, winnerId)}
+                    isFinale={true}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Statistiques */}
+          <div className="glass-card p-6">
+            <h3 className="text-xl font-bold text-white mb-4 tracking-wide flex items-center space-x-2">
+              <Award className="w-5 h-5" />
+              <span>Statistiques du Tournoi</span>
+            </h3>
+            <div className="grid grid-cols-2 md:grid-cols-6 gap-4 text-center">
+              <div className="glass-card p-4">
+                <div className="text-2xl font-bold text-blue-400">{pools.length}</div>
+                <div className="text-white/70 text-sm">Poules</div>
+              </div>
+              <div className="glass-card p-4">
+                <div className="text-2xl font-bold text-green-400">{qualifiedTeams.length}</div>
+                <div className="text-white/70 text-sm">Qualifiés</div>
+              </div>
+              <div className="glass-card p-4">
+                <div className="text-2xl font-bold text-purple-400">{matchResults.length}</div>
+                <div className="text-white/70 text-sm">Matchs joués</div>
+              </div>
+              <div className="glass-card p-4">
+                <div className="text-2xl font-bold text-orange-400">2</div>
+                <div className="text-white/70 text-sm">Demi-finales</div>
+              </div>
+              <div className="glass-card p-4">
+                <div className="text-2xl font-bold text-yellow-400">1</div>
+                <div className="text-white/70 text-sm">Finale</div>
+              </div>
+              <div className="glass-card p-4">
+                <div className="text-2xl font-bold text-white">{teams.length}</div>
+                <div className="text-white/70 text-sm">Équipes</div>
+              </div>
+            </div>
+          </div>
         </div>
       ) : (
         <div className="text-center py-16">
@@ -649,54 +677,16 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools }: PoolsTab
             Aucune poule générée
           </h3>
           <p className="text-white/60 text-lg font-medium">
-            Générez les poules pour organiser le tournoi par élimination
+            Générez les poules pour organiser le tournoi complet
           </p>
-        </div>
-      )}
-
-      {pools.length > 0 && (
-        <div className="mt-8 glass-card p-6">
-          <h3 className="text-xl font-bold text-white mb-4 tracking-wide flex items-center space-x-2">
-            <Trophy className="w-5 h-5" />
-            <span>Statistiques du Tournoi</span>
-          </h3>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-4 text-center">
-            <div className="glass-card p-4">
-              <div className="text-2xl font-bold text-blue-400">{pools.length}</div>
-              <div className="text-white/70 text-sm">Poules</div>
-            </div>
-            <div className="glass-card p-4">
-              <div className="text-2xl font-bold text-green-400">
-                {pools.reduce((total, pool) => {
-                  const poolTeams = pool.teamIds.map(id => teams.find(t => t.id === id)).filter(Boolean);
-                  return total + (poolTeams.length === 3 ? 1 : 2);
-                }, 0)}
-              </div>
-              <div className="text-white/70 text-sm">Qualifiés</div>
-            </div>
-            <div className="glass-card p-4">
-              <div className="text-2xl font-bold text-purple-400">
-                {matchResults.length}
-              </div>
-              <div className="text-white/70 text-sm">Matchs joués</div>
-            </div>
-            <div className="glass-card p-4">
-              <div className="text-2xl font-bold text-orange-400">2</div>
-              <div className="text-white/70 text-sm">Terrains/Poule</div>
-            </div>
-            <div className="glass-card p-4">
-              <div className="text-2xl font-bold text-white">{teams.length}</div>
-              <div className="text-white/70 text-sm">Équipes</div>
-            </div>
-          </div>
         </div>
       )}
     </div>
   );
 }
 
-// Composant pour afficher un match avec sélection du gagnant
-interface MatchCardProps {
+// Composant compact pour les matchs de poules
+interface CompactMatchCardProps {
   match: any;
   courtNumber: string;
   winner: string | null;
@@ -704,54 +694,19 @@ interface MatchCardProps {
   disabled?: boolean;
 }
 
-function MatchCard({ match, courtNumber, winner, onSelectWinner, disabled = false }: MatchCardProps) {
+function CompactMatchCard({ match, courtNumber, winner, onSelectWinner, disabled = false }: CompactMatchCardProps) {
   const [showWinnerSelection, setShowWinnerSelection] = useState(false);
-
-  const getMatchTypeColor = (type: string) => {
-    switch (type) {
-      case 'premier-match': return 'from-blue-500 to-blue-600';
-      case 'match-gagnants': return 'from-green-500 to-green-600';
-      case 'match-perdants': return 'from-orange-500 to-orange-600';
-      case 'match-barrage': return 'from-purple-500 to-purple-600';
-      case 'bye-automatique': return 'from-yellow-500 to-yellow-600';
-      case 'finale-poule-3': return 'from-red-500 to-red-600';
-      default: return 'from-gray-500 to-gray-600';
-    }
-  };
-
-  const getMatchTypeIcon = (type: string) => {
-    switch (type) {
-      case 'premier-match': return <Users className="w-5 h-5" />;
-      case 'match-gagnants': return <Crown className="w-5 h-5" />;
-      case 'match-perdants': return <Users className="w-5 h-5" />;
-      case 'match-barrage': return <Zap className="w-5 h-5" />;
-      case 'bye-automatique': return <Star className="w-5 h-5" />;
-      case 'finale-poule-3': return <Trophy className="w-5 h-5" />;
-      default: return <Users className="w-5 h-5" />;
-    }
-  };
 
   if (match.type === 'bye-automatique') {
     return (
-      <div className="grid grid-cols-[100px_1fr] gap-6 items-center">
-        <div className="bg-gradient-to-br from-yellow-500 to-yellow-600 text-white rounded-xl p-4 text-center shadow-lg">
-          <div className="flex items-center justify-center space-x-2">
-            <Star className="w-5 h-5" />
-            <span className="font-bold text-lg">BYE</span>
-          </div>
+      <div className="grid grid-cols-[60px_1fr] gap-3 items-center">
+        <div className="bg-yellow-500 text-white rounded-lg p-2 text-center text-sm font-bold">
+          BYE
         </div>
-        <div className="glass-card p-6 bg-yellow-500/10 border-yellow-400/30">
+        <div className="glass-card p-3 bg-yellow-500/10 border-yellow-400/30">
           <div className="text-center">
-            <div className="flex items-center justify-center space-x-2 mb-3">
-              <Star className="w-6 h-6 text-yellow-400" />
-              <h4 className="font-bold text-white text-xl">🌟 {match.team1.name}</h4>
-            </div>
-            <div className="text-yellow-200 font-bold text-lg mb-2">Qualification automatique !</div>
-            <div className="space-y-1">
-              {match.team1.players.map((player: any) => (
-                <div key={player.id} className="text-sm text-white/80">{player.name}</div>
-              ))}
-            </div>
+            <div className="font-bold text-white text-sm">🌟 {match.team1.name}</div>
+            <div className="text-yellow-200 text-xs">Qualifié automatiquement</div>
           </div>
         </div>
       </div>
@@ -759,90 +714,48 @@ function MatchCard({ match, courtNumber, winner, onSelectWinner, disabled = fals
   }
 
   return (
-    <div className="grid grid-cols-[100px_1fr] gap-6 items-center">
-      <div className={`bg-gradient-to-br ${getMatchTypeColor(match.type)} text-white rounded-xl p-4 text-center shadow-lg`}>
-        <div className="flex items-center justify-center space-x-2">
-          <MapPin className="w-5 h-5" />
-          <span className="font-bold text-lg">{courtNumber}</span>
+    <div className="grid grid-cols-[60px_1fr_auto] gap-3 items-center">
+      <div className="bg-blue-500 text-white rounded-lg p-2 text-center text-sm font-bold">
+        {courtNumber}
+      </div>
+      <div className={`glass-card p-3 ${disabled ? 'opacity-50' : ''}`}>
+        <div className="grid grid-cols-[1fr_auto_1fr] gap-2 items-center text-center">
+          <div>
+            <div className={`font-bold text-sm ${winner === match.team1.id ? 'text-green-400' : 'text-white'}`}>
+              {match.team1.name}
+              {winner === match.team1.id && <Crown className="w-3 h-3 inline ml-1 text-yellow-400" />}
+            </div>
+          </div>
+          <div className="text-white/70 text-xs font-bold">VS</div>
+          <div>
+            <div className={`font-bold text-sm ${winner === match.team2?.id ? 'text-green-400' : 'text-white'}`}>
+              {match.team2?.name}
+              {winner === match.team2?.id && <Crown className="w-3 h-3 inline ml-1 text-yellow-400" />}
+            </div>
+          </div>
         </div>
       </div>
-      <div className={`glass-card p-6 transition-all duration-300 ${disabled ? 'opacity-50' : 'bg-white/5 hover:bg-white/10'}`}>
-        <div className="grid grid-cols-[1fr_auto_1fr_auto] gap-6 items-center">
-          {/* Équipe 1 */}
-          <div className="text-center">
-            <div className="flex items-center justify-center space-x-2 mb-3">
-              {getMatchTypeIcon(match.type)}
-              <h4 className={`font-bold text-lg ${winner === match.team1.id ? 'text-green-400' : 'text-white'}`}>
-                {match.team1.name}
-              </h4>
-              {winner === match.team1.id && <Crown className="w-5 h-5 text-yellow-400" />}
-            </div>
-            {match.team1.players.length > 0 && (
-              <div className="space-y-1">
-                {match.team1.players.map((player: any) => (
-                  <div key={player.id} className="text-sm text-white/80">{player.name}</div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* VS */}
-          <div className={`bg-gradient-to-r ${getMatchTypeColor(match.type)} text-white rounded-full w-16 h-16 flex items-center justify-center font-bold text-xl shadow-lg`}>
-            VS
-          </div>
-
-          {/* Équipe 2 */}
-          <div className="text-center">
-            <div className="flex items-center justify-center space-x-2 mb-3">
-              {getMatchTypeIcon(match.type)}
-              <h4 className={`font-bold text-lg ${winner === match.team2?.id ? 'text-green-400' : 'text-white'}`}>
-                {match.team2?.name}
-              </h4>
-              {winner === match.team2?.id && <Crown className="w-5 h-5 text-yellow-400" />}
-            </div>
-            {match.team2?.players.length > 0 && (
-              <div className="space-y-1">
-                {match.team2.players.map((player: any) => (
-                  <div key={player.id} className="text-sm text-white/80">{player.name}</div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Bouton de sélection du gagnant */}
-          <div className="flex flex-col items-center space-y-2">
-            {!disabled && match.team2 && match.team2.players.length > 0 && (
-              <>
-                {winner ? (
-                  <button
-                    onClick={() => setShowWinnerSelection(true)}
-                    className="glass-button-secondary p-2 rounded-lg transition-all duration-300 hover:scale-110"
-                    title="Modifier le gagnant"
-                  >
-                    <Edit3 className="w-5 h-5" />
-                  </button>
-                ) : (
-                  <button
-                    onClick={() => setShowWinnerSelection(true)}
-                    className="glass-button p-3 rounded-lg transition-all duration-300 hover:scale-110"
-                    title="Sélectionner le gagnant"
-                  >
-                    <Trophy className="w-5 h-5" />
-                  </button>
-                )}
-              </>
-            )}
+      <div className="relative">
+        {!disabled && match.team2 && match.team2.players.length > 0 && (
+          <>
+            <button
+              onClick={() => setShowWinnerSelection(true)}
+              className={`p-2 rounded-lg transition-all duration-300 ${winner ? 'glass-button-secondary' : 'glass-button'}`}
+              title={winner ? "Modifier le gagnant" : "Sélectionner le gagnant"}
+            >
+              {winner ? <Edit3 className="w-4 h-4" /> : <Trophy className="w-4 h-4" />}
+            </button>
             
             {showWinnerSelection && (
-              <div className="absolute z-10 bg-slate-800 border border-white/20 rounded-lg p-4 shadow-xl">
-                <div className="text-white font-bold mb-3 text-center">Qui a gagné ?</div>
-                <div className="space-y-2">
+              <div className="absolute z-10 right-0 top-12 bg-slate-800 border border-white/20 rounded-lg p-3 shadow-xl min-w-[150px]">
+                <div className="text-white font-bold mb-2 text-center text-sm">Gagnant ?</div>
+                <div className="space-y-1">
                   <button
                     onClick={() => {
                       onSelectWinner(match.team1.id, match.team2.id);
                       setShowWinnerSelection(false);
                     }}
-                    className="w-full glass-button p-2 text-sm"
+                    className="w-full glass-button p-2 text-xs"
                   >
                     {match.team1.name}
                   </button>
@@ -851,22 +764,138 @@ function MatchCard({ match, courtNumber, winner, onSelectWinner, disabled = fals
                       onSelectWinner(match.team2.id, match.team1.id);
                       setShowWinnerSelection(false);
                     }}
-                    className="w-full glass-button p-2 text-sm"
+                    className="w-full glass-button p-2 text-xs"
                   >
                     {match.team2.name}
                   </button>
                   <button
                     onClick={() => setShowWinnerSelection(false)}
-                    className="w-full glass-button-secondary p-2 text-sm"
+                    className="w-full glass-button-secondary p-2 text-xs"
                   >
                     Annuler
                   </button>
                 </div>
               </div>
             )}
-          </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// Composant pour les matchs d'élimination
+interface EliminationMatchCardProps {
+  match: EliminationMatch;
+  courtNumber: string;
+  onSelectWinner: (winnerId: string) => void;
+  isFinale?: boolean;
+}
+
+function EliminationMatchCard({ match, courtNumber, onSelectWinner, isFinale = false }: EliminationMatchCardProps) {
+  const [showWinnerSelection, setShowWinnerSelection] = useState(false);
+
+  const canPlay = match.team1 && match.team2;
+
+  return (
+    <div className={`glass-card p-4 ${isFinale ? 'bg-gradient-to-br from-yellow-500/20 to-orange-500/20 border-yellow-400/40' : ''}`}>
+      <div className="text-center mb-4">
+        <div className="flex items-center justify-center space-x-2 mb-2">
+          {isFinale ? <Trophy className="w-5 h-5 text-yellow-400" /> : <Target className="w-5 h-5 text-white" />}
+          <h4 className="font-bold text-white">{match.description}</h4>
+        </div>
+        <div className={`inline-block px-3 py-1 rounded-lg text-sm font-bold ${isFinale ? 'bg-yellow-500 text-white' : 'bg-blue-500 text-white'}`}>
+          {courtNumber}
         </div>
       </div>
+
+      <div className="grid grid-cols-[1fr_auto_1fr] gap-4 items-center mb-4">
+        <div className="text-center">
+          <div className={`font-bold ${match.winner === match.team1?.id ? 'text-green-400' : 'text-white'}`}>
+            {match.team1?.name || 'En attente'}
+            {match.winner === match.team1?.id && <Crown className="w-4 h-4 inline ml-1 text-yellow-400" />}
+          </div>
+          {match.team1 && (
+            <div className="text-white/70 text-xs mt-1">
+              {match.team1.players.map(p => p.name).join(', ')}
+            </div>
+          )}
+        </div>
+
+        <div className={`rounded-full w-12 h-12 flex items-center justify-center font-bold text-white ${isFinale ? 'bg-gradient-to-r from-yellow-500 to-orange-500' : 'bg-gradient-to-r from-blue-500 to-purple-500'}`}>
+          VS
+        </div>
+
+        <div className="text-center">
+          <div className={`font-bold ${match.winner === match.team2?.id ? 'text-green-400' : 'text-white'}`}>
+            {match.team2?.name || 'En attente'}
+            {match.winner === match.team2?.id && <Crown className="w-4 h-4 inline ml-1 text-yellow-400" />}
+          </div>
+          {match.team2 && (
+            <div className="text-white/70 text-xs mt-1">
+              {match.team2.players.map(p => p.name).join(', ')}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {canPlay && (
+        <div className="text-center relative">
+          {match.winner ? (
+            <button
+              onClick={() => setShowWinnerSelection(true)}
+              className="glass-button-secondary px-4 py-2 text-sm"
+              title="Modifier le gagnant"
+            >
+              <Edit3 className="w-4 h-4 inline mr-2" />
+              Modifier
+            </button>
+          ) : (
+            <button
+              onClick={() => setShowWinnerSelection(true)}
+              className={`px-4 py-2 text-sm ${isFinale ? 'bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600' : 'glass-button'}`}
+              title="Sélectionner le gagnant"
+            >
+              <Trophy className="w-4 h-4 inline mr-2" />
+              {isFinale ? 'Couronner le Champion' : 'Sélectionner le gagnant'}
+            </button>
+          )}
+          
+          {showWinnerSelection && (
+            <div className="absolute z-10 left-1/2 transform -translate-x-1/2 top-12 bg-slate-800 border border-white/20 rounded-lg p-4 shadow-xl min-w-[200px]">
+              <div className="text-white font-bold mb-3 text-center">
+                {isFinale ? '🏆 Qui est le Champion ?' : 'Qui a gagné ?'}
+              </div>
+              <div className="space-y-2">
+                <button
+                  onClick={() => {
+                    onSelectWinner(match.team1!.id);
+                    setShowWinnerSelection(false);
+                  }}
+                  className="w-full glass-button p-2 text-sm"
+                >
+                  {match.team1!.name}
+                </button>
+                <button
+                  onClick={() => {
+                    onSelectWinner(match.team2!.id);
+                    setShowWinnerSelection(false);
+                  }}
+                  className="w-full glass-button p-2 text-sm"
+                >
+                  {match.team2!.name}
+                </button>
+                <button
+                  onClick={() => setShowWinnerSelection(false)}
+                  className="w-full glass-button-secondary p-2 text-sm"
+                >
+                  Annuler
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
