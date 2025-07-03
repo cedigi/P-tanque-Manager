@@ -1,15 +1,16 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Pool, Team, Tournament, Match } from '../types/tournament';
-import { Grid3X3, Users, Trophy, Shuffle, Printer, MapPin, Edit3 } from 'lucide-react';
+import { Grid3X3, Users, Trophy, Shuffle, Printer, MapPin, Edit3, Crown, Medal, Target } from 'lucide-react';
 
 interface PoolsTabProps {
   tournament: Tournament;
   teams: Team[];
   pools: Pool[];
   onGeneratePools: () => void;
+  onUpdateScore?: (matchId: string, team1Score: number, team2Score: number) => void;
 }
 
-export function PoolsTab({ tournament, teams, pools, onGeneratePools }: PoolsTabProps) {
+export function PoolsTab({ tournament, teams, pools, onGeneratePools, onUpdateScore }: PoolsTabProps) {
   const isSolo = tournament.type === 'melee' || tournament.type === 'tete-a-tete';
 
   const handlePrint = () => {
@@ -24,19 +25,20 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools }: PoolsTab
           <style>
             body { font-family: Arial, sans-serif; margin: 20px; }
             h1 { text-align: center; margin-bottom: 30px; }
-            .pools-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 20px; }
+            .pools-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(500px, 1fr)); gap: 20px; }
             .pool { border: 2px solid #333; border-radius: 8px; padding: 15px; margin-bottom: 20px; }
             .pool-title { font-weight: bold; font-size: 18px; margin-bottom: 15px; text-align: center; background: #f0f0f0; padding: 10px; border-radius: 4px; }
-            .bracket { margin: 10px 0; }
-            .match-row { display: flex; justify-content: space-between; align-items: center; padding: 8px; border: 1px solid #ddd; margin: 4px 0; background: #f9f9f9; }
-            .team-name { font-weight: bold; }
-            .score { font-weight: bold; text-align: center; min-width: 60px; }
-            .round-title { font-weight: bold; margin: 15px 0 5px 0; color: #333; }
+            .bracket-section { margin: 15px 0; }
+            .section-title { font-weight: bold; margin-bottom: 10px; color: #333; border-bottom: 1px solid #ddd; padding-bottom: 5px; }
+            .match-row { display: flex; justify-content: space-between; align-items: center; padding: 10px; border: 1px solid #ddd; margin: 5px 0; background: #f9f9f9; border-radius: 4px; }
+            .team-name { font-weight: bold; flex: 1; }
+            .score { font-weight: bold; text-align: center; min-width: 80px; font-size: 16px; }
+            .winner { background: #d4edda; border-color: #c3e6cb; }
             @media print { body { margin: 0; } }
           </style>
         </head>
         <body>
-          <h1>Poules - ${tournament.name}</h1>
+          <h1>Brackets des Poules - ${tournament.name}</h1>
           <div class="pools-container">
             ${pools.map(pool => {
               const poolMatches = tournament.matches.filter(m => m.poolId === pool.id);
@@ -65,26 +67,26 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools }: PoolsTab
     const [team1, team2, team3, team4] = poolTeams;
     
     // Matchs du premier tour
-    const match1 = poolMatches.find(m => 
+    const match1vs4 = poolMatches.find(m => 
       (m.team1Id === team1.id && m.team2Id === team4.id) ||
       (m.team1Id === team4.id && m.team2Id === team1.id)
     );
-    const match2 = poolMatches.find(m => 
+    const match2vs3 = poolMatches.find(m => 
       (m.team1Id === team2.id && m.team2Id === team3.id) ||
       (m.team1Id === team3.id && m.team2Id === team2.id)
     );
 
     return `
-      <div class="bracket">
-        <div class="round-title">Premier tour</div>
+      <div class="bracket-section">
+        <div class="section-title">🥇 Premier Tour</div>
         <div class="match-row">
           <span class="team-name">${team1.name}</span>
-          <span class="score">${match1?.completed ? `${match1.team1Id === team1.id ? match1.team1Score : match1.team2Score} - ${match1.team1Id === team1.id ? match1.team2Score : match1.team1Score}` : '- -'}</span>
+          <span class="score">${match1vs4?.completed ? `${match1vs4.team1Id === team1.id ? match1vs4.team1Score : match1vs4.team2Score} - ${match1vs4.team1Id === team1.id ? match1vs4.team2Score : match1vs4.team1Score}` : '- - -'}</span>
           <span class="team-name">${team4.name}</span>
         </div>
         <div class="match-row">
           <span class="team-name">${team2.name}</span>
-          <span class="score">${match2?.completed ? `${match2.team1Id === team2.id ? match2.team1Score : match2.team2Score} - ${match2.team1Id === team2.id ? match2.team2Score : match2.team1Score}` : '- -'}</span>
+          <span class="score">${match2vs3?.completed ? `${match2vs3.team1Id === team2.id ? match2vs3.team1Score : match2vs3.team2Score} - ${match2vs3.team1Id === team2.id ? match2vs3.team2Score : match2vs3.team1Score}` : '- - -'}</span>
           <span class="team-name">${team3.name}</span>
         </div>
       </div>
@@ -127,13 +129,14 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools }: PoolsTab
       {pools.length > 0 ? (
         <>
           {/* Affichage des poules avec système de bracket automatique */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 mb-8">
             {pools.map((pool) => (
               <AutomaticBracketPool 
                 key={pool.id} 
                 pool={pool} 
                 teams={teams} 
                 matches={tournament.matches}
+                onUpdateScore={onUpdateScore}
                 isSolo={isSolo}
               />
             ))}
@@ -189,10 +192,11 @@ interface AutomaticBracketPoolProps {
   pool: Pool;
   teams: Team[];
   matches: Match[];
+  onUpdateScore?: (matchId: string, team1Score: number, team2Score: number) => void;
   isSolo: boolean;
 }
 
-function AutomaticBracketPool({ pool, teams, matches, isSolo }: AutomaticBracketPoolProps) {
+function AutomaticBracketPool({ pool, teams, matches, onUpdateScore, isSolo }: AutomaticBracketPoolProps) {
   const poolMatches = matches.filter(m => m.poolId === pool.id);
   const poolTeams = pool.teamIds.map(id => teams.find(t => t.id === id)).filter(Boolean) as Team[];
   
@@ -253,93 +257,183 @@ function AutomaticBracketPool({ pool, teams, matches, isSolo }: AutomaticBracket
     );
   });
 
+  // Déterminer qui a besoin d'un match de barrage
+  const getTeamStats = (team: Team) => {
+    const teamMatches = poolMatches.filter(m => 
+      m.completed && (
+        m.team1Id === team.id || m.team2Id === team.id
+      )
+    );
+
+    let wins = 0;
+    teamMatches.forEach(match => {
+      const isTeam1 = match.team1Id === team.id;
+      const teamScore = isTeam1 ? match.team1Score! : match.team2Score!;
+      const opponentScore = isTeam1 ? match.team2Score! : match.team1Score!;
+      
+      if (teamScore > opponentScore) wins++;
+    });
+
+    return { wins, matches: teamMatches.length };
+  };
+
+  // Calculer les statistiques pour déterminer le barrage
+  const allStats = poolTeams.map(team => ({
+    team,
+    ...getTeamStats(team)
+  }));
+
+  const teamsWithOneWin = allStats.filter(stat => stat.wins === 1 && stat.matches >= 2);
+  const needsBarrage = teamsWithOneWin.length === 2;
+
   return (
     <div className="glass-card overflow-hidden">
-      <div className="px-6 py-4 border-b border-white/20 bg-white/5">
+      <div className="px-6 py-4 border-b border-white/20 bg-gradient-to-r from-blue-500/20 to-purple-500/20">
         <h3 className="text-xl font-bold text-white tracking-wide flex items-center space-x-2">
           <Grid3X3 className="w-5 h-5" />
           <span>{pool.name}</span>
         </h3>
         <div className="text-sm text-white/70 mt-1">
-          Système de bracket automatique
+          Bracket automatique • 4 équipes
         </div>
       </div>
       
       <div className="p-6 space-y-6">
         {/* Premier tour */}
-        <div>
-          <h4 className="text-sm font-bold text-white/80 mb-3 uppercase tracking-wider">
-            🥇 Premier tour
-          </h4>
+        <div className="space-y-4">
+          <div className="flex items-center space-x-2 mb-4">
+            <Crown className="w-5 h-5 text-yellow-400" />
+            <h4 className="text-lg font-bold text-white tracking-wide">
+              Premier Tour
+            </h4>
+          </div>
+          
           <div className="space-y-3">
             {/* Match 1 vs 4 */}
-            <BracketMatchRow 
+            <BracketMatchCard 
               team1={team1} 
               team2={team4} 
               match={match1vs4}
               label="Match 1"
+              onUpdateScore={onUpdateScore}
             />
             
             {/* Match 2 vs 3 */}
-            <BracketMatchRow 
+            <BracketMatchCard 
               team1={team2} 
               team2={team3} 
               match={match2vs3}
               label="Match 2"
+              onUpdateScore={onUpdateScore}
             />
           </div>
         </div>
 
         {/* Deuxième tour - Gagnants */}
         {(result1vs4.winner && result2vs3.winner) && (
-          <div>
-            <h4 className="text-sm font-bold text-green-400 mb-3 uppercase tracking-wider">
-              🏆 Finale (Gagnants vs Gagnants)
-            </h4>
-            <BracketMatchRow 
+          <div className="space-y-4">
+            <div className="flex items-center space-x-2 mb-4">
+              <Trophy className="w-5 h-5 text-green-400" />
+              <h4 className="text-lg font-bold text-green-400 tracking-wide">
+                Finale (Gagnants vs Gagnants)
+              </h4>
+            </div>
+            
+            <BracketMatchCard 
               team1={result1vs4.winner} 
               team2={result2vs3.winner} 
               match={winnersMatch}
               label="Finale"
               isWinnersMatch={true}
+              onUpdateScore={onUpdateScore}
             />
           </div>
         )}
 
         {/* Deuxième tour - Perdants */}
         {(result1vs4.loser && result2vs3.loser) && (
-          <div>
-            <h4 className="text-sm font-bold text-red-400 mb-3 uppercase tracking-wider">
-              🥉 Petite finale (Perdants vs Perdants)
-            </h4>
-            <BracketMatchRow 
+          <div className="space-y-4">
+            <div className="flex items-center space-x-2 mb-4">
+              <Medal className="w-5 h-5 text-orange-400" />
+              <h4 className="text-lg font-bold text-orange-400 tracking-wide">
+                Petite Finale (Perdants vs Perdants)
+              </h4>
+            </div>
+            
+            <BracketMatchCard 
               team1={result1vs4.loser} 
               team2={result2vs3.loser} 
               match={losersMatch}
               label="3e place"
               isLosersMatch={true}
+              onUpdateScore={onUpdateScore}
             />
           </div>
         )}
 
-        {/* Match de barrage (si nécessaire) */}
-        {/* TODO: Logique pour détecter si un match de barrage est nécessaire */}
+        {/* Match de barrage */}
+        {needsBarrage && (
+          <div className="space-y-4">
+            <div className="flex items-center space-x-2 mb-4">
+              <Target className="w-5 h-5 text-red-400" />
+              <h4 className="text-lg font-bold text-red-400 tracking-wide">
+                Match de Barrage (1 victoire chacun)
+              </h4>
+            </div>
+            
+            <div className="glass-card p-4 bg-red-500/10 border-red-400/40">
+              <div className="text-center">
+                <div className="text-white font-bold mb-2">
+                  {teamsWithOneWin[0].team.name} vs {teamsWithOneWin[1].team.name}
+                </div>
+                <div className="text-sm text-white/70">
+                  Match de barrage nécessaire pour départager
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Résumé des victoires */}
+        <div className="glass-card p-4 bg-white/5">
+          <h5 className="text-sm font-bold text-white/80 mb-3 uppercase tracking-wider">
+            📊 Résumé des victoires
+          </h5>
+          <div className="grid grid-cols-2 gap-2 text-sm">
+            {allStats.map(stat => (
+              <div key={stat.team.id} className="flex justify-between items-center">
+                <span className="text-white font-medium">{stat.team.name}</span>
+                <span className={`font-bold ${
+                  stat.wins === 2 ? 'text-green-400' :
+                  stat.wins === 1 ? 'text-yellow-400' :
+                  'text-red-400'
+                }`}>
+                  {stat.wins} victoire{stat.wins > 1 ? 's' : ''}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );
 }
 
-// Composant pour afficher une ligne de match dans le bracket
-interface BracketMatchRowProps {
+// Composant pour afficher une carte de match dans le bracket
+interface BracketMatchCardProps {
   team1: Team;
   team2: Team;
   match?: Match;
   label: string;
   isWinnersMatch?: boolean;
   isLosersMatch?: boolean;
+  onUpdateScore?: (matchId: string, team1Score: number, team2Score: number) => void;
 }
 
-function BracketMatchRow({ team1, team2, match, label, isWinnersMatch, isLosersMatch }: BracketMatchRowProps) {
+function BracketMatchCard({ team1, team2, match, label, isWinnersMatch, isLosersMatch, onUpdateScore }: BracketMatchCardProps) {
+  const [editingScore, setEditingScore] = useState(false);
+  const [scores, setScores] = useState({ team1: 0, team2: 0 });
+
   const getTeamScore = (team: Team) => {
     if (!match?.completed) return '-';
     const isTeam1 = match.team1Id === team.id;
@@ -357,46 +451,112 @@ function BracketMatchRow({ team1, team2, match, label, isWinnersMatch, isLosersM
 
   const winner = getWinner();
 
+  const handleEditScore = () => {
+    if (!match) return;
+    setScores({
+      team1: match.team1Score || 0,
+      team2: match.team2Score || 0
+    });
+    setEditingScore(true);
+  };
+
+  const handleSaveScore = () => {
+    if (!match || !onUpdateScore) return;
+    onUpdateScore(match.id, scores.team1, scores.team2);
+    setEditingScore(false);
+  };
+
   return (
-    <div className={`glass-card p-4 ${
+    <div className={`glass-card overflow-hidden transition-all duration-300 ${
       isWinnersMatch ? 'border-green-400/40 bg-green-500/10' :
-      isLosersMatch ? 'border-red-400/40 bg-red-500/10' :
-      'border-white/20'
+      isLosersMatch ? 'border-orange-400/40 bg-orange-500/10' :
+      'border-white/20 hover:border-blue-400/40'
     }`}>
-      <div className="flex items-center justify-between">
-        {/* Équipe 1 */}
-        <div className={`flex-1 text-center p-3 rounded-lg ${
-          winner === team1.id ? 'bg-green-500/20 border border-green-400' : 'bg-white/5'
-        }`}>
-          <div className="font-bold text-white">{team1.name}</div>
-          <div className="text-xs text-white/70 mt-1">
-            {team1.players.map(p => `${p.label ? `[${p.label}] ` : ''}${p.name}`).join(', ')}
-          </div>
-        </div>
-
-        {/* Score central */}
-        <div className="mx-4 text-center">
-          <div className="text-2xl font-bold text-white">
-            {getTeamScore(team1)} - {getTeamScore(team2)}
-          </div>
-          <div className="text-xs text-white/60 mt-1">{label}</div>
-          {match?.court && (
-            <div className="mt-1">
-              <span className="px-2 py-1 bg-blue-500/30 border border-blue-400 text-blue-400 rounded text-xs font-bold">
-                <MapPin className="w-3 h-3 inline mr-1" />
-                T{match.court}
-              </span>
+      <div className="p-4">
+        <div className="flex items-center justify-between mb-4">
+          {/* Équipe 1 */}
+          <div className={`flex-1 text-center p-3 rounded-lg transition-all duration-300 ${
+            winner === team1.id ? 'bg-green-500/20 border border-green-400 scale-105' : 'bg-white/5'
+          }`}>
+            <div className="font-bold text-white text-lg">{team1.name}</div>
+            <div className="text-xs text-white/70 mt-1">
+              {team1.players.map(p => `${p.label ? `[${p.label}] ` : ''}${p.name}`).join(', ')}
             </div>
-          )}
-        </div>
+          </div>
 
-        {/* Équipe 2 */}
-        <div className={`flex-1 text-center p-3 rounded-lg ${
-          winner === team2.id ? 'bg-green-500/20 border border-green-400' : 'bg-white/5'
-        }`}>
-          <div className="font-bold text-white">{team2.name}</div>
-          <div className="text-xs text-white/70 mt-1">
-            {team2.players.map(p => `${p.label ? `[${p.label}] ` : ''}${p.name}`).join(', ')}
+          {/* Score central */}
+          <div className="mx-6 text-center">
+            {editingScore && match ? (
+              <div className="space-y-2">
+                <div className="flex items-center space-x-2">
+                  <input
+                    type="number"
+                    min="0"
+                    max="13"
+                    value={scores.team1}
+                    onChange={(e) => setScores({ ...scores, team1: Number(e.target.value) })}
+                    className="w-16 px-2 py-1 text-center bg-white/10 border border-white/20 rounded text-white font-bold"
+                  />
+                  <span className="text-white font-bold">-</span>
+                  <input
+                    type="number"
+                    min="0"
+                    max="13"
+                    value={scores.team2}
+                    onChange={(e) => setScores({ ...scores, team2: Number(e.target.value) })}
+                    className="w-16 px-2 py-1 text-center bg-white/10 border border-white/20 rounded text-white font-bold"
+                  />
+                </div>
+                <div className="flex space-x-2">
+                  <button
+                    onClick={handleSaveScore}
+                    className="px-3 py-1 bg-green-500/80 text-white rounded text-xs font-bold hover:bg-green-500"
+                  >
+                    ✓
+                  </button>
+                  <button
+                    onClick={() => setEditingScore(false)}
+                    className="px-3 py-1 bg-red-500/80 text-white rounded text-xs font-bold hover:bg-red-500"
+                  >
+                    ✕
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <>
+                <div className="text-3xl font-bold text-white mb-1">
+                  {getTeamScore(team1)} - {getTeamScore(team2)}
+                </div>
+                <div className="text-xs text-white/60 mb-2">{label}</div>
+                {match?.court && (
+                  <div className="mb-2">
+                    <span className="px-2 py-1 bg-blue-500/30 border border-blue-400 text-blue-400 rounded text-xs font-bold">
+                      <MapPin className="w-3 h-3 inline mr-1" />
+                      T{match.court}
+                    </span>
+                  </div>
+                )}
+                {match && onUpdateScore && (
+                  <button
+                    onClick={handleEditScore}
+                    className="p-1 text-white/60 hover:text-white transition-colors"
+                    title="Modifier le score"
+                  >
+                    <Edit3 className="w-4 h-4" />
+                  </button>
+                )}
+              </>
+            )}
+          </div>
+
+          {/* Équipe 2 */}
+          <div className={`flex-1 text-center p-3 rounded-lg transition-all duration-300 ${
+            winner === team2.id ? 'bg-green-500/20 border border-green-400 scale-105' : 'bg-white/5'
+          }`}>
+            <div className="font-bold text-white text-lg">{team2.name}</div>
+            <div className="text-xs text-white/70 mt-1">
+              {team2.players.map(p => `${p.label ? `[${p.label}] ` : ''}${p.name}`).join(', ')}
+            </div>
           </div>
         </div>
       </div>

@@ -113,11 +113,57 @@ export function useTournament() {
       };
     });
 
+    // Generate initial matches for each pool (1 vs 4, 2 vs 3)
+    const allMatches: any[] = [];
+    let courtIndex = 1;
+    
+    pools.forEach(pool => {
+      const poolTeams = pool.teamIds.map(id => tournament.teams.find(t => t.id === id)).filter(Boolean);
+      
+      if (poolTeams.length === 4) {
+        const [team1, team2, team3, team4] = poolTeams;
+        
+        // Match 1 vs 4
+        allMatches.push({
+          id: crypto.randomUUID(),
+          round: 1,
+          court: courtIndex,
+          team1Id: team1!.id,
+          team2Id: team4!.id,
+          completed: false,
+          isBye: false,
+          poolId: pool.id,
+          battleIntensity: Math.floor(Math.random() * 50) + 25,
+          hackingAttempts: 0,
+        });
+        
+        courtIndex = (courtIndex % tournament.courts) + 1;
+        
+        // Match 2 vs 3
+        allMatches.push({
+          id: crypto.randomUUID(),
+          round: 1,
+          court: courtIndex,
+          team1Id: team2!.id,
+          team2Id: team3!.id,
+          completed: false,
+          isBye: false,
+          poolId: pool.id,
+          battleIntensity: Math.floor(Math.random() * 50) + 25,
+          hackingAttempts: 0,
+        });
+        
+        courtIndex = (courtIndex % tournament.courts) + 1;
+      }
+    });
+
     const updatedTournament = {
       ...tournament,
       teams: updatedTeams,
       pools,
+      matches: allMatches,
       poolsGenerated: true,
+      currentRound: 1,
     };
     saveTournament(updatedTournament);
   };
@@ -128,23 +174,106 @@ export function useTournament() {
     const isPoolTournament = tournament.type === 'doublette-poule' || tournament.type === 'triplette-poule';
     
     if (isPoolTournament && tournament.pools.length > 0) {
-      // Generate matches for each pool
-      const allMatches: any[] = [];
+      // Generate second round matches (winners vs winners, losers vs losers)
+      const allMatches: any[] = [...tournament.matches];
       let courtIndex = 1;
       
       tournament.pools.forEach(pool => {
-        const poolMatches = generatePoolMatches(pool, tournament.teams);
-        // Assign courts to pool matches
-        poolMatches.forEach(match => {
-          match.court = courtIndex;
-          courtIndex = (courtIndex % tournament.courts) + 1;
-        });
-        allMatches.push(...poolMatches);
+        const poolMatches = tournament.matches.filter(m => m.poolId === pool.id);
+        const poolTeams = pool.teamIds.map(id => tournament.teams.find(t => t.id === id)).filter(Boolean);
+        
+        if (poolTeams.length === 4) {
+          const [team1, team2, team3, team4] = poolTeams;
+          
+          // Find first round matches
+          const match1vs4 = poolMatches.find(m => 
+            (m.team1Id === team1!.id && m.team2Id === team4!.id) ||
+            (m.team1Id === team4!.id && m.team2Id === team1!.id)
+          );
+          
+          const match2vs3 = poolMatches.find(m => 
+            (m.team1Id === team2!.id && m.team2Id === team3!.id) ||
+            (m.team1Id === team3!.id && m.team2Id === team2!.id)
+          );
+          
+          // Only generate second round if first round is complete
+          if (match1vs4?.completed && match2vs3?.completed) {
+            // Determine winners and losers
+            const getWinner = (match: any, teamA: any, teamB: any) => {
+              const isTeamAFirst = match.team1Id === teamA.id;
+              const teamAScore = isTeamAFirst ? match.team1Score : match.team2Score;
+              const teamBScore = isTeamAFirst ? match.team2Score : match.team1Score;
+              return teamAScore > teamBScore ? teamA : teamB;
+            };
+            
+            const getLoser = (match: any, teamA: any, teamB: any) => {
+              const isTeamAFirst = match.team1Id === teamA.id;
+              const teamAScore = isTeamAFirst ? match.team1Score : match.team2Score;
+              const teamBScore = isTeamAFirst ? match.team2Score : match.team1Score;
+              return teamAScore < teamBScore ? teamA : teamB;
+            };
+            
+            const winner1vs4 = getWinner(match1vs4, team1, team4);
+            const winner2vs3 = getWinner(match2vs3, team2, team3);
+            const loser1vs4 = getLoser(match1vs4, team1, team4);
+            const loser2vs3 = getLoser(match2vs3, team2, team3);
+            
+            // Check if winners match already exists
+            const winnersMatchExists = allMatches.some(m => 
+              m.poolId === pool.id &&
+              ((m.team1Id === winner1vs4.id && m.team2Id === winner2vs3.id) ||
+               (m.team1Id === winner2vs3.id && m.team2Id === winner1vs4.id))
+            );
+            
+            // Check if losers match already exists
+            const losersMatchExists = allMatches.some(m => 
+              m.poolId === pool.id &&
+              ((m.team1Id === loser1vs4.id && m.team2Id === loser2vs3.id) ||
+               (m.team1Id === loser2vs3.id && m.team2Id === loser1vs4.id))
+            );
+            
+            // Generate winners match
+            if (!winnersMatchExists) {
+              allMatches.push({
+                id: crypto.randomUUID(),
+                round: tournament.currentRound + 1,
+                court: courtIndex,
+                team1Id: winner1vs4.id,
+                team2Id: winner2vs3.id,
+                completed: false,
+                isBye: false,
+                poolId: pool.id,
+                battleIntensity: Math.floor(Math.random() * 50) + 25,
+                hackingAttempts: 0,
+              });
+              
+              courtIndex = (courtIndex % tournament.courts) + 1;
+            }
+            
+            // Generate losers match
+            if (!losersMatchExists) {
+              allMatches.push({
+                id: crypto.randomUUID(),
+                round: tournament.currentRound + 1,
+                court: courtIndex,
+                team1Id: loser1vs4.id,
+                team2Id: loser2vs3.id,
+                completed: false,
+                isBye: false,
+                poolId: pool.id,
+                battleIntensity: Math.floor(Math.random() * 50) + 25,
+                hackingAttempts: 0,
+              });
+              
+              courtIndex = (courtIndex % tournament.courts) + 1;
+            }
+          }
+        }
       });
 
       const updatedTournament = {
         ...tournament,
-        matches: [...tournament.matches, ...allMatches],
+        matches: allMatches,
         currentRound: tournament.currentRound + 1,
       };
       saveTournament(updatedTournament);
