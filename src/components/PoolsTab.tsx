@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Pool, Team, Tournament } from '../types/tournament';
-import { Grid3X3, Users, Trophy, Shuffle, Printer, MapPin, Crown, Zap, Star } from 'lucide-react';
+import { Grid3X3, Users, Trophy, Shuffle, Printer, MapPin, Crown, Zap, Star, Check, Edit3 } from 'lucide-react';
 
 interface PoolsTabProps {
   tournament: Tournament;
@@ -9,10 +9,39 @@ interface PoolsTabProps {
   onGeneratePools: () => void;
 }
 
+interface MatchResult {
+  poolId: string;
+  matchId: string;
+  winnerId: string;
+  loserId: string;
+  phase: number;
+}
+
 export function PoolsTab({ tournament, teams, pools, onGeneratePools }: PoolsTabProps) {
   const isSolo = tournament.type === 'melee' || tournament.type === 'tete-a-tete';
+  const [matchResults, setMatchResults] = useState<MatchResult[]>([]);
 
-  // Générer les phases du tournoi pour chaque poule
+  // Fonction pour enregistrer le résultat d'un match
+  const recordMatchResult = (poolId: string, matchId: string, winnerId: string, loserId: string, phase: number) => {
+    setMatchResults(prev => {
+      const filtered = prev.filter(r => r.matchId !== matchId);
+      return [...filtered, { poolId, matchId, winnerId, loserId, phase }];
+    });
+  };
+
+  // Fonction pour obtenir le gagnant d'un match
+  const getMatchWinner = (matchId: string): string | null => {
+    const result = matchResults.find(r => r.matchId === matchId);
+    return result?.winnerId || null;
+  };
+
+  // Fonction pour obtenir le perdant d'un match
+  const getMatchLoser = (matchId: string): string | null => {
+    const result = matchResults.find(r => r.matchId === matchId);
+    return result?.loserId || null;
+  };
+
+  // Générer les phases du tournoi pour chaque poule avec progression automatique
   const generateTournamentPhases = (pool: Pool) => {
     const poolTeams = pool.teamIds.map(id => teams.find(t => t.id === id)).filter(Boolean);
     
@@ -21,6 +50,7 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools }: PoolsTab
     // Poule de 3 équipes
     if (poolTeams.length === 3) {
       // Phase 1: Une équipe seule (BYE automatique) et un match entre les 2 autres
+      const phase1Match = `phase1-match-${pool.id}`;
       const phase1 = [
         {
           id: `phase1-bye-${pool.id}`,
@@ -30,7 +60,7 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools }: PoolsTab
           description: 'BYE automatique'
         },
         {
-          id: `phase1-match-${pool.id}`,
+          id: phase1Match,
           team1: poolTeams[1]!, // Équipe 2
           team2: poolTeams[2]!, // Équipe 3
           type: 'premier-match' as const,
@@ -39,32 +69,39 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools }: PoolsTab
       ];
 
       // Phase 2: L'équipe en BYE joue contre le gagnant du match
+      const phase1Winner = getMatchWinner(phase1Match);
+      const winnerTeam = phase1Winner ? teams.find(t => t.id === phase1Winner) : null;
+      
       const phase2 = [
         {
           id: `phase2-finale-${pool.id}`,
           team1: poolTeams[0]!, // Équipe qui avait le BYE
-          team2: { name: 'Gagnant du match', players: [] } as Team,
+          team2: winnerTeam || { name: 'Gagnant du match', players: [] } as Team,
           type: 'finale-poule-3' as const,
-          description: 'Finale de poule'
+          description: 'Finale de poule',
+          canPlay: !!phase1Winner
         }
       ];
 
       return { phase1, phase2, phase3: [] };
     }
 
-    // Poule de 4 équipes (logique existante)
+    // Poule de 4 équipes
     if (poolTeams.length === 4) {
-      // Phase 1: Tous les matchs simultanés (équipe 1 vs 3, équipe 2 vs 4)
+      // Phase 1: Tous les matchs simultanés
+      const match1Id = `phase1-match1-${pool.id}`;
+      const match2Id = `phase1-match2-${pool.id}`;
+      
       const phase1 = [
         {
-          id: `phase1-match1-${pool.id}`,
+          id: match1Id,
           team1: poolTeams[0]!, // Équipe 1
           team2: poolTeams[2]!, // Équipe 3
           type: 'premier-match' as const,
           description: 'Match 1'
         },
         {
-          id: `phase1-match2-${pool.id}`,
+          id: match2Id,
           team1: poolTeams[1]!, // Équipe 2
           team2: poolTeams[3]!, // Équipe 4
           type: 'premier-match' as const,
@@ -73,30 +110,53 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools }: PoolsTab
       ];
 
       // Phase 2: Gagnants vs Gagnants et Perdants vs Perdants
+      const match1Winner = getMatchWinner(match1Id);
+      const match1Loser = getMatchLoser(match1Id);
+      const match2Winner = getMatchWinner(match2Id);
+      const match2Loser = getMatchLoser(match2Id);
+
+      const winnerTeam1 = match1Winner ? teams.find(t => t.id === match1Winner) : null;
+      const winnerTeam2 = match2Winner ? teams.find(t => t.id === match2Winner) : null;
+      const loserTeam1 = match1Loser ? teams.find(t => t.id === match1Loser) : null;
+      const loserTeam2 = match2Loser ? teams.find(t => t.id === match2Loser) : null;
+
+      const winnersMatchId = `phase2-winners-${pool.id}`;
+      const losersMatchId = `phase2-losers-${pool.id}`;
+
       const phase2 = [
         {
-          id: `phase2-winners-${pool.id}`,
-          team1: { name: 'Gagnant Match 1', players: [] } as Team,
-          team2: { name: 'Gagnant Match 2', players: [] } as Team,
+          id: winnersMatchId,
+          team1: winnerTeam1 || { name: 'Gagnant Match 1', players: [] } as Team,
+          team2: winnerTeam2 || { name: 'Gagnant Match 2', players: [] } as Team,
           type: 'match-gagnants' as const,
-          description: 'Match des gagnants'
+          description: 'Match des gagnants',
+          canPlay: !!(match1Winner && match2Winner)
         },
         {
-          id: `phase2-losers-${pool.id}`,
-          team1: { name: 'Perdant Match 1', players: [] } as Team,
-          team2: { name: 'Perdant Match 2', players: [] } as Team,
+          id: losersMatchId,
+          team1: loserTeam1 || { name: 'Perdant Match 1', players: [] } as Team,
+          team2: loserTeam2 || { name: 'Perdant Match 2', players: [] } as Team,
           type: 'match-perdants' as const,
-          description: 'Match des perdants'
+          description: 'Match des perdants',
+          canPlay: !!(match1Loser && match2Loser)
         }
       ];
 
-      // Phase 3: Match de barrage (équipes à 1 victoire)
+      // Phase 3: Match de barrage
+      const winnersWinner = getMatchWinner(winnersMatchId);
+      const winnersLoser = getMatchLoser(winnersMatchId);
+      const losersWinner = getMatchWinner(losersMatchId);
+
+      const winnersLoserTeam = winnersLoser ? teams.find(t => t.id === winnersLoser) : null;
+      const losersWinnerTeam = losersWinner ? teams.find(t => t.id === losersWinner) : null;
+
       const phase3 = [{
         id: `phase3-barrage-${pool.id}`,
-        team1: { name: 'Gagnant match perdants', players: [] } as Team,
-        team2: { name: 'Perdant match gagnants', players: [] } as Team,
+        team1: losersWinnerTeam || { name: 'Gagnant match perdants', players: [] } as Team,
+        team2: winnersLoserTeam || { name: 'Perdant match gagnants', players: [] } as Team,
         type: 'match-barrage' as const,
-        description: 'Match de barrage'
+        description: 'Match de barrage',
+        canPlay: !!(losersWinner && winnersLoser)
       }];
 
       return { phase1, phase2, phase3 };
@@ -247,22 +307,13 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools }: PoolsTab
               color: #2563eb;
               margin: 0 15px;
             }
-            .qualification-info {
-              background: #ecfdf5;
-              border: 2px solid #10b981;
-              border-radius: 8px;
-              padding: 15px;
-              margin-top: 20px;
-              text-align: center;
-            }
-            .qualification-title {
+            .winner-badge {
+              background: #10b981;
+              color: white;
+              padding: 4px 8px;
+              border-radius: 4px;
+              font-size: 12px;
               font-weight: bold;
-              color: #065f46;
-              margin-bottom: 10px;
-            }
-            .qualification-text {
-              color: #047857;
-              font-size: 14px;
             }
             @media print { 
               body { margin: 0; background: white; } 
@@ -288,6 +339,7 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools }: PoolsTab
                     </div>
                     <div class="matches-grid">
                       ${phases.phase1.map((match) => {
+                        const winner = getMatchWinner(match.id);
                         if (match.type === 'bye-automatique') {
                           return `
                             <div class="match-row">
@@ -304,12 +356,18 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools }: PoolsTab
                               <div class="court-number">T${courtCounter++}</div>
                               <div class="match-card">
                                 <div class="team-info">
-                                  <div class="team-name">${match.team1.name}</div>
+                                  <div class="team-name">
+                                    ${match.team1.name}
+                                    ${winner === match.team1.id ? '<span class="winner-badge">GAGNANT</span>' : ''}
+                                  </div>
                                   <div class="team-players">${match.team1.players.map(p => p.name).join(', ')}</div>
                                 </div>
                                 <div class="vs-divider">VS</div>
                                 <div class="team-info">
-                                  <div class="team-name">${match.team2.name}</div>
+                                  <div class="team-name">
+                                    ${match.team2.name}
+                                    ${winner === match.team2.id ? '<span class="winner-badge">GAGNANT</span>' : ''}
+                                  </div>
                                   <div class="team-players">${match.team2.players.map(p => p.name).join(', ')}</div>
                                 </div>
                               </div>
@@ -328,18 +386,25 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools }: PoolsTab
                     </div>
                     <div class="matches-grid">
                       ${phases.phase2.map((match) => {
+                        const winner = getMatchWinner(match.id);
                         courtCounter = 1;
                         return `
                         <div class="match-row">
                           <div class="court-number">T${courtCounter++}</div>
                           <div class="match-card">
                             <div class="team-info">
-                              <div class="team-name">${match.team1.name}</div>
+                              <div class="team-name">
+                                ${match.team1.name}
+                                ${winner === match.team1.id ? '<span class="winner-badge">GAGNANT</span>' : ''}
+                              </div>
                               <div class="team-players">${match.team1.players.map(p => p.name).join(', ')}</div>
                             </div>
                             <div class="vs-divider">VS</div>
                             <div class="team-info">
-                              <div class="team-name">${match.team2.name}</div>
+                              <div class="team-name">
+                                ${match.team2.name}
+                                ${winner === match.team2.id ? '<span class="winner-badge">GAGNANT</span>' : ''}
+                              </div>
                               <div class="team-players">${match.team2.players.map(p => p.name).join(', ')}</div>
                             </div>
                           </div>
@@ -354,17 +419,24 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools }: PoolsTab
                     <div class="phase-title">⚡ Phase 3 - Match de Barrage (Équipes à 1 victoire)</div>
                     <div class="matches-grid">
                       ${phases.phase3.map((match) => {
+                        const winner = getMatchWinner(match.id);
                         courtCounter = 1;
                         return `
                         <div class="match-row">
                           <div class="court-number">T${courtCounter++}</div>
                           <div class="match-card">
                             <div class="team-info">
-                              <div class="team-name">${match.team1.name}</div>
+                              <div class="team-name">
+                                ${match.team1.name}
+                                ${winner === match.team1.id ? '<span class="winner-badge">GAGNANT</span>' : ''}
+                              </div>
                             </div>
                             <div class="vs-divider">VS</div>
                             <div class="team-info">
-                              <div class="team-name">${match.team2.name}</div>
+                              <div class="team-name">
+                                ${match.team2.name}
+                                ${winner === match.team2.id ? '<span class="winner-badge">GAGNANT</span>' : ''}
+                              </div>
                             </div>
                           </div>
                         </div>
@@ -372,16 +444,6 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools }: PoolsTab
                     </div>
                   </div>
                 ` : ''}
-                
-                <div class="qualification-info">
-                  <div class="qualification-title">🏆 Règles de Qualification</div>
-                  <div class="qualification-text">
-                    ${poolTeams.length === 3 ? 
-                      '• Une équipe a un BYE automatique en Phase 1<br/>• Elle joue ensuite contre le gagnant du match<br/>• Le gagnant de cette finale est qualifié pour le tour suivant' :
-                      '• Le gagnant avec 2 victoires est automatiquement qualifié<br/>• Le gagnant du match de barrage (1 victoire chacun) est également qualifié<br/>• 2 équipes par poule accèdent au tour suivant<br/>• Les terrains sont réutilisés après chaque phase'
-                    }
-                  </div>
-                </div>
               </div>
             `;
           }).join('')}
@@ -466,70 +528,13 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools }: PoolsTab
                     </div>
                     <div className="space-y-4">
                       {phases.phase1.map((match) => (
-                        <div key={match.id} className="grid grid-cols-[100px_1fr] gap-6 items-center">
-                          {match.type === 'bye-automatique' ? (
-                            <>
-                              <div className="bg-gradient-to-br from-yellow-500 to-yellow-600 text-white rounded-xl p-4 text-center shadow-lg">
-                                <div className="flex items-center justify-center space-x-2">
-                                  <Star className="w-5 h-5" />
-                                  <span className="font-bold text-lg">BYE</span>
-                                </div>
-                              </div>
-                              <div className="glass-card p-6 bg-yellow-500/10 border-yellow-400/30">
-                                <div className="text-center">
-                                  <div className="flex items-center justify-center space-x-2 mb-3">
-                                    <Star className="w-6 h-6 text-yellow-400" />
-                                    <h4 className="font-bold text-white text-xl">🌟 {match.team1.name}</h4>
-                                  </div>
-                                  <div className="text-yellow-200 font-bold text-lg mb-2">Qualification automatique !</div>
-                                  <div className="space-y-1">
-                                    {match.team1.players.map((player) => (
-                                      <div key={player.id} className="text-sm text-white/80">{player.name}</div>
-                                    ))}
-                                  </div>
-                                </div>
-                              </div>
-                            </>
-                          ) : (
-                            <>
-                              <div className={`bg-gradient-to-br ${getMatchTypeColor(match.type)} text-white rounded-xl p-4 text-center shadow-lg`}>
-                                <div className="flex items-center justify-center space-x-2">
-                                  <MapPin className="w-5 h-5" />
-                                  <span className="font-bold text-lg">T{courtCounter++}</span>
-                                </div>
-                              </div>
-                              <div className="glass-card p-6 bg-white/5 hover:bg-white/10 transition-all duration-300">
-                                <div className="grid grid-cols-[1fr_auto_1fr] gap-6 items-center">
-                                  <div className="text-center">
-                                    <div className="flex items-center justify-center space-x-2 mb-3">
-                                      <Users className="w-5 h-5 text-blue-400" />
-                                      <h4 className="font-bold text-white text-lg">{match.team1.name}</h4>
-                                    </div>
-                                    <div className="space-y-1">
-                                      {match.team1.players.map((player) => (
-                                        <div key={player.id} className="text-sm text-white/80">{player.name}</div>
-                                      ))}
-                                    </div>
-                                  </div>
-                                  <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-full w-16 h-16 flex items-center justify-center font-bold text-xl shadow-lg">
-                                    VS
-                                  </div>
-                                  <div className="text-center">
-                                    <div className="flex items-center justify-center space-x-2 mb-3">
-                                      <Users className="w-5 h-5 text-green-400" />
-                                      <h4 className="font-bold text-white text-lg">{match.team2?.name}</h4>
-                                    </div>
-                                    <div className="space-y-1">
-                                      {match.team2?.players.map((player) => (
-                                        <div key={player.id} className="text-sm text-white/80">{player.name}</div>
-                                      ))}
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-                            </>
-                          )}
-                        </div>
+                        <MatchCard
+                          key={match.id}
+                          match={match}
+                          courtNumber={match.type === 'bye-automatique' ? 'BYE' : `T${courtCounter++}`}
+                          winner={getMatchWinner(match.id)}
+                          onSelectWinner={(winnerId, loserId) => recordMatchResult(pool.id, match.id, winnerId, loserId, 1)}
+                        />
                       ))}
                     </div>
                   </div>
@@ -553,47 +558,14 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools }: PoolsTab
                       {phases.phase2.map((match, index) => {
                         const terrainNumber = poolTeams.length === 3 ? 1 : (index % 2) + 1;
                         return (
-                          <div key={match.id} className="grid grid-cols-[100px_1fr] gap-6 items-center">
-                            <div className={`bg-gradient-to-br ${getMatchTypeColor(match.type)} text-white rounded-xl p-4 text-center shadow-lg`}>
-                              <div className="flex items-center justify-center space-x-2">
-                                <MapPin className="w-5 h-5" />
-                                <span className="font-bold text-lg">T{terrainNumber}</span>
-                              </div>
-                            </div>
-                            <div className="glass-card p-6 bg-white/5 hover:bg-white/10 transition-all duration-300">
-                              <div className="grid grid-cols-[1fr_auto_1fr] gap-6 items-center">
-                                <div className="text-center">
-                                  <div className="flex items-center justify-center space-x-2 mb-3">
-                                    {getMatchTypeIcon(match.type)}
-                                    <h4 className="font-bold text-white text-lg">{match.team1.name}</h4>
-                                  </div>
-                                  {match.team1.players.length > 0 && (
-                                    <div className="space-y-1">
-                                      {match.team1.players.map((player) => (
-                                        <div key={player.id} className="text-sm text-white/80">{player.name}</div>
-                                      ))}
-                                    </div>
-                                  )}
-                                </div>
-                                <div className={`bg-gradient-to-r ${getMatchTypeColor(match.type)} text-white rounded-full w-16 h-16 flex items-center justify-center font-bold text-xl shadow-lg`}>
-                                  VS
-                                </div>
-                                <div className="text-center">
-                                  <div className="flex items-center justify-center space-x-2 mb-3">
-                                    {getMatchTypeIcon(match.type)}
-                                    <h4 className="font-bold text-white text-lg">{match.team2.name}</h4>
-                                  </div>
-                                  {match.team2.players.length > 0 && (
-                                    <div className="space-y-1">
-                                      {match.team2.players.map((player) => (
-                                        <div key={player.id} className="text-sm text-white/80">{player.name}</div>
-                                      ))}
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          </div>
+                          <MatchCard
+                            key={match.id}
+                            match={match}
+                            courtNumber={`T${terrainNumber}`}
+                            winner={getMatchWinner(match.id)}
+                            onSelectWinner={(winnerId, loserId) => recordMatchResult(pool.id, match.id, winnerId, loserId, 2)}
+                            disabled={!match.canPlay}
+                          />
                         );
                       })}
                     </div>
@@ -609,33 +581,14 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools }: PoolsTab
                     </div>
                     <div className="space-y-4">
                       {phases.phase3.map((match) => (
-                        <div key={match.id} className="grid grid-cols-[100px_1fr] gap-6 items-center">
-                          <div className={`bg-gradient-to-br ${getMatchTypeColor(match.type)} text-white rounded-xl p-4 text-center shadow-lg`}>
-                            <div className="flex items-center justify-center space-x-2">
-                              <MapPin className="w-5 h-5" />
-                              <span className="font-bold text-lg">T1</span>
-                            </div>
-                          </div>
-                          <div className="glass-card p-6 bg-white/5 hover:bg-white/10 transition-all duration-300">
-                            <div className="grid grid-cols-[1fr_auto_1fr] gap-6 items-center">
-                              <div className="text-center">
-                                <div className="flex items-center justify-center space-x-2 mb-3">
-                                  <Zap className="w-5 h-5 text-purple-400" />
-                                  <h4 className="font-bold text-white text-lg">{match.team1.name}</h4>
-                                </div>
-                              </div>
-                              <div className="bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-full w-16 h-16 flex items-center justify-center font-bold text-xl shadow-lg">
-                                VS
-                              </div>
-                              <div className="text-center">
-                                <div className="flex items-center justify-center space-x-2 mb-3">
-                                  <Zap className="w-5 h-5 text-purple-400" />
-                                  <h4 className="font-bold text-white text-lg">{match.team2.name}</h4>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
+                        <MatchCard
+                          key={match.id}
+                          match={match}
+                          courtNumber="T1"
+                          winner={getMatchWinner(match.id)}
+                          onSelectWinner={(winnerId, loserId) => recordMatchResult(pool.id, match.id, winnerId, loserId, 3)}
+                          disabled={!match.canPlay}
+                        />
                       ))}
                     </div>
                   </div>
@@ -723,12 +676,9 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools }: PoolsTab
             </div>
             <div className="glass-card p-4">
               <div className="text-2xl font-bold text-purple-400">
-                {pools.reduce((total, pool) => {
-                  const phases = generateTournamentPhases(pool);
-                  return total + phases.phase1.length + phases.phase2.length + phases.phase3.length;
-                }, 0)}
+                {matchResults.length}
               </div>
-              <div className="text-white/70 text-sm">Matchs total</div>
+              <div className="text-white/70 text-sm">Matchs joués</div>
             </div>
             <div className="glass-card p-4">
               <div className="text-2xl font-bold text-orange-400">2</div>
@@ -741,6 +691,182 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools }: PoolsTab
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+// Composant pour afficher un match avec sélection du gagnant
+interface MatchCardProps {
+  match: any;
+  courtNumber: string;
+  winner: string | null;
+  onSelectWinner: (winnerId: string, loserId: string) => void;
+  disabled?: boolean;
+}
+
+function MatchCard({ match, courtNumber, winner, onSelectWinner, disabled = false }: MatchCardProps) {
+  const [showWinnerSelection, setShowWinnerSelection] = useState(false);
+
+  const getMatchTypeColor = (type: string) => {
+    switch (type) {
+      case 'premier-match': return 'from-blue-500 to-blue-600';
+      case 'match-gagnants': return 'from-green-500 to-green-600';
+      case 'match-perdants': return 'from-orange-500 to-orange-600';
+      case 'match-barrage': return 'from-purple-500 to-purple-600';
+      case 'bye-automatique': return 'from-yellow-500 to-yellow-600';
+      case 'finale-poule-3': return 'from-red-500 to-red-600';
+      default: return 'from-gray-500 to-gray-600';
+    }
+  };
+
+  const getMatchTypeIcon = (type: string) => {
+    switch (type) {
+      case 'premier-match': return <Users className="w-5 h-5" />;
+      case 'match-gagnants': return <Crown className="w-5 h-5" />;
+      case 'match-perdants': return <Users className="w-5 h-5" />;
+      case 'match-barrage': return <Zap className="w-5 h-5" />;
+      case 'bye-automatique': return <Star className="w-5 h-5" />;
+      case 'finale-poule-3': return <Trophy className="w-5 h-5" />;
+      default: return <Users className="w-5 h-5" />;
+    }
+  };
+
+  if (match.type === 'bye-automatique') {
+    return (
+      <div className="grid grid-cols-[100px_1fr] gap-6 items-center">
+        <div className="bg-gradient-to-br from-yellow-500 to-yellow-600 text-white rounded-xl p-4 text-center shadow-lg">
+          <div className="flex items-center justify-center space-x-2">
+            <Star className="w-5 h-5" />
+            <span className="font-bold text-lg">BYE</span>
+          </div>
+        </div>
+        <div className="glass-card p-6 bg-yellow-500/10 border-yellow-400/30">
+          <div className="text-center">
+            <div className="flex items-center justify-center space-x-2 mb-3">
+              <Star className="w-6 h-6 text-yellow-400" />
+              <h4 className="font-bold text-white text-xl">🌟 {match.team1.name}</h4>
+            </div>
+            <div className="text-yellow-200 font-bold text-lg mb-2">Qualification automatique !</div>
+            <div className="space-y-1">
+              {match.team1.players.map((player: any) => (
+                <div key={player.id} className="text-sm text-white/80">{player.name}</div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="grid grid-cols-[100px_1fr] gap-6 items-center">
+      <div className={`bg-gradient-to-br ${getMatchTypeColor(match.type)} text-white rounded-xl p-4 text-center shadow-lg`}>
+        <div className="flex items-center justify-center space-x-2">
+          <MapPin className="w-5 h-5" />
+          <span className="font-bold text-lg">{courtNumber}</span>
+        </div>
+      </div>
+      <div className={`glass-card p-6 transition-all duration-300 ${disabled ? 'opacity-50' : 'bg-white/5 hover:bg-white/10'}`}>
+        <div className="grid grid-cols-[1fr_auto_1fr_auto] gap-6 items-center">
+          {/* Équipe 1 */}
+          <div className="text-center">
+            <div className="flex items-center justify-center space-x-2 mb-3">
+              {getMatchTypeIcon(match.type)}
+              <h4 className={`font-bold text-lg ${winner === match.team1.id ? 'text-green-400' : 'text-white'}`}>
+                {match.team1.name}
+              </h4>
+              {winner === match.team1.id && <Crown className="w-5 h-5 text-yellow-400" />}
+            </div>
+            {match.team1.players.length > 0 && (
+              <div className="space-y-1">
+                {match.team1.players.map((player: any) => (
+                  <div key={player.id} className="text-sm text-white/80">{player.name}</div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* VS */}
+          <div className={`bg-gradient-to-r ${getMatchTypeColor(match.type)} text-white rounded-full w-16 h-16 flex items-center justify-center font-bold text-xl shadow-lg`}>
+            VS
+          </div>
+
+          {/* Équipe 2 */}
+          <div className="text-center">
+            <div className="flex items-center justify-center space-x-2 mb-3">
+              {getMatchTypeIcon(match.type)}
+              <h4 className={`font-bold text-lg ${winner === match.team2?.id ? 'text-green-400' : 'text-white'}`}>
+                {match.team2?.name}
+              </h4>
+              {winner === match.team2?.id && <Crown className="w-5 h-5 text-yellow-400" />}
+            </div>
+            {match.team2?.players.length > 0 && (
+              <div className="space-y-1">
+                {match.team2.players.map((player: any) => (
+                  <div key={player.id} className="text-sm text-white/80">{player.name}</div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Bouton de sélection du gagnant */}
+          <div className="flex flex-col items-center space-y-2">
+            {!disabled && match.team2 && match.team2.players.length > 0 && (
+              <>
+                {winner ? (
+                  <button
+                    onClick={() => setShowWinnerSelection(true)}
+                    className="glass-button-secondary p-2 rounded-lg transition-all duration-300 hover:scale-110"
+                    title="Modifier le gagnant"
+                  >
+                    <Edit3 className="w-5 h-5" />
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => setShowWinnerSelection(true)}
+                    className="glass-button p-3 rounded-lg transition-all duration-300 hover:scale-110"
+                    title="Sélectionner le gagnant"
+                  >
+                    <Trophy className="w-5 h-5" />
+                  </button>
+                )}
+              </>
+            )}
+            
+            {showWinnerSelection && (
+              <div className="absolute z-10 bg-slate-800 border border-white/20 rounded-lg p-4 shadow-xl">
+                <div className="text-white font-bold mb-3 text-center">Qui a gagné ?</div>
+                <div className="space-y-2">
+                  <button
+                    onClick={() => {
+                      onSelectWinner(match.team1.id, match.team2.id);
+                      setShowWinnerSelection(false);
+                    }}
+                    className="w-full glass-button p-2 text-sm"
+                  >
+                    {match.team1.name}
+                  </button>
+                  <button
+                    onClick={() => {
+                      onSelectWinner(match.team2.id, match.team1.id);
+                      setShowWinnerSelection(false);
+                    }}
+                    className="w-full glass-button p-2 text-sm"
+                  >
+                    {match.team2.name}
+                  </button>
+                  <button
+                    onClick={() => setShowWinnerSelection(false)}
+                    className="w-full glass-button-secondary p-2 text-sm"
+                  >
+                    Annuler
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
