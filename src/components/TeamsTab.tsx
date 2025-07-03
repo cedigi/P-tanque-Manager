@@ -101,46 +101,56 @@ export function TeamsTab({ teams, tournamentType, onAddTeam, onRemoveTeam }: Tea
         />
       )}
 
-      <div className="space-y-4">
+      <div className="space-y-2">
         {teams.map((team) => (
-          <div key={team.id} className="glass-card p-6 hover:scale-[1.02] transition-all duration-300">
-            <div className="flex justify-between items-start mb-4">
-              <div className="flex-1">
-                <div className="flex items-center space-x-3 mb-3">
-                  <Users className="w-6 h-6 text-white" />
-                  <h3 className="font-bold text-white text-xl tracking-wide">{team.name}</h3>
-                  {team.poolId && (
-                    <span className="px-3 py-1 bg-blue-500/30 border border-blue-400 text-blue-400 rounded-full text-sm font-bold">
-                      Poule assignée
-                    </span>
-                  )}
-                </div>
-              </div>
-              <button
-                onClick={() => onRemoveTeam(team.id)}
-                className="text-red-400 hover:text-red-300 transition-colors p-2 rounded-lg hover:bg-red-400/10"
-                title={isSolo ? 'Supprimer le joueur' : "Supprimer l'équipe"}
-              >
-                <Trash2 className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="space-y-3">
-              {team.players.map((player: Player) => (
-                <div
-                  key={player.id}
-                  className="glass-card p-4"
-                >
-                  <div className="flex items-center space-x-3">
-                    {player.label && (
-                      <span className="w-8 h-8 bg-blue-400/20 border border-blue-400 text-blue-400 rounded-full flex items-center justify-center text-sm font-bold">
-                        {player.label}
-                      </span>
-                    )}
-                    <span className="font-bold text-white text-lg">{player.name}</span>
+          <div key={team.id} className="glass-card p-3 hover:scale-[1.01] transition-all duration-300">
+            <div className="flex items-center justify-between">
+              {/* Partie gauche : Icône + Nom équipe + Joueurs sur une ligne */}
+              <div className="flex items-center space-x-3 flex-1 min-w-0">
+                <Users className="w-5 h-5 text-white flex-shrink-0" />
+                
+                {/* Nom de l'équipe et joueurs sur la même ligne */}
+                <div className="flex items-center space-x-2 min-w-0 flex-1">
+                  <span className="font-bold text-white text-lg flex-shrink-0">
+                    {team.name} :
+                  </span>
+                  
+                  {/* Liste des joueurs avec labels */}
+                  <div className="flex items-center space-x-2 min-w-0 flex-1">
+                    {team.players.map((player, index) => (
+                      <React.Fragment key={player.id}>
+                        {index > 0 && <span className="text-white/60">-</span>}
+                        <div className="flex items-center space-x-1 flex-shrink-0">
+                          {player.label && (
+                            <span className="w-5 h-5 bg-blue-400/20 border border-blue-400 text-blue-400 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0">
+                              {player.label}
+                            </span>
+                          )}
+                          <span className="text-white font-medium truncate">
+                            {player.name}
+                          </span>
+                        </div>
+                      </React.Fragment>
+                    ))}
                   </div>
                 </div>
-              ))}
+              </div>
+
+              {/* Partie droite : Badge poule + Bouton supprimer */}
+              <div className="flex items-center space-x-3 flex-shrink-0">
+                {team.poolId && (
+                  <span className="px-2 py-1 bg-blue-500/30 border border-blue-400 text-blue-400 rounded-full text-xs font-bold">
+                    Poule
+                  </span>
+                )}
+                <button
+                  onClick={() => onRemoveTeam(team.id)}
+                  className="text-red-400 hover:text-red-300 transition-colors p-1 rounded-lg hover:bg-red-400/10"
+                  title={isSolo ? 'Supprimer le joueur' : "Supprimer l'équipe"}
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
             </div>
           </div>
         ))}
