@@ -161,116 +161,97 @@
     background: rgba(59, 130, 246, 0.9);
   }
 
-  /* Styles spécifiques pour les poules */
-  .pool-card {
-    background: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(20px);
-    border: 2px solid rgba(37, 99, 235, 0.4);
-    border-radius: 20px;
-    overflow: hidden;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-    transition: all 0.3s ease;
-  }
-
-  .pool-card:hover {
-    border-color: rgba(37, 99, 235, 0.6);
-    box-shadow: 0 12px 40px rgba(37, 99, 235, 0.3);
-    transform: translateY(-4px);
-  }
-
-  .pool-header {
-    background: linear-gradient(135deg, rgba(37, 99, 235, 0.9) 0%, rgba(29, 78, 216, 0.9) 100%);
-    padding: 20px;
-    text-align: center;
-    border-bottom: 2px solid rgba(255, 255, 255, 0.2);
-  }
-
-  .pool-content {
-    padding: 24px;
-    space-y: 16px;
-  }
-
-  .team-card {
+  /* Styles spécifiques pour les matchs de poules */
+  .pool-match-card {
     background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(20px);
     border: 2px solid rgba(255, 255, 255, 0.15);
     border-radius: 16px;
-    padding: 20px;
-    margin-bottom: 16px;
-    position: relative;
     transition: all 0.3s ease;
+    overflow: hidden;
   }
 
-  .team-card:hover {
+  .pool-match-card:hover {
     background: rgba(255, 255, 255, 0.12);
     border-color: rgba(59, 130, 246, 0.4);
-    transform: translateX(4px);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
   }
 
-  .team-card:last-child {
-    margin-bottom: 0;
-  }
-
-  .team-position {
-    position: absolute;
-    top: -8px;
-    left: 16px;
+  .court-badge {
     background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
     color: white;
-    width: 32px;
-    height: 32px;
+    border-radius: 12px;
+    padding: 16px;
+    text-align: center;
+    font-weight: bold;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+    border: 2px solid rgba(255, 255, 255, 0.2);
+  }
+
+  .team-section {
+    padding: 20px;
+    text-align: center;
+  }
+
+  .team-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 12px;
+    gap: 8px;
+  }
+
+  .team-name {
+    font-weight: bold;
+    font-size: 18px;
+    color: white;
+  }
+
+  .vs-separator {
+    background: linear-gradient(135deg, #f97316 0%, #dc2626 100%);
+    color: white;
     border-radius: 50%;
+    width: 64px;
+    height: 64px;
     display: flex;
     align-items: center;
     justify-content: center;
     font-weight: bold;
-    font-size: 14px;
+    font-size: 20px;
+    box-shadow: 0 4px 12px rgba(249, 115, 22, 0.4);
     border: 3px solid rgba(255, 255, 255, 0.2);
-    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
   }
 
-  .team-info {
-    margin-top: 8px;
-  }
-
-  .players-list {
-    space-y: 8px;
-  }
-
-  .player-item {
+  .player-badge {
     display: flex;
     align-items: center;
+    justify-content: center;
+    gap: 8px;
     padding: 8px 12px;
     background: rgba(255, 255, 255, 0.05);
-    border-radius: 8px;
     border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.9);
     transition: all 0.2s ease;
   }
 
-  .player-item:hover {
+  .player-badge:hover {
     background: rgba(255, 255, 255, 0.1);
     border-color: rgba(59, 130, 246, 0.3);
   }
 
-  .player-label {
-    width: 24px;
-    height: 24px;
-    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-    color: white;
+  .player-label-circle {
+    width: 20px;
+    height: 20px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 12px;
     font-weight: bold;
-    margin-right: 12px;
     border: 2px solid rgba(255, 255, 255, 0.2);
-    box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
-  }
-
-  .player-name {
-    color: white;
-    font-weight: 500;
-    font-size: 14px;
   }
 
   /* Formulaire compact pour les équipes */
