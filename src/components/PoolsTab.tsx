@@ -33,6 +33,21 @@ interface EliminationPhase {
   round: number;
 }
 
+// Move getPhaseDisplayName outside the component as a pure helper function
+const getPhaseDisplayName = (phaseName: string): string => {
+  const phaseNames: { [key: string]: string } = {
+    '128eme-de-finale': '128èmes de finale',
+    '64eme-de-finale': '64èmes de finale',
+    '32eme-de-finale': '32èmes de finale',
+    '16eme-de-finale': '16èmes de finale',
+    '8eme-de-finale': '8èmes de finale',
+    'quart-de-finale': 'Quarts de finale',
+    'demi-finale': 'Demi-finales',
+    'finale': 'Finale'
+  };
+  return phaseNames[phaseName] || phaseName;
+};
+
 export function PoolsTab({ tournament, teams, pools, onGeneratePools }: PoolsTabProps) {
   const isSolo = tournament.type === 'melee' || tournament.type === 'tete-a-tete';
   const [matchResults, setMatchResults] = useState<MatchResult[]>([]);
@@ -388,21 +403,6 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools }: PoolsTab
       });
     }
   }, [generateEliminationMatchesPure]);
-
-  // Obtenir le nom d'affichage d'une phase
-  const getPhaseDisplayName = useCallback((phaseName: string): string => {
-    const phaseNames: { [key: string]: string } = {
-      '128eme-de-finale': '128èmes de finale',
-      '64eme-de-finale': '64èmes de finale',
-      '32eme-de-finale': '32èmes de finale',
-      '16eme-de-finale': '16èmes de finale',
-      '8eme-de-finale': '8èmes de finale',
-      'quart-de-finale': 'Quarts de finale',
-      'demi-finale': 'Demi-finales',
-      'finale': 'Finale'
-    };
-    return phaseNames[phaseName] || phaseName;
-  }, []);
 
   const handlePrint = () => {
     const printWindow = window.open('', '_blank');
