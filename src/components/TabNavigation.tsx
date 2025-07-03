@@ -1,14 +1,18 @@
 import React from 'react';
-import { Users, Gamepad2, Trophy } from 'lucide-react';
+import { Users, Gamepad2, Trophy, Grid3X3 } from 'lucide-react';
 
 interface TabNavigationProps {
   activeTab: string;
   onTabChange: (tab: string) => void;
+  tournamentType: string;
 }
 
-export function TabNavigation({ activeTab, onTabChange }: TabNavigationProps) {
+export function TabNavigation({ activeTab, onTabChange, tournamentType }: TabNavigationProps) {
+  const isPoolTournament = tournamentType === 'doublette-poule' || tournamentType === 'triplette-poule';
+  
   const tabs = [
     { id: 'teams', label: 'Teams', icon: Users },
+    ...(isPoolTournament ? [{ id: 'pools', label: 'Poules', icon: Grid3X3 }] : []),
     { id: 'matches', label: 'Matches', icon: Gamepad2 },
     { id: 'standings', label: 'Standings', icon: Trophy },
   ];

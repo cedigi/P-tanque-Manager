@@ -19,8 +19,10 @@ export function TeamsTab({ teams, tournamentType, onAddTeam, onRemoveTeam }: Tea
   const getPlayersPerTeam = () => {
     switch (tournamentType) {
       case 'tete-a-tete': return 1;
-      case 'doublette': return 2;
-      case 'triplette': return 3;
+      case 'doublette': 
+      case 'doublette-poule': return 2;
+      case 'triplette': 
+      case 'triplette-poule': return 3;
       case 'quadrette': return 4;
       case 'melee': return 1;
       default: return 2;
@@ -153,6 +155,11 @@ export function TeamsTab({ teams, tournamentType, onAddTeam, onRemoveTeam }: Tea
                 <div className="flex items-center space-x-3 mb-3">
                   <Users className="w-6 h-6 text-white" />
                   <h3 className="font-bold text-white text-xl tracking-wide">{team.name}</h3>
+                  {team.poolId && (
+                    <span className="px-3 py-1 bg-blue-500/30 border border-blue-400 text-blue-400 rounded-full text-sm font-bold">
+                      Poule assignée
+                    </span>
+                  )}
                 </div>
               </div>
               <button

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Tournament, TournamentType, Team, Player } from '../types/tournament';
+import { Tournament, TournamentType, Team, Player, Pool } from '../types/tournament';
 import { generateMatches } from '../utils/matchmaking';
+import { generatePools, generatePoolMatches } from '../utils/poolGeneration';
 
 const STORAGE_KEY = 'petanque-tournament';
 
@@ -12,6 +13,11 @@ export function useTournament() {
     if (saved) {
       const parsed = JSON.parse(saved);
       parsed.createdAt = new Date(parsed.createdAt);
+      // Ensure pools array exists for backward compatibility
+      if (!parsed.pools) {
+        parsed.pools = [];
+        parsed.poolsGenerated = false;
+      }
       setTournament(parsed);
     }
   }, []);
@@ -30,11 +36,13 @@ export function useTournament() {
       courts,
       teams: [],
       matches: [],
+      pools: [],
       currentRound: 0,
       completed: false,
       createdAt: new Date(),
       securityLevel: 1,
       networkStatus: 'online',
+      poolsGenerated: false,
     };
     saveTournament(newTournament);
   };
@@ -84,6 +92,32 @@ export function useTournament() {
     const updatedTournament = {
       ...tournament,
       teams: renumberedTeams,
+      // Reset pools if teams change
+      pools: [],
+      poolsGenerated: false,
+    };
+    saveTournament(updatedTournament);
+  };
+
+  const generateTournamentPools = () => {
+    if (!tournament) return;
+
+    const pools = generatePools(tournament.teams);
+    
+    // Assign pool IDs to teams
+    const updatedTeams = tournament.teams.map(team => {
+      const pool = pools.find(p => p.teamIds.includes(team.id));
+      return {
+        ...team,
+        poolId: pool?.id
+      };
+    });
+
+    const updatedTournament = {
+      ...tournament,
+      teams: updatedTeams,
+      pools,
+      poolsGenerated: true,
     };
     saveTournament(updatedTournament);
   };
@@ -91,13 +125,39 @@ export function useTournament() {
   const generateRound = () => {
     if (!tournament) return;
 
-    const newMatches = generateMatches(tournament);
-    const updatedTournament = {
-      ...tournament,
-      matches: [...tournament.matches, ...newMatches],
-      currentRound: tournament.currentRound + 1,
-    };
-    saveTournament(updatedTournament);
+    const isPoolTournament = tournament.type === 'doublette-poule' || tournament.type === 'triplette-poule';
+    
+    if (isPoolTournament && tournament.pools.length > 0) {
+      // Generate matches for each pool
+      const allMatches: any[] = [];
+      let courtIndex = 1;
+      
+      tournament.pools.forEach(pool => {
+        const poolMatches = generatePoolMatches(pool, tournament.teams);
+        // Assign courts to pool matches
+        poolMatches.forEach(match => {
+          match.court = courtIndex;
+          courtIndex = (courtIndex % tournament.courts) + 1;
+        });
+        allMatches.push(...poolMatches);
+      });
+
+      const updatedTournament = {
+        ...tournament,
+        matches: [...tournament.matches, ...allMatches],
+        currentRound: tournament.currentRound + 1,
+      };
+      saveTournament(updatedTournament);
+    } else {
+      // Standard tournament logic
+      const newMatches = generateMatches(tournament);
+      const updatedTournament = {
+        ...tournament,
+        matches: [...tournament.matches, ...newMatches],
+        currentRound: tournament.currentRound + 1,
+      };
+      saveTournament(updatedTournament);
+    }
   };
 
   const updateMatchScore = (matchId: string, team1Score: number, team2Score: number) => {
@@ -210,6 +270,7 @@ export function useTournament() {
     createTournament,
     addTeam,
     removeTeam,
+    generateTournamentPools,
     generateRound,
     updateMatchScore,
     updateMatchCourt,

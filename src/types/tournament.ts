@@ -1,4 +1,4 @@
-export type TournamentType = 'tete-a-tete' | 'doublette' | 'triplette' | 'quadrette' | 'melee';
+export type TournamentType = 'tete-a-tete' | 'doublette' | 'triplette' | 'quadrette' | 'melee' | 'doublette-poule' | 'triplette-poule';
 
 export interface CyberImplant {
   id: string;
@@ -32,6 +32,14 @@ export interface Team {
   performance: number;
   teamRating: number;
   synchroLevel: number;
+  poolId?: string;
+}
+
+export interface Pool {
+  id: string;
+  name: string;
+  teamIds: string[];
+  matches: Match[];
 }
 
 export interface Match {
@@ -48,6 +56,7 @@ export interface Match {
   isBye: boolean;
   battleIntensity: number;
   hackingAttempts: number;
+  poolId?: string;
 }
 
 export interface Tournament {
@@ -57,9 +66,11 @@ export interface Tournament {
   courts: number;
   teams: Team[];
   matches: Match[];
+  pools: Pool[];
   currentRound: number;
   completed: boolean;
   createdAt: Date;
   securityLevel: number;
   networkStatus: 'online' | 'offline' | 'compromised';
+  poolsGenerated: boolean;
 }

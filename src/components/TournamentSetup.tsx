@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { TournamentType } from '../types/tournament';
-import { Users, Target, Trophy, Shield } from 'lucide-react';
+import { Users, Target, Trophy, Shield, Grid3X3 } from 'lucide-react';
 import { Logo } from './Logo';
 
 interface TournamentSetupProps {
@@ -52,11 +52,25 @@ export function TournamentSetup({ onCreateTournament }: TournamentSetupProps) {
       players: 'Joueurs individuels',
       description: 'Tournoi libre'
     },
+    { 
+      value: 'doublette-poule', 
+      label: 'Doublette en poule', 
+      icon: Grid3X3, 
+      players: '2 joueurs par équipe',
+      description: 'Tournoi par poules'
+    },
+    { 
+      value: 'triplette-poule', 
+      label: 'Triplette en poule', 
+      icon: Grid3X3, 
+      players: '3 joueurs par équipe',
+      description: 'Tournoi par poules'
+    },
   ] as const;
 
   return (
     <div className="min-h-screen flex items-center justify-center p-6">
-      <div className="max-w-3xl w-full">
+      <div className="max-w-4xl w-full">
         <div className="text-center mb-8">
           <div className="relative w-24 h-24 mx-auto mb-6">
             <Logo className="w-24 h-24 drop-shadow-2xl" />
@@ -75,7 +89,7 @@ export function TournamentSetup({ onCreateTournament }: TournamentSetupProps) {
             <label className="block text-xl font-bold text-white mb-6 tracking-wide">
               Type de tournoi
             </label>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {tournamentTypes.map((tournamentType) => {
                 const Icon = tournamentType.icon;
                 return (

@@ -3,6 +3,7 @@ import { Header } from './components/Header';
 import { TournamentSetup } from './components/TournamentSetup';
 import { TabNavigation } from './components/TabNavigation';
 import { TeamsTab } from './components/TeamsTab';
+import { PoolsTab } from './components/PoolsTab';
 import { MatchesTab } from './components/MatchesTab';
 import { StandingsTab } from './components/StandingsTab';
 import { useTournament } from './hooks/useTournament';
@@ -16,6 +17,7 @@ function App() {
     createTournament,
     addTeam,
     removeTeam,
+    generateTournamentPools,
     generateRound,
     updateMatchScore,
     updateMatchCourt,
@@ -32,6 +34,7 @@ function App() {
   };
 
   const isSolo = tournament && (tournament.type === 'melee' || tournament.type === 'tete-a-tete');
+  const isPoolTournament = tournament && (tournament.type === 'doublette-poule' || tournament.type === 'triplette-poule');
 
   const content = !tournament ? (
     <TournamentSetup onCreateTournament={createTournament} />
@@ -45,8 +48,13 @@ function App() {
             </h2>
             <p className="text-white/80 font-medium tracking-wide">
               {tournament.type.charAt(0).toUpperCase() +
-                tournament.type.slice(1)} • {tournament.courts} terrain
+                tournament.type.slice(1).replace('-', ' ')} • {tournament.courts} terrain
               {tournament.courts > 1 ? 's' : ''} • Tour {tournament.currentRound}
+              {isPoolTournament && tournament.poolsGenerated && (
+                <span className="ml-2 px-2 py-1 bg-green-500/30 border border-green-400 text-green-400 rounded text-sm">
+                  Poules générées
+                </span>
+              )}
             </p>
           </div>
           <button
@@ -58,7 +66,11 @@ function App() {
             <span>NOUVEAU TOURNOI</span>
           </button>
         </div>
-        <TabNavigation activeTab={activeTab} onTabChange={setActiveTab} />
+        <TabNavigation 
+          activeTab={activeTab} 
+          onTabChange={setActiveTab} 
+          tournamentType={tournament.type}
+        />
       </div>
 
       <main className="min-h-screen">
@@ -68,6 +80,14 @@ function App() {
             tournamentType={tournament.type}
             onAddTeam={addTeam}
             onRemoveTeam={removeTeam}
+          />
+        )}
+        {activeTab === 'pools' && isPoolTournament && (
+          <PoolsTab
+            tournament={tournament}
+            teams={tournament.teams}
+            pools={tournament.pools}
+            onGeneratePools={generateTournamentPools}
           />
         )}
         {activeTab === 'matches' && (
