@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Pool, Team, Tournament, Match } from '../types/tournament';
-import { Grid3X3, Users, Trophy, Shuffle, Printer, MapPin, Edit3, Crown, Medal, Target } from 'lucide-react';
+import { Grid3X3, Users, Trophy, Shuffle, Printer, MapPin, Edit3, Crown, Medal, Target, Zap } from 'lucide-react';
 
 interface PoolsTabProps {
   tournament: Tournament;
@@ -286,6 +286,13 @@ function AutomaticBracketPool({ pool, teams, matches, onUpdateScore, isSolo }: A
   const teamsWithOneWin = allStats.filter(stat => stat.wins === 1 && stat.matches >= 2);
   const needsBarrage = teamsWithOneWin.length === 2;
 
+  // Match de barrage
+  const barrageMatch = poolMatches.find(m => 
+    m.round === 3 && 
+    teamsWithOneWin.some(stat => stat.team.id === m.team1Id) &&
+    teamsWithOneWin.some(stat => stat.team.id === m.team2Id)
+  );
+
   return (
     <div className="glass-card overflow-hidden">
       <div className="px-6 py-4 border-b border-white/20 bg-gradient-to-r from-blue-500/20 to-purple-500/20">
@@ -293,8 +300,9 @@ function AutomaticBracketPool({ pool, teams, matches, onUpdateScore, isSolo }: A
           <Grid3X3 className="w-5 h-5" />
           <span>{pool.name}</span>
         </h3>
-        <div className="text-sm text-white/70 mt-1">
-          Bracket automatique • 4 équipes
+        <div className="text-sm text-white/70 mt-1 flex items-center space-x-2">
+          <Zap className="w-4 h-4" />
+          <span>Bracket automatique • 4 équipes</span>
         </div>
       </div>
       
@@ -335,8 +343,15 @@ function AutomaticBracketPool({ pool, teams, matches, onUpdateScore, isSolo }: A
             <div className="flex items-center space-x-2 mb-4">
               <Trophy className="w-5 h-5 text-green-400" />
               <h4 className="text-lg font-bold text-green-400 tracking-wide">
-                Finale (Gagnants vs Gagnants)
+                🏆 Finale (Gagnants vs Gagnants)
               </h4>
+              {winnersMatch && (
+                <div className="ml-auto">
+                  <span className="px-2 py-1 bg-green-500/20 border border-green-400 text-green-400 rounded text-xs font-bold">
+                    AUTO-GÉNÉRÉ
+                  </span>
+                </div>
+              )}
             </div>
             
             <BracketMatchCard 
@@ -356,8 +371,15 @@ function AutomaticBracketPool({ pool, teams, matches, onUpdateScore, isSolo }: A
             <div className="flex items-center space-x-2 mb-4">
               <Medal className="w-5 h-5 text-orange-400" />
               <h4 className="text-lg font-bold text-orange-400 tracking-wide">
-                Petite Finale (Perdants vs Perdants)
+                🥉 Petite Finale (Perdants vs Perdants)
               </h4>
+              {losersMatch && (
+                <div className="ml-auto">
+                  <span className="px-2 py-1 bg-orange-500/20 border border-orange-400 text-orange-400 rounded text-xs font-bold">
+                    AUTO-GÉNÉRÉ
+                  </span>
+                </div>
+              )}
             </div>
             
             <BracketMatchCard 
@@ -377,20 +399,38 @@ function AutomaticBracketPool({ pool, teams, matches, onUpdateScore, isSolo }: A
             <div className="flex items-center space-x-2 mb-4">
               <Target className="w-5 h-5 text-red-400" />
               <h4 className="text-lg font-bold text-red-400 tracking-wide">
-                Match de Barrage (1 victoire chacun)
+                ⚔️ Match de Barrage (1 victoire chacun)
               </h4>
+              {barrageMatch && (
+                <div className="ml-auto">
+                  <span className="px-2 py-1 bg-red-500/20 border border-red-400 text-red-400 rounded text-xs font-bold">
+                    AUTO-GÉNÉRÉ
+                  </span>
+                </div>
+              )}
             </div>
             
-            <div className="glass-card p-4 bg-red-500/10 border-red-400/40">
-              <div className="text-center">
-                <div className="text-white font-bold mb-2">
-                  {teamsWithOneWin[0].team.name} vs {teamsWithOneWin[1].team.name}
-                </div>
-                <div className="text-sm text-white/70">
-                  Match de barrage nécessaire pour départager
+            {barrageMatch ? (
+              <BracketMatchCard 
+                team1={teamsWithOneWin[0].team} 
+                team2={teamsWithOneWin[1].team} 
+                match={barrageMatch}
+                label="Barrage"
+                isBarrageMatch={true}
+                onUpdateScore={onUpdateScore}
+              />
+            ) : (
+              <div className="glass-card p-4 bg-red-500/10 border-red-400/40">
+                <div className="text-center">
+                  <div className="text-white font-bold mb-2">
+                    {teamsWithOneWin[0].team.name} vs {teamsWithOneWin[1].team.name}
+                  </div>
+                  <div className="text-sm text-white/70">
+                    Match de barrage sera généré automatiquement
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
         )}
 
@@ -427,10 +467,11 @@ interface BracketMatchCardProps {
   label: string;
   isWinnersMatch?: boolean;
   isLosersMatch?: boolean;
+  isBarrageMatch?: boolean;
   onUpdateScore?: (matchId: string, team1Score: number, team2Score: number) => void;
 }
 
-function BracketMatchCard({ team1, team2, match, label, isWinnersMatch, isLosersMatch, onUpdateScore }: BracketMatchCardProps) {
+function BracketMatchCard({ team1, team2, match, label, isWinnersMatch, isLosersMatch, isBarrageMatch, onUpdateScore }: BracketMatchCardProps) {
   const [editingScore, setEditingScore] = useState(false);
   const [scores, setScores] = useState({ team1: 0, team2: 0 });
 
@@ -470,18 +511,26 @@ function BracketMatchCard({ team1, team2, match, label, isWinnersMatch, isLosers
     <div className={`glass-card overflow-hidden transition-all duration-300 ${
       isWinnersMatch ? 'border-green-400/40 bg-green-500/10' :
       isLosersMatch ? 'border-orange-400/40 bg-orange-500/10' :
+      isBarrageMatch ? 'border-red-400/40 bg-red-500/10' :
       'border-white/20 hover:border-blue-400/40'
     }`}>
       <div className="p-4">
         <div className="flex items-center justify-between mb-4">
           {/* Équipe 1 */}
           <div className={`flex-1 text-center p-3 rounded-lg transition-all duration-300 ${
-            winner === team1.id ? 'bg-green-500/20 border border-green-400 scale-105' : 'bg-white/5'
+            winner === team1.id ? 'bg-green-500/20 border border-green-400 scale-105 shadow-lg' : 'bg-white/5'
           }`}>
             <div className="font-bold text-white text-lg">{team1.name}</div>
             <div className="text-xs text-white/70 mt-1">
               {team1.players.map(p => `${p.label ? `[${p.label}] ` : ''}${p.name}`).join(', ')}
             </div>
+            {winner === team1.id && (
+              <div className="mt-2">
+                <span className="px-2 py-1 bg-green-500/30 border border-green-400 text-green-400 rounded text-xs font-bold">
+                  🏆 GAGNANT
+                </span>
+              </div>
+            )}
           </div>
 
           {/* Score central */}
@@ -551,12 +600,19 @@ function BracketMatchCard({ team1, team2, match, label, isWinnersMatch, isLosers
 
           {/* Équipe 2 */}
           <div className={`flex-1 text-center p-3 rounded-lg transition-all duration-300 ${
-            winner === team2.id ? 'bg-green-500/20 border border-green-400 scale-105' : 'bg-white/5'
+            winner === team2.id ? 'bg-green-500/20 border border-green-400 scale-105 shadow-lg' : 'bg-white/5'
           }`}>
             <div className="font-bold text-white text-lg">{team2.name}</div>
             <div className="text-xs text-white/70 mt-1">
               {team2.players.map(p => `${p.label ? `[${p.label}] ` : ''}${p.name}`).join(', ')}
             </div>
+            {winner === team2.id && (
+              <div className="mt-2">
+                <span className="px-2 py-1 bg-green-500/30 border border-green-400 text-green-400 rounded text-xs font-bold">
+                  🏆 GAGNANT
+                </span>
+              </div>
+            )}
           </div>
         </div>
       </div>
