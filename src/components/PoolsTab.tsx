@@ -364,11 +364,11 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools }: PoolsTab
           <div class="section">
             <div class="section-header">Phase de Poules</div>
             <div class="pools-grid">
-              ${pools.map(pool => {
+              ${pools.map((pool, index) => {
                 const poolTeams = pool.teamIds.map(id => teams.find(t => t.id === id)).filter(Boolean);
                 return `
                   <div class="pool-card">
-                    <div class="pool-header">${pool.name} (${poolTeams.length} équipes)</div>
+                    <div class="pool-header">Poule ${index + 1} (${poolTeams.length} équipes)</div>
                     <div style="padding: 10px;">
                       ${poolTeams.map(team => `
                         <div style="margin: 5px 0; padding: 5px; background: #f9fafb; border-radius: 4px;">
@@ -490,14 +490,14 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools }: PoolsTab
 
             <div className="p-6">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {pools.map((pool) => {
+                {pools.map((pool, index) => {
                   const phases = generateTournamentPhases(pool);
                   const poolTeams = pool.teamIds.map(id => teams.find(t => t.id === id)).filter(Boolean);
                   
                   return (
                     <div key={pool.id} className="glass-card p-4">
                       <div className="text-center mb-4">
-                        <h4 className="text-xl font-bold text-white">{pool.name}</h4>
+                        <h4 className="text-xl font-bold text-white">Poule {index + 1}</h4>
                         <p className="text-white/70 text-sm">{poolTeams.length} équipes • 2 terrains</p>
                       </div>
 
@@ -563,8 +563,8 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools }: PoolsTab
             </div>
           </div>
 
-          {/* Phase Éliminatoire */}
-          <div className="glass-card overflow-hidden">
+          {/* Phase Éliminatoire - Positionnement fixe */}
+          <div className="glass-card overflow-hidden" style={{ position: 'relative', zIndex: 1 }}>
             <div className="bg-gradient-to-r from-yellow-600/80 to-orange-600/80 backdrop-filter backdrop-blur-10 px-6 py-4 border-b border-white/20">
               <div className="flex items-center justify-center space-x-3">
                 <Trophy className="w-6 h-6 text-white" />
@@ -747,7 +747,7 @@ function CompactMatchCard({ match, courtNumber, winner, onSelectWinner, disabled
             </button>
             
             {showWinnerSelection && (
-              <div className="absolute z-10 right-0 top-12 bg-slate-800 border border-white/20 rounded-lg p-3 shadow-xl min-w-[150px]">
+              <div className="absolute z-50 right-0 top-12 bg-slate-800 border border-white/20 rounded-lg p-3 shadow-xl min-w-[150px]">
                 <div className="text-white font-bold mb-2 text-center text-sm">Gagnant ?</div>
                 <div className="space-y-1">
                   <button
@@ -862,7 +862,7 @@ function EliminationMatchCard({ match, courtNumber, onSelectWinner, isFinale = f
           )}
           
           {showWinnerSelection && (
-            <div className="absolute z-10 left-1/2 transform -translate-x-1/2 top-12 bg-slate-800 border border-white/20 rounded-lg p-4 shadow-xl min-w-[200px]">
+            <div className="absolute z-50 left-1/2 transform -translate-x-1/2 top-12 bg-slate-800 border border-white/20 rounded-lg p-4 shadow-xl min-w-[200px]">
               <div className="text-white font-bold mb-3 text-center">
                 {isFinale ? '🏆 Qui est le Champion ?' : 'Qui a gagné ?'}
               </div>
