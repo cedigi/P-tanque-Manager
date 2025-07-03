@@ -68,13 +68,23 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools }: PoolsTab
       const phases = generateTournamentPhases(pool);
       
       if (poolTeams.length === 3) {
-        // Pour une poule de 3 : le gagnant de la finale (Phase 2)
+        // Pour une poule de 3 : le gagnant de la finale (Phase 2) + le gagnant du barrage (Phase 3)
         const finaleMatch = phases.phase2[0];
+        const barrageMatch = phases.phase3[0];
+        
         if (finaleMatch) {
           const winner = getMatchWinner(finaleMatch.id);
           if (winner) {
             const winnerTeam = teams.find(t => t.id === winner);
             if (winnerTeam) qualified.push(winnerTeam);
+          }
+        }
+        
+        if (barrageMatch) {
+          const barrageWinner = getMatchWinner(barrageMatch.id);
+          if (barrageWinner) {
+            const team = teams.find(t => t.id === barrageWinner);
+            if (team) qualified.push(team);
           }
         }
       } else if (poolTeams.length === 4) {
@@ -170,11 +180,13 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools }: PoolsTab
       ];
 
       const phase1Winner = getMatchWinner(phase1Match);
+      const phase1Loser = getMatchLoser(phase1Match);
       const winnerTeam = phase1Winner ? teams.find(t => t.id === phase1Winner) : null;
       
+      const phase2MatchId = `phase2-finale-${pool.id}`;
       const phase2 = [
         {
-          id: `phase2-finale-${pool.id}`,
+          id: phase2MatchId,
           team1: poolTeams[0]!,
           team2: winnerTeam || { name: 'Gagnant du match', players: [] } as Team,
           type: 'finale-poule-3' as const,
@@ -183,7 +195,21 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools }: PoolsTab
         }
       ];
 
-      return { phase1, phase2, phase3: [] };
+      // Phase 3 : Match de barrage entre le perdant de la finale et le perdant de la phase 1
+      const phase2Loser = getMatchLoser(phase2MatchId);
+      const phase1LoserTeam = phase1Loser ? teams.find(t => t.id === phase1Loser) : null;
+      const phase2LoserTeam = phase2Loser ? teams.find(t => t.id === phase2Loser) : null;
+
+      const phase3 = [{
+        id: `phase3-barrage-${pool.id}`,
+        team1: phase1LoserTeam || { name: 'Perdant Phase 1', players: [] } as Team,
+        team2: phase2LoserTeam || { name: 'Perdant finale', players: [] } as Team,
+        type: 'match-barrage-3' as const,
+        description: 'Match de barrage',
+        canPlay: !!(phase1Loser && phase2Loser)
+      }];
+
+      return { phase1, phase2, phase3 };
     }
 
     // Poule de 4 équipes
