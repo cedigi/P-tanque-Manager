@@ -747,7 +747,10 @@ function CompactMatchCard({ match, courtNumber, winner, onSelectWinner, disabled
             </button>
             
             {showWinnerSelection && (
-              <div className="absolute z-50 right-0 top-12 bg-slate-800 border border-white/20 rounded-lg p-3 shadow-xl min-w-[150px]">
+              <div 
+                className="absolute right-0 top-12 bg-slate-800 border border-white/20 rounded-lg p-3 shadow-xl min-w-[150px]"
+                style={{ zIndex: 9999 }}
+              >
                 <div className="text-white font-bold mb-2 text-center text-sm">Gagnant ?</div>
                 <div className="space-y-1">
                   <button
@@ -862,7 +865,10 @@ function EliminationMatchCard({ match, courtNumber, onSelectWinner, isFinale = f
           )}
           
           {showWinnerSelection && (
-            <div className="absolute z-50 left-1/2 transform -translate-x-1/2 top-12 bg-slate-800 border border-white/20 rounded-lg p-4 shadow-xl min-w-[200px]">
+            <div 
+              className="absolute left-1/2 transform -translate-x-1/2 top-12 bg-slate-800 border border-white/20 rounded-lg p-4 shadow-xl min-w-[200px]"
+              style={{ zIndex: 9999 }}
+            >
               <div className="text-white font-bold mb-3 text-center">
                 {isFinale ? '🏆 Qui est le Champion ?' : 'Qui a gagné ?'}
               </div>
