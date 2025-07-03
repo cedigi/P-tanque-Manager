@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { Pool, Team, Tournament, Match } from '../types/tournament';
-import { Grid3X3, Users, Trophy, Shuffle, Printer, Play, Clock, CheckCircle } from 'lucide-react';
+import { Grid3X3, Users, Trophy, Shuffle, Printer, Play, Clock, CheckCircle, MapPin, Edit3 } from 'lucide-react';
 
 interface PoolsTabProps {
   tournament: Tournament;
@@ -111,8 +111,8 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools }: PoolsTab
 
       {pools.length > 0 ? (
         <>
-          {/* Affichage des poules */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+          {/* Affichage des poules avec matchs */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
             {pools.map((pool) => (
               <PoolCard 
                 key={pool.id} 
@@ -253,7 +253,7 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools }: PoolsTab
   );
 }
 
-// Composant pour afficher une poule individuelle
+// Composant pour afficher une poule individuelle avec ses matchs
 interface PoolCardProps {
   pool: Pool;
   teams: Team[];
@@ -271,6 +271,19 @@ function PoolCard({ pool, teams, matches, isSolo }: PoolCardProps) {
   // Une poule est terminée seulement si TOUS les matchs sont joués
   const isPoolCompleted = completedMatches.length === totalMatches && completedMatches.length > 0;
   const qualifiedTeams = isPoolCompleted ? poolStandings.slice(0, 2) : []; // Top 2 qualifiés seulement si poule terminée
+
+  const getTeamName = (teamId: string) => {
+    const team = teams.find(t => t.id === teamId);
+    return team?.name || 'Équipe inconnue';
+  };
+
+  const getTeamPlayers = (teamId: string) => {
+    const team = teams.find(t => t.id === teamId);
+    if (!team) return '';
+    return team.players
+      .map(player => (player.label ? `[${player.label}] ${player.name}` : player.name))
+      .join(', ');
+  };
 
   return (
     <div className="glass-card overflow-hidden">
@@ -293,46 +306,114 @@ function PoolCard({ pool, teams, matches, isSolo }: PoolCardProps) {
         )}
       </div>
       
-      <div className="p-6 space-y-4">
-        {poolStandings.map((team, index) => {
-          const isQualified = isPoolCompleted && index < 2;
-          return (
-            <div key={team.id} className={`glass-card p-4 ${isQualified ? 'border-green-400/40 bg-green-500/10' : ''}`}>
-              <div className="flex items-center justify-between mb-2">
-                <div className="flex items-center space-x-3">
-                  <span className={`w-6 h-6 rounded-full flex items-center justify-center text-sm font-bold ${
-                    isQualified ? 'bg-green-500 text-white' : 'bg-white/20 text-white/70'
-                  }`}>
-                    {index + 1}
-                  </span>
-                  <h4 className="font-bold text-white text-lg">{team.name}</h4>
-                  {isQualified && (
-                    <span className="px-2 py-1 bg-green-500/30 border border-green-400 text-green-400 rounded text-xs font-bold">
-                      Qualifié
-                    </span>
-                  )}
-                </div>
-                <div className="text-right">
-                  <div className="text-white font-bold">{team.wins}V - {team.losses}D</div>
-                  <div className="text-white/70 text-sm">+{team.performance}</div>
-                </div>
-              </div>
-              
-              <div className="flex flex-wrap gap-2">
-                {team.players.map((player) => (
-                  <div key={player.id} className="flex items-center space-x-2 text-sm text-white/80">
-                    {player.label && (
-                      <span className="w-5 h-5 bg-blue-400/20 border border-blue-400 text-blue-400 rounded-full flex items-center justify-center text-xs font-bold">
-                        {player.label}
+      <div className="p-6">
+        {/* Classement de la poule */}
+        <div className="mb-6">
+          <h4 className="text-lg font-bold text-white mb-4">Classement</h4>
+          <div className="space-y-2">
+            {poolStandings.map((team, index) => {
+              const isQualified = isPoolCompleted && index < 2;
+              return (
+                <div key={team.id} className={`glass-card p-3 ${isQualified ? 'border-green-400/40 bg-green-500/10' : ''}`}>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <span className={`w-6 h-6 rounded-full flex items-center justify-center text-sm font-bold ${
+                        isQualified ? 'bg-green-500 text-white' : 'bg-white/20 text-white/70'
+                      }`}>
+                        {index + 1}
                       </span>
-                    )}
-                    <span>{player.name}</span>
+                      <div>
+                        <div className="font-bold text-white">{team.name}</div>
+                        <div className="text-xs text-white/70">
+                          {team.players.map(p => `${p.label ? `[${p.label}] ` : ''}${p.name}`).join(', ')}
+                        </div>
+                      </div>
+                      {isQualified && (
+                        <span className="px-2 py-1 bg-green-500/30 border border-green-400 text-green-400 rounded text-xs font-bold">
+                          Qualifié
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-right">
+                      <div className="text-white font-bold text-sm">{team.wins}V - {team.losses}D</div>
+                      <div className="text-white/70 text-xs">+{team.performance}</div>
+                    </div>
                   </div>
-                ))}
-              </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Matchs de la poule */}
+        <div>
+          <h4 className="text-lg font-bold text-white mb-4">Matchs</h4>
+          {poolMatches.length > 0 ? (
+            <div className="space-y-3">
+              {poolMatches.map((match) => (
+                <div key={match.id} className="pool-match-card">
+                  <div className="grid grid-cols-5 items-center h-20">
+                    {/* Terrain */}
+                    <div className="court-badge">
+                      <div className="flex items-center justify-center space-x-1">
+                        <MapPin className="w-4 h-4" />
+                        <span className="text-sm font-bold">{match.court}</span>
+                      </div>
+                    </div>
+
+                    {/* Équipe 1 */}
+                    <div className="team-section">
+                      <div className="team-header">
+                        <Users className="w-4 h-4 text-white" />
+                      </div>
+                      <div className="team-name text-sm">{getTeamName(match.team1Id)}</div>
+                      <div className="text-xs text-white/70 mt-1 truncate">
+                        {getTeamPlayers(match.team1Id)}
+                      </div>
+                    </div>
+
+                    {/* Score */}
+                    <div className="text-center">
+                      {match.completed ? (
+                        <div className="text-xl font-bold text-white">
+                          {match.team1Score} - {match.team2Score}
+                        </div>
+                      ) : (
+                        <div className="vs-separator text-sm">VS</div>
+                      )}
+                    </div>
+
+                    {/* Équipe 2 */}
+                    <div className="team-section">
+                      <div className="team-header">
+                        <Users className="w-4 h-4 text-white" />
+                      </div>
+                      <div className="team-name text-sm">{getTeamName(match.team2Id)}</div>
+                      <div className="text-xs text-white/70 mt-1 truncate">
+                        {getTeamPlayers(match.team2Id)}
+                      </div>
+                    </div>
+
+                    {/* Statut */}
+                    <div className="text-center">
+                      {match.completed ? (
+                        <CheckCircle className="w-6 h-6 text-green-400 mx-auto" />
+                      ) : (
+                        <Clock className="w-6 h-6 text-yellow-400 mx-auto" />
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
-          );
-        })}
+          ) : (
+            <div className="text-center py-8 text-white/60">
+              <Play className="w-8 h-8 mx-auto mb-2" />
+              <p>Aucun match généré</p>
+              <p className="text-sm">Allez dans l'onglet "Matchs" pour générer les rencontres</p>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
