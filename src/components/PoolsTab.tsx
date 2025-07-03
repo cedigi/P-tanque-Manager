@@ -22,32 +22,110 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools }: PoolsTab
         <head>
           <title>Poules - ${tournament.name}</title>
           <style>
-            body { font-family: Arial, sans-serif; margin: 20px; }
-            h1 { text-align: center; margin-bottom: 30px; }
-            .pools-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
-            .pool { border: 2px solid #333; border-radius: 8px; padding: 15px; margin-bottom: 20px; }
-            .pool-title { font-weight: bold; font-size: 18px; margin-bottom: 15px; text-align: center; background: #f0f0f0; padding: 10px; border-radius: 4px; }
-            .team { padding: 10px; border: 1px solid #ddd; border-radius: 4px; margin-bottom: 8px; background: #f9f9f9; }
-            .team-name { font-weight: bold; margin-bottom: 5px; }
-            .team-players { font-size: 14px; color: #666; }
-            @media print { body { margin: 0; } }
+            body { 
+              font-family: Arial, sans-serif; 
+              margin: 20px; 
+              background: #f5f5f5;
+            }
+            h1 { 
+              text-align: center; 
+              margin-bottom: 30px; 
+              color: #333;
+              font-size: 28px;
+            }
+            .pools-container { 
+              display: grid; 
+              grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); 
+              gap: 25px; 
+              max-width: 1200px;
+              margin: 0 auto;
+            }
+            .pool { 
+              border: 3px solid #2563eb; 
+              border-radius: 12px; 
+              background: white;
+              box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+              overflow: hidden;
+            }
+            .pool-header { 
+              background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+              color: white;
+              padding: 15px;
+              text-align: center;
+              font-weight: bold; 
+              font-size: 20px;
+              letter-spacing: 1px;
+            }
+            .pool-content {
+              padding: 20px;
+            }
+            .team { 
+              padding: 12px 15px; 
+              border: 2px solid #e5e7eb; 
+              border-radius: 8px; 
+              margin-bottom: 12px; 
+              background: #f9fafb;
+              transition: all 0.2s ease;
+            }
+            .team:hover {
+              border-color: #2563eb;
+              background: #eff6ff;
+            }
+            .team:last-child {
+              margin-bottom: 0;
+            }
+            .team-name { 
+              font-weight: bold; 
+              font-size: 16px;
+              color: #1f2937;
+              margin-bottom: 8px;
+            }
+            .team-players { 
+              font-size: 14px; 
+              color: #6b7280;
+              line-height: 1.4;
+            }
+            .player-label {
+              display: inline-block;
+              width: 20px;
+              height: 20px;
+              background: #2563eb;
+              color: white;
+              border-radius: 50%;
+              text-align: center;
+              line-height: 20px;
+              font-size: 12px;
+              font-weight: bold;
+              margin-right: 8px;
+              vertical-align: middle;
+            }
+            @media print { 
+              body { margin: 0; background: white; } 
+              .pool { break-inside: avoid; }
+            }
           </style>
         </head>
         <body>
-          <h1>Poules - ${tournament.name}</h1>
+          <h1>🏆 Poules - ${tournament.name}</h1>
           <div class="pools-container">
             ${pools.map(pool => `
               <div class="pool">
-                <div class="pool-title">${pool.name}</div>
-                ${pool.teamIds.map(teamId => {
-                  const team = teams.find(t => t.id === teamId);
-                  return team ? `
-                    <div class="team">
-                      <div class="team-name">${team.name}</div>
-                      <div class="team-players">${team.players.map(p => `${p.label ? `[${p.label}] ` : ''}${p.name}`).join(', ')}</div>
-                    </div>
-                  ` : '';
-                }).join('')}
+                <div class="pool-header">${pool.name}</div>
+                <div class="pool-content">
+                  ${pool.teamIds.map(teamId => {
+                    const team = teams.find(t => t.id === teamId);
+                    return team ? `
+                      <div class="team">
+                        <div class="team-name">${team.name}</div>
+                        <div class="team-players">
+                          ${team.players.map(p => `
+                            ${p.label ? `<span class="player-label">${p.label}</span>` : ''}${p.name}
+                          `).join('<br>')}
+                        </div>
+                      </div>
+                    ` : '';
+                  }).join('')}
+                </div>
               </div>
             `).join('')}
           </div>
@@ -94,37 +172,53 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools }: PoolsTab
       )}
 
       {pools.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
           {pools.map((pool) => (
-            <div key={pool.id} className="glass-card overflow-hidden">
-              <div className="px-6 py-4 border-b border-white/20 bg-white/5">
-                <h3 className="text-xl font-bold text-white tracking-wide flex items-center space-x-2">
-                  <Grid3X3 className="w-5 h-5" />
-                  <span>{pool.name}</span>
-                </h3>
+            <div key={pool.id} className="pool-card">
+              {/* En-tête de la poule */}
+              <div className="pool-header">
+                <div className="flex items-center justify-center space-x-3">
+                  <Grid3X3 className="w-6 h-6" />
+                  <h3 className="text-2xl font-bold tracking-wide">{pool.name}</h3>
+                </div>
+                <div className="text-sm opacity-90 mt-1">
+                  {pool.teamIds.length} {isSolo ? 'joueur' : 'équipe'}{pool.teamIds.length > 1 ? 's' : ''}
+                </div>
               </div>
-              <div className="p-6 space-y-4">
-                {pool.teamIds.map((teamId) => {
+
+              {/* Contenu de la poule */}
+              <div className="pool-content">
+                {pool.teamIds.map((teamId, index) => {
                   const team = teams.find(t => t.id === teamId);
                   if (!team) return null;
                   
                   return (
-                    <div key={teamId} className="glass-card p-4">
-                      <div className="flex items-center space-x-3 mb-2">
-                        <Users className="w-5 h-5 text-white" />
-                        <h4 className="font-bold text-white text-lg">{team.name}</h4>
+                    <div key={teamId} className="team-card">
+                      {/* Numéro de position dans la poule */}
+                      <div className="team-position">
+                        {index + 1}
                       </div>
-                      <div className="space-y-2">
-                        {team.players.map((player) => (
-                          <div key={player.id} className="flex items-center space-x-2 text-sm text-white/80">
-                            {player.label && (
-                              <span className="w-5 h-5 bg-blue-400/20 border border-blue-400 text-blue-400 rounded-full flex items-center justify-center text-xs font-bold">
-                                {player.label}
-                              </span>
-                            )}
-                            <span>{player.name}</span>
-                          </div>
-                        ))}
+                      
+                      {/* Informations de l'équipe */}
+                      <div className="team-info">
+                        <div className="flex items-center space-x-3 mb-3">
+                          <Users className="w-5 h-5 text-blue-400" />
+                          <h4 className="font-bold text-white text-lg">{team.name}</h4>
+                        </div>
+                        
+                        {/* Liste des joueurs */}
+                        <div className="players-list">
+                          {team.players.map((player) => (
+                            <div key={player.id} className="player-item">
+                              {player.label && (
+                                <span className="player-label">
+                                  {player.label}
+                                </span>
+                              )}
+                              <span className="player-name">{player.name}</span>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     </div>
                   );
