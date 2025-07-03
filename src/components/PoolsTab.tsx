@@ -1,6 +1,6 @@
 import React from 'react';
 import { Pool, Team, Tournament, Match } from '../types/tournament';
-import { Grid3X3, Users, Trophy, Shuffle, Printer, MapPin } from 'lucide-react';
+import { Grid3X3, Users, Trophy, Shuffle, Printer, MapPin, Edit3 } from 'lucide-react';
 
 interface PoolsTabProps {
   tournament: Tournament;
@@ -24,13 +24,14 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools }: PoolsTab
           <style>
             body { font-family: Arial, sans-serif; margin: 20px; }
             h1 { text-align: center; margin-bottom: 30px; }
-            .pools-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+            .pools-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 20px; }
             .pool { border: 2px solid #333; border-radius: 8px; padding: 15px; margin-bottom: 20px; }
             .pool-title { font-weight: bold; font-size: 18px; margin-bottom: 15px; text-align: center; background: #f0f0f0; padding: 10px; border-radius: 4px; }
-            .team { padding: 10px; border: 1px solid #ddd; border-radius: 4px; margin-bottom: 8px; background: #f9f9f9; }
-            .team-name { font-weight: bold; margin-bottom: 5px; }
-            .team-players { font-size: 14px; color: #666; }
-            .match { display: flex; justify-content: space-between; align-items: center; padding: 8px; border: 1px solid #ddd; margin: 4px 0; background: #f9f9f9; }
+            .bracket { margin: 10px 0; }
+            .match-row { display: flex; justify-content: space-between; align-items: center; padding: 8px; border: 1px solid #ddd; margin: 4px 0; background: #f9f9f9; }
+            .team-name { font-weight: bold; }
+            .score { font-weight: bold; text-align: center; min-width: 60px; }
+            .round-title { font-weight: bold; margin: 15px 0 5px 0; color: #333; }
             @media print { body { margin: 0; } }
           </style>
         </head>
@@ -39,31 +40,12 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools }: PoolsTab
           <div class="pools-container">
             ${pools.map(pool => {
               const poolMatches = tournament.matches.filter(m => m.poolId === pool.id);
+              const poolTeams = pool.teamIds.map(id => teams.find(t => t.id === id)).filter(Boolean);
+              
               return `
                 <div class="pool">
                   <div class="pool-title">${pool.name}</div>
-                  ${pool.teamIds.map(teamId => {
-                    const team = teams.find(t => t.id === teamId);
-                    return team ? `
-                      <div class="team">
-                        <div class="team-name">${team.name}</div>
-                        <div class="team-players">${team.players.map(p => `${p.label ? `[${p.label}] ` : ''}${p.name}`).join(', ')}</div>
-                      </div>
-                    ` : '';
-                  }).join('')}
-                  
-                  <h4>Matchs</h4>
-                  ${poolMatches.map(match => {
-                    const team1 = teams.find(t => t.id === match.team1Id);
-                    const team2 = teams.find(t => t.id === match.team2Id);
-                    return `
-                      <div class="match">
-                        <span>${team1?.name || 'Équipe 1'}</span>
-                        <span>${match.completed ? `${match.team1Score} - ${match.team2Score}` : '- -'}</span>
-                        <span>${team2?.name || 'Équipe 2'}</span>
-                      </div>
-                    `;
-                  }).join('')}
+                  ${generateBracketHTML(poolTeams, poolMatches)}
                 </div>
               `;
             }).join('')}
@@ -75,6 +57,38 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools }: PoolsTab
     printWindow.document.write(printContent);
     printWindow.document.close();
     printWindow.print();
+  };
+
+  const generateBracketHTML = (poolTeams: Team[], poolMatches: Match[]) => {
+    if (poolTeams.length !== 4) return '<p>Poule incomplète</p>';
+
+    const [team1, team2, team3, team4] = poolTeams;
+    
+    // Matchs du premier tour
+    const match1 = poolMatches.find(m => 
+      (m.team1Id === team1.id && m.team2Id === team4.id) ||
+      (m.team1Id === team4.id && m.team2Id === team1.id)
+    );
+    const match2 = poolMatches.find(m => 
+      (m.team1Id === team2.id && m.team2Id === team3.id) ||
+      (m.team1Id === team3.id && m.team2Id === team2.id)
+    );
+
+    return `
+      <div class="bracket">
+        <div class="round-title">Premier tour</div>
+        <div class="match-row">
+          <span class="team-name">${team1.name}</span>
+          <span class="score">${match1?.completed ? `${match1.team1Id === team1.id ? match1.team1Score : match1.team2Score} - ${match1.team1Id === team1.id ? match1.team2Score : match1.team1Score}` : '- -'}</span>
+          <span class="team-name">${team4.name}</span>
+        </div>
+        <div class="match-row">
+          <span class="team-name">${team2.name}</span>
+          <span class="score">${match2?.completed ? `${match2.team1Id === team2.id ? match2.team1Score : match2.team2Score} - ${match2.team1Id === team2.id ? match2.team2Score : match2.team1Score}` : '- -'}</span>
+          <span class="team-name">${team3.name}</span>
+        </div>
+      </div>
+    `;
   };
 
   return (
@@ -112,10 +126,10 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools }: PoolsTab
 
       {pools.length > 0 ? (
         <>
-          {/* Affichage compact des poules avec matchs intégrés */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+          {/* Affichage des poules avec système de bracket automatique */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
             {pools.map((pool) => (
-              <CompactPoolCard 
+              <AutomaticBracketPool 
                 key={pool.id} 
                 pool={pool} 
                 teams={teams} 
@@ -170,67 +184,74 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools }: PoolsTab
   );
 }
 
-// Composant compact pour afficher une poule avec ses matchs
-interface CompactPoolCardProps {
+// Composant pour le système de bracket automatique
+interface AutomaticBracketPoolProps {
   pool: Pool;
   teams: Team[];
   matches: Match[];
   isSolo: boolean;
 }
 
-function CompactPoolCard({ pool, teams, matches, isSolo }: CompactPoolCardProps) {
+function AutomaticBracketPool({ pool, teams, matches, isSolo }: AutomaticBracketPoolProps) {
   const poolMatches = matches.filter(m => m.poolId === pool.id);
   const poolTeams = pool.teamIds.map(id => teams.find(t => t.id === id)).filter(Boolean) as Team[];
   
-  const getTeamName = (teamId: string) => {
-    const team = teams.find(t => t.id === teamId);
-    return team?.name || 'Équipe inconnue';
+  if (poolTeams.length !== 4) {
+    return (
+      <div className="glass-card p-6">
+        <h3 className="text-xl font-bold text-white mb-4">{pool.name}</h3>
+        <p className="text-white/70">Poule incomplète ({poolTeams.length}/4 équipes)</p>
+      </div>
+    );
+  }
+
+  const [team1, team2, team3, team4] = poolTeams;
+
+  // Matchs du premier tour (1 vs 4, 2 vs 3)
+  const match1vs4 = poolMatches.find(m => 
+    (m.team1Id === team1.id && m.team2Id === team4.id) ||
+    (m.team1Id === team4.id && m.team2Id === team1.id)
+  );
+  
+  const match2vs3 = poolMatches.find(m => 
+    (m.team1Id === team2.id && m.team2Id === team3.id) ||
+    (m.team1Id === team3.id && m.team2Id === team2.id)
+  );
+
+  // Déterminer les gagnants et perdants automatiquement
+  const getWinnerLoser = (match: Match | undefined, teamA: Team, teamB: Team) => {
+    if (!match?.completed) return { winner: null, loser: null };
+    
+    const isTeamAFirst = match.team1Id === teamA.id;
+    const teamAScore = isTeamAFirst ? match.team1Score! : match.team2Score!;
+    const teamBScore = isTeamAFirst ? match.team2Score! : match.team1Score!;
+    
+    if (teamAScore > teamBScore) {
+      return { winner: teamA, loser: teamB };
+    } else {
+      return { winner: teamB, loser: teamA };
+    }
   };
 
-  // Calculer les statistiques pour le classement
-  const calculateStats = () => {
-    const stats = poolTeams.map(team => {
-      const teamMatches = poolMatches.filter(m => 
-        m.completed && (m.team1Id === team.id || m.team2Id === team.id)
-      );
+  const result1vs4 = getWinnerLoser(match1vs4, team1, team4);
+  const result2vs3 = getWinnerLoser(match2vs3, team2, team3);
 
-      let wins = 0;
-      let losses = 0;
-      let pointsFor = 0;
-      let pointsAgainst = 0;
+  // Matchs du deuxième tour (automatiquement remplis)
+  const winnersMatch = poolMatches.find(m => {
+    if (!result1vs4.winner || !result2vs3.winner) return false;
+    return (
+      (m.team1Id === result1vs4.winner.id && m.team2Id === result2vs3.winner.id) ||
+      (m.team1Id === result2vs3.winner.id && m.team2Id === result1vs4.winner.id)
+    );
+  });
 
-      teamMatches.forEach(match => {
-        const isTeam1 = match.team1Id === team.id;
-        const teamScore = isTeam1 ? (match.team1Score || 0) : (match.team2Score || 0);
-        const opponentScore = isTeam1 ? (match.team2Score || 0) : (match.team1Score || 0);
-
-        pointsFor += teamScore;
-        pointsAgainst += opponentScore;
-
-        if (teamScore > opponentScore) {
-          wins++;
-        } else {
-          losses++;
-        }
-      });
-
-      return {
-        team,
-        wins,
-        losses,
-        pointsFor,
-        pointsAgainst,
-        performance: pointsFor - pointsAgainst
-      };
-    });
-
-    return stats.sort((a, b) => {
-      if (b.wins !== a.wins) return b.wins - a.wins;
-      return b.performance - a.performance;
-    });
-  };
-
-  const stats = calculateStats();
+  const losersMatch = poolMatches.find(m => {
+    if (!result1vs4.loser || !result2vs3.loser) return false;
+    return (
+      (m.team1Id === result1vs4.loser.id && m.team2Id === result2vs3.loser.id) ||
+      (m.team1Id === result2vs3.loser.id && m.team2Id === result1vs4.loser.id)
+    );
+  });
 
   return (
     <div className="glass-card overflow-hidden">
@@ -240,72 +261,142 @@ function CompactPoolCard({ pool, teams, matches, isSolo }: CompactPoolCardProps)
           <span>{pool.name}</span>
         </h3>
         <div className="text-sm text-white/70 mt-1">
-          {poolMatches.filter(m => m.completed).length}/{poolMatches.length} matchs joués
+          Système de bracket automatique
         </div>
       </div>
       
-      <div className="p-6 space-y-4">
-        {/* Équipes de la poule */}
+      <div className="p-6 space-y-6">
+        {/* Premier tour */}
         <div>
-          <h4 className="text-sm font-bold text-white/80 mb-3 uppercase tracking-wider">Équipes</h4>
-          <div className="space-y-2">
-            {stats.map((stat, index) => (
-              <div key={stat.team.id} className="glass-card p-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <span className="w-5 h-5 bg-white/20 text-white rounded-full flex items-center justify-center text-xs font-bold">
-                      {index + 1}
-                    </span>
-                    <div>
-                      <div className="font-bold text-white text-sm">{stat.team.name}</div>
-                      <div className="text-xs text-white/70">
-                        {stat.team.players.map(p => `${p.label ? `[${p.label}] ` : ''}${p.name}`).join(', ')}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-white font-bold text-xs">{stat.wins}V-{stat.losses}D</div>
-                    <div className="text-white/70 text-xs">+{stat.performance}</div>
-                  </div>
-                </div>
-              </div>
-            ))}
+          <h4 className="text-sm font-bold text-white/80 mb-3 uppercase tracking-wider">
+            🥇 Premier tour
+          </h4>
+          <div className="space-y-3">
+            {/* Match 1 vs 4 */}
+            <BracketMatchRow 
+              team1={team1} 
+              team2={team4} 
+              match={match1vs4}
+              label="Match 1"
+            />
+            
+            {/* Match 2 vs 3 */}
+            <BracketMatchRow 
+              team1={team2} 
+              team2={team3} 
+              match={match2vs3}
+              label="Match 2"
+            />
           </div>
         </div>
 
-        {/* Matchs de la poule */}
-        <div>
-          <h4 className="text-sm font-bold text-white/80 mb-3 uppercase tracking-wider">Matchs</h4>
-          <div className="space-y-2">
-            {poolMatches.map((match) => (
-              <div key={match.id} className="glass-card p-3">
-                <div className="flex items-center justify-between text-sm">
-                  <div className="flex-1 text-white font-medium">
-                    {getTeamName(match.team1Id)}
-                  </div>
-                  <div className="mx-3 text-center">
-                    {match.completed ? (
-                      <span className="text-white font-bold">
-                        {match.team1Score} - {match.team2Score}
-                      </span>
-                    ) : (
-                      <span className="text-white/50">- -</span>
-                    )}
-                  </div>
-                  <div className="flex-1 text-right text-white font-medium">
-                    {getTeamName(match.team2Id)}
-                  </div>
-                </div>
-                {match.court && (
-                  <div className="mt-2 text-center">
-                    <span className="px-2 py-1 bg-blue-500/30 border border-blue-400 text-blue-400 rounded text-xs font-bold">
-                      <MapPin className="w-3 h-3 inline mr-1" />
-                      T{match.court}
-                    </span>
-                  </div>
-                )}
-              </div>
-            ))}
+        {/* Deuxième tour - Gagnants */}
+        {(result1vs4.winner && result2vs3.winner) && (
+          <div>
+            <h4 className="text-sm font-bold text-green-400 mb-3 uppercase tracking-wider">
+              🏆 Finale (Gagnants vs Gagnants)
+            </h4>
+            <BracketMatchRow 
+              team1={result1vs4.winner} 
+              team2={result2vs3.winner} 
+              match={winnersMatch}
+              label="Finale"
+              isWinnersMatch={true}
+            />
+          </div>
+        )}
+
+        {/* Deuxième tour - Perdants */}
+        {(result1vs4.loser && result2vs3.loser) && (
+          <div>
+            <h4 className="text-sm font-bold text-red-400 mb-3 uppercase tracking-wider">
+              🥉 Petite finale (Perdants vs Perdants)
+            </h4>
+            <BracketMatchRow 
+              team1={result1vs4.loser} 
+              team2={result2vs3.loser} 
+              match={losersMatch}
+              label="3e place"
+              isLosersMatch={true}
+            />
+          </div>
+        )}
+
+        {/* Match de barrage (si nécessaire) */}
+        {/* TODO: Logique pour détecter si un match de barrage est nécessaire */}
+      </div>
+    </div>
+  );
+}
+
+// Composant pour afficher une ligne de match dans le bracket
+interface BracketMatchRowProps {
+  team1: Team;
+  team2: Team;
+  match?: Match;
+  label: string;
+  isWinnersMatch?: boolean;
+  isLosersMatch?: boolean;
+}
+
+function BracketMatchRow({ team1, team2, match, label, isWinnersMatch, isLosersMatch }: BracketMatchRowProps) {
+  const getTeamScore = (team: Team) => {
+    if (!match?.completed) return '-';
+    const isTeam1 = match.team1Id === team.id;
+    return isTeam1 ? match.team1Score : match.team2Score;
+  };
+
+  const getWinner = () => {
+    if (!match?.completed) return null;
+    const team1Score = getTeamScore(team1);
+    const team2Score = getTeamScore(team2);
+    if (team1Score > team2Score) return team1.id;
+    if (team2Score > team1Score) return team2.id;
+    return null;
+  };
+
+  const winner = getWinner();
+
+  return (
+    <div className={`glass-card p-4 ${
+      isWinnersMatch ? 'border-green-400/40 bg-green-500/10' :
+      isLosersMatch ? 'border-red-400/40 bg-red-500/10' :
+      'border-white/20'
+    }`}>
+      <div className="flex items-center justify-between">
+        {/* Équipe 1 */}
+        <div className={`flex-1 text-center p-3 rounded-lg ${
+          winner === team1.id ? 'bg-green-500/20 border border-green-400' : 'bg-white/5'
+        }`}>
+          <div className="font-bold text-white">{team1.name}</div>
+          <div className="text-xs text-white/70 mt-1">
+            {team1.players.map(p => `${p.label ? `[${p.label}] ` : ''}${p.name}`).join(', ')}
+          </div>
+        </div>
+
+        {/* Score central */}
+        <div className="mx-4 text-center">
+          <div className="text-2xl font-bold text-white">
+            {getTeamScore(team1)} - {getTeamScore(team2)}
+          </div>
+          <div className="text-xs text-white/60 mt-1">{label}</div>
+          {match?.court && (
+            <div className="mt-1">
+              <span className="px-2 py-1 bg-blue-500/30 border border-blue-400 text-blue-400 rounded text-xs font-bold">
+                <MapPin className="w-3 h-3 inline mr-1" />
+                T{match.court}
+              </span>
+            </div>
+          )}
+        </div>
+
+        {/* Équipe 2 */}
+        <div className={`flex-1 text-center p-3 rounded-lg ${
+          winner === team2.id ? 'bg-green-500/20 border border-green-400' : 'bg-white/5'
+        }`}>
+          <div className="font-bold text-white">{team2.name}</div>
+          <div className="text-xs text-white/70 mt-1">
+            {team2.players.map(p => `${p.label ? `[${p.label}] ` : ''}${p.name}`).join(', ')}
           </div>
         </div>
       </div>
