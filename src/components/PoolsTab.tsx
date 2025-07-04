@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Pool, Team, Tournament, Match } from '../types/tournament';
-import { Grid3X3, Users, Trophy, Shuffle, Printer, Edit3 } from 'lucide-react';
+import { Grid3X3, Users, Trophy, Shuffle, Printer, Edit3, Crown } from 'lucide-react';
 
 interface PoolsTabProps {
   tournament: Tournament;
@@ -73,8 +73,8 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools, onUpdateSc
     );
 
     return `
-      <div class="match-box">${team1.name} ${match1vs4?.completed ? `${match1vs4.team1Id === team1.id ? match1vs4.team1Score : match1vs4.team2Score} - ${match1vs4.team1Id === team1.id ? match1vs4.team2Score : match1vs4.team1Score}` : '- - -'} ${team4.name}</div>
-      <div class="match-box">${team2.name} ${match2vs3?.completed ? `${match2vs3.team1Id === team2.id ? match2vs3.team1Score : match2vs3.team2Score} - ${match2vs3.team1Id === team2.id ? match2vs3.team2Score : match2vs3.team1Score}` : '- - -'} ${team3.name}</div>
+      <div class="match-box">T${match1vs4?.court || '-'} | ${team1.name} ${match1vs4?.completed ? `${match1vs4.team1Id === team1.id ? match1vs4.team1Score : match1vs4.team2Score} - ${match1vs4.team1Id === team1.id ? match1vs4.team2Score : match1vs4.team1Score}` : '- - -'} ${team4.name}</div>
+      <div class="match-box">T${match2vs3?.court || '-'} | ${team2.name} ${match2vs3?.completed ? `${match2vs3.team1Id === team2.id ? match2vs3.team1Score : match2vs3.team2Score} - ${match2vs3.team1Id === team2.id ? match2vs3.team2Score : match2vs3.team1Score}` : '- - -'} ${team3.name}</div>
       <div class="match-box">V vs V : - - -</div>
       <div class="match-box">D vs D : - - -</div>
       <div class="match-box">Barrage : - - -</div>
@@ -116,10 +116,10 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools, onUpdateSc
 
       {pools.length > 0 ? (
         <>
-          {/* Affichage des poules avec exactement 5 cases */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 mb-8">
+          {/* Affichage des poules avec exactement 5 cases - Layout plus compact */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-8">
             {pools.map((pool) => (
-              <FiveBoxPool 
+              <CompactFiveBoxPool 
                 key={pool.id} 
                 pool={pool} 
                 teams={teams} 
@@ -174,23 +174,23 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools, onUpdateSc
   );
 }
 
-// Composant avec exactement 5 cases qui se remplissent automatiquement
-interface FiveBoxPoolProps {
+// Composant compact avec exactement 5 cases qui se remplissent automatiquement
+interface CompactFiveBoxPoolProps {
   pool: Pool;
   teams: Team[];
   matches: Match[];
   onUpdateScore?: (matchId: string, team1Score: number, team2Score: number) => void;
 }
 
-function FiveBoxPool({ pool, teams, matches, onUpdateScore }: FiveBoxPoolProps) {
+function CompactFiveBoxPool({ pool, teams, matches, onUpdateScore }: CompactFiveBoxPoolProps) {
   const poolMatches = matches.filter(m => m.poolId === pool.id);
   const poolTeams = pool.teamIds.map(id => teams.find(t => t.id === id)).filter(Boolean) as Team[];
   
   if (poolTeams.length !== 4) {
     return (
-      <div className="glass-card p-4">
-        <h3 className="text-lg font-bold text-white mb-2">{pool.name}</h3>
-        <p className="text-white/70 text-sm">Poule incomplète ({poolTeams.length}/4 équipes)</p>
+      <div className="glass-card p-3 min-w-[280px]">
+        <h3 className="text-sm font-bold text-white mb-2">{pool.name}</h3>
+        <p className="text-white/70 text-xs">Poule incomplète ({poolTeams.length}/4 équipes)</p>
       </div>
     );
   }
@@ -278,17 +278,17 @@ function FiveBoxPool({ pool, teams, matches, onUpdateScore }: FiveBoxPoolProps) 
   );
 
   return (
-    <div className="glass-card overflow-hidden">
-      <div className="px-4 py-3 border-b border-white/20 bg-white/5">
-        <h3 className="text-lg font-bold text-white tracking-wide flex items-center space-x-2">
-          <Grid3X3 className="w-4 h-4" />
+    <div className="glass-card overflow-hidden min-w-[280px] max-w-[320px]">
+      <div className="px-3 py-2 border-b border-white/20 bg-white/5">
+        <h3 className="text-sm font-bold text-white tracking-wide flex items-center space-x-2">
+          <Grid3X3 className="w-3 h-3" />
           <span>{pool.name}</span>
         </h3>
       </div>
       
-      <div className="p-4 space-y-3">
+      <div className="p-2 space-y-2">
         {/* Case 1 : Match 1 vs 4 */}
-        <MatchBox 
+        <CompactMatchBox 
           team1={team1} 
           team2={team4} 
           match={match1vs4}
@@ -296,7 +296,7 @@ function FiveBoxPool({ pool, teams, matches, onUpdateScore }: FiveBoxPoolProps) 
         />
         
         {/* Case 2 : Match 2 vs 3 */}
-        <MatchBox 
+        <CompactMatchBox 
           team1={team2} 
           team2={team3} 
           match={match2vs3}
@@ -304,7 +304,7 @@ function FiveBoxPool({ pool, teams, matches, onUpdateScore }: FiveBoxPoolProps) 
         />
 
         {/* Case 3 : Gagnants vs Gagnants */}
-        <MatchBox 
+        <CompactMatchBox 
           team1={result1vs4.winner} 
           team2={result2vs3.winner} 
           match={winnersMatch}
@@ -314,7 +314,7 @@ function FiveBoxPool({ pool, teams, matches, onUpdateScore }: FiveBoxPoolProps) 
         />
 
         {/* Case 4 : Perdants vs Perdants */}
-        <MatchBox 
+        <CompactMatchBox 
           team1={result1vs4.loser} 
           team2={result2vs3.loser} 
           match={losersMatch}
@@ -324,7 +324,7 @@ function FiveBoxPool({ pool, teams, matches, onUpdateScore }: FiveBoxPoolProps) 
         />
 
         {/* Case 5 : Match de barrage */}
-        <MatchBox 
+        <CompactMatchBox 
           team1={teamsWithOneWin[0]?.team} 
           team2={teamsWithOneWin[1]?.team} 
           match={barrageMatch}
@@ -338,8 +338,8 @@ function FiveBoxPool({ pool, teams, matches, onUpdateScore }: FiveBoxPoolProps) 
   );
 }
 
-// Composant pour chaque case de match
-interface MatchBoxProps {
+// Composant compact pour chaque case de match
+interface CompactMatchBoxProps {
   team1?: Team | null;
   team2?: Team | null;
   match?: Match;
@@ -349,15 +349,16 @@ interface MatchBoxProps {
   showOnlyIfNeeded?: boolean;
 }
 
-function MatchBox({ team1, team2, match, label, bgColor = "bg-white/5", onUpdateScore, showOnlyIfNeeded = true }: MatchBoxProps) {
+function CompactMatchBox({ team1, team2, match, label, bgColor = "bg-white/5", onUpdateScore, showOnlyIfNeeded = true }: CompactMatchBoxProps) {
   const [editingScore, setEditingScore] = useState(false);
   const [scores, setScores] = useState({ team1: 0, team2: 0 });
+  const [showWinnerSelector, setShowWinnerSelector] = useState(false);
 
   // Si showOnlyIfNeeded est true et qu'il n'y a pas d'équipes, ne pas afficher
   if (showOnlyIfNeeded && (!team1 || !team2)) {
     return (
-      <div className={`glass-card p-3 ${bgColor} opacity-50`}>
-        <div className="text-center text-white/60 text-sm">
+      <div className={`glass-card p-2 ${bgColor} opacity-50`}>
+        <div className="text-center text-white/60 text-xs">
           {label || "En attente..."}
         </div>
       </div>
@@ -385,80 +386,132 @@ function MatchBox({ team1, team2, match, label, bgColor = "bg-white/5", onUpdate
     setEditingScore(false);
   };
 
+  const handleQuickWin = (winnerTeam: 'team1' | 'team2') => {
+    if (!match || !onUpdateScore) return;
+    const winnerScore = 13;
+    const loserScore = Math.floor(Math.random() * 12); // Score aléatoire entre 0 et 11
+    
+    if (winnerTeam === 'team1') {
+      onUpdateScore(match.id, winnerScore, loserScore);
+    } else {
+      onUpdateScore(match.id, loserScore, winnerScore);
+    }
+    setShowWinnerSelector(false);
+  };
+
   return (
-    <div className={`glass-card p-3 ${bgColor} transition-all duration-300`}>
-      <div className="flex items-center justify-between">
-        {/* Équipe 1 */}
-        <div className="flex-1 text-left">
-          <div className="font-bold text-white text-sm">
-            {team1?.name || "..."}
+    <div className={`glass-card p-2 ${bgColor} transition-all duration-300`}>
+      {/* Colonne terrain à gauche */}
+      <div className="flex items-center space-x-2">
+        <div className="w-8 text-center">
+          <div className="text-xs font-bold text-blue-400">
+            {match?.court ? `T${match.court}` : '-'}
           </div>
         </div>
 
-        {/* Score central */}
-        <div className="mx-4 text-center min-w-[100px]">
-          {editingScore && match ? (
-            <div className="flex items-center space-x-1">
-              <input
-                type="number"
-                min="0"
-                max="13"
-                value={scores.team1}
-                onChange={(e) => setScores({ ...scores, team1: Number(e.target.value) })}
-                className="w-8 px-1 py-0 text-center bg-white/10 border border-white/20 rounded text-white text-xs font-bold"
-              />
-              <span className="text-white text-xs">-</span>
-              <input
-                type="number"
-                min="0"
-                max="13"
-                value={scores.team2}
-                onChange={(e) => setScores({ ...scores, team2: Number(e.target.value) })}
-                className="w-8 px-1 py-0 text-center bg-white/10 border border-white/20 rounded text-white text-xs font-bold"
-              />
-              <button
-                onClick={handleSaveScore}
-                className="ml-1 px-1 py-0 bg-green-500/80 text-white rounded text-xs"
-              >
-                ✓
-              </button>
-              <button
-                onClick={() => setEditingScore(false)}
-                className="px-1 py-0 bg-red-500/80 text-white rounded text-xs"
-              >
-                ✕
-              </button>
-            </div>
-          ) : (
-            <div className="flex items-center justify-center space-x-2">
-              <div className="text-lg font-bold text-white">
-                {getTeamScore(team1)} - {getTeamScore(team2)}
+        {/* Contenu principal du match */}
+        <div className="flex-1">
+          <div className="flex items-center justify-between">
+            {/* Équipe 1 */}
+            <div className="flex-1 text-left">
+              <div className="font-bold text-white text-xs truncate">
+                {team1?.name || "..."}
               </div>
-              {match && onUpdateScore && team1 && team2 && (
-                <button
-                  onClick={handleEditScore}
-                  className="p-1 text-white/60 hover:text-white transition-colors"
-                  title="Modifier le score"
-                >
-                  <Edit3 className="w-3 h-3" />
-                </button>
+            </div>
+
+            {/* Score central */}
+            <div className="mx-2 text-center min-w-[60px]">
+              {editingScore && match ? (
+                <div className="flex items-center space-x-1">
+                  <input
+                    type="number"
+                    min="0"
+                    max="13"
+                    value={scores.team1}
+                    onChange={(e) => setScores({ ...scores, team1: Number(e.target.value) })}
+                    className="w-6 px-1 py-0 text-center bg-white/10 border border-white/20 rounded text-white text-xs font-bold"
+                  />
+                  <span className="text-white text-xs">-</span>
+                  <input
+                    type="number"
+                    min="0"
+                    max="13"
+                    value={scores.team2}
+                    onChange={(e) => setScores({ ...scores, team2: Number(e.target.value) })}
+                    className="w-6 px-1 py-0 text-center bg-white/10 border border-white/20 rounded text-white text-xs font-bold"
+                  />
+                  <button
+                    onClick={handleSaveScore}
+                    className="ml-1 px-1 py-0 bg-green-500/80 text-white rounded text-xs"
+                  >
+                    ✓
+                  </button>
+                  <button
+                    onClick={() => setEditingScore(false)}
+                    className="px-1 py-0 bg-red-500/80 text-white rounded text-xs"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ) : showWinnerSelector && match && team1 && team2 ? (
+                <div className="flex flex-col space-y-1">
+                  <button
+                    onClick={() => handleQuickWin('team1')}
+                    className="px-2 py-1 bg-green-500/80 text-white rounded text-xs hover:bg-green-500"
+                    title={`${team1.name} gagne`}
+                  >
+                    {team1.name.substring(0, 8)}...
+                  </button>
+                  <button
+                    onClick={() => handleQuickWin('team2')}
+                    className="px-2 py-1 bg-green-500/80 text-white rounded text-xs hover:bg-green-500"
+                    title={`${team2.name} gagne`}
+                  >
+                    {team2.name.substring(0, 8)}...
+                  </button>
+                  <button
+                    onClick={() => setShowWinnerSelector(false)}
+                    className="px-1 py-0 bg-red-500/80 text-white rounded text-xs"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center justify-center space-x-1">
+                  <div className="text-sm font-bold text-white">
+                    {getTeamScore(team1)} - {getTeamScore(team2)}
+                  </div>
+                  {match && onUpdateScore && team1 && team2 && (
+                    <div className="flex flex-col space-y-1">
+                      <button
+                        onClick={handleEditScore}
+                        className="p-1 text-white/60 hover:text-white transition-colors"
+                        title="Modifier le score"
+                      >
+                        <Edit3 className="w-2 h-2" />
+                      </button>
+                      <button
+                        onClick={() => setShowWinnerSelector(true)}
+                        className="p-1 text-yellow-400 hover:text-yellow-300 transition-colors"
+                        title="Définir le gagnant"
+                      >
+                        <Crown className="w-2 h-2" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+              {label && (
+                <div className="text-xs text-white/60 mt-1">{label}</div>
               )}
             </div>
-          )}
-          {label && (
-            <div className="text-xs text-white/60 mt-1">{label}</div>
-          )}
-          {match?.court && (
-            <div className="text-xs text-blue-400 mt-1">
-              T{match.court}
-            </div>
-          )}
-        </div>
 
-        {/* Équipe 2 */}
-        <div className="flex-1 text-right">
-          <div className="font-bold text-white text-sm">
-            {team2?.name || "..."}
+            {/* Équipe 2 */}
+            <div className="flex-1 text-right">
+              <div className="font-bold text-white text-xs truncate">
+                {team2?.name || "..."}
+              </div>
+            </div>
           </div>
         </div>
       </div>
