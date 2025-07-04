@@ -144,13 +144,13 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools, onUpdateSc
         return b.performance - a.performance;
       });
 
-      // Prendre les 2 premiers de chaque poule (ou 1 seul si poule de 3 avec élimination)
+      // CORRECTION : Pour les poules de 3, on prend les 2 premiers (après barrage éventuel)
       if (poolTeams.length === 4) {
         // Pour une poule de 4, on prend les 2 premiers
         qualified.push(...teamStats.slice(0, 2).map(stat => stat.team));
       } else if (poolTeams.length === 3) {
-        // Pour une poule de 3, on prend le premier
-        qualified.push(teamStats[0].team);
+        // Pour une poule de 3, on prend les 2 premiers (le gagnant + le vainqueur du barrage)
+        qualified.push(...teamStats.slice(0, 2).map(stat => stat.team));
       }
     });
 
