@@ -74,8 +74,8 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools, onUpdateSc
       return `
         <div class="match-box">T${match1vs4?.court || '-'} | ${team1.name} ${match1vs4?.completed ? `${match1vs4.team1Id === team1.id ? match1vs4.team1Score : match1vs4.team2Score} - ${match1vs4.team1Id === team1.id ? match1vs4.team2Score : match1vs4.team1Score}` : '- - -'} ${team4.name}</div>
         <div class="match-box">T${match2vs3?.court || '-'} | ${team2.name} ${match2vs3?.completed ? `${match2vs3.team1Id === team2.id ? match2vs3.team1Score : match2vs3.team2Score} - ${match2vs3.team1Id === team2.id ? match2vs3.team2Score : match2vs3.team1Score}` : '- - -'} ${team3.name}</div>
-        <div class="match-box">V vs V : - - -</div>
-        <div class="match-box">D vs D : - - -</div>
+        <div class="match-box">Finale : - - -</div>
+        <div class="match-box">Petite finale : - - -</div>
         <div class="match-box">Barrage : - - -</div>
       `;
     } else if (poolTeams.length === 3) {
@@ -90,7 +90,7 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools, onUpdateSc
       return `
         <div class="match-box">T${match1vs2?.court || '-'} | ${team1.name} ${match1vs2?.completed ? `${match1vs2.team1Id === team1.id ? match1vs2.team1Score : match1vs2.team2Score} - ${match1vs2.team1Id === team1.id ? match1vs2.team2Score : match1vs2.team1Score}` : '- - -'} ${team2.name}</div>
         <div class="match-box">${team3.name} - Qualifié d'office</div>
-        <div class="match-box">V vs Qualifié : - - -</div>
+        <div class="match-box">Finale : - - -</div>
         <div class="match-box">Perdant éliminé</div>
         <div class="match-box">Match de barrage : - - -</div>
       `;
@@ -326,7 +326,6 @@ function CompactFourTeamPool({ poolTeams, poolMatches, pool, onUpdateScore }: {
           team1={result1vs4.winner} 
           team2={result2vs3.winner} 
           match={winnersMatch}
-          label="V vs V"
           bgColor="bg-green-500/10"
           onUpdateScore={onUpdateScore}
         />
@@ -335,7 +334,6 @@ function CompactFourTeamPool({ poolTeams, poolMatches, pool, onUpdateScore }: {
           team1={result1vs4.loser} 
           team2={result2vs3.loser} 
           match={losersMatch}
-          label="D vs D"
           bgColor="bg-orange-500/10"
           onUpdateScore={onUpdateScore}
         />
@@ -344,7 +342,6 @@ function CompactFourTeamPool({ poolTeams, poolMatches, pool, onUpdateScore }: {
           team1={teamsWithOneWin[0]?.team} 
           team2={teamsWithOneWin[1]?.team} 
           match={barrageMatch}
-          label="Barrage"
           bgColor="bg-red-500/10"
           onUpdateScore={onUpdateScore}
           showOnlyIfNeeded={teamsWithOneWin.length === 2}
@@ -451,7 +448,6 @@ function CompactThreeTeamPool({ poolTeams, poolMatches, pool, onUpdateScore }: {
           team1={firstRoundResult.winner} 
           team2={team3} 
           match={finalMatch}
-          label="V vs Q"
           bgColor="bg-green-500/10"
           onUpdateScore={onUpdateScore}
         />
@@ -469,7 +465,6 @@ function CompactThreeTeamPool({ poolTeams, poolMatches, pool, onUpdateScore }: {
           team1={barrageTeam1} 
           team2={barrageTeam2} 
           match={barrageMatch}
-          label="Barrage"
           bgColor="bg-red-500/10"
           onUpdateScore={onUpdateScore}
           showOnlyIfNeeded={needsBarrage}
@@ -527,24 +522,23 @@ function WinnerModal({ team1, team2, onSelectWinner, onClose }: WinnerModalProps
   );
 }
 
-// Composant de case de match compacte SANS SCORES
+// Composant de case de match compacte SANS SCORES - VERSION FINALE
 interface CompactMatchBoxProps {
   team1?: Team | null;
   team2?: Team | null;
   match?: Match;
-  label?: string;
   bgColor?: string;
   onUpdateScore?: (matchId: string, team1Score: number, team2Score: number) => void;
   showOnlyIfNeeded?: boolean;
 }
 
-function CompactMatchBox({ team1, team2, match, label, bgColor = "bg-white/5", onUpdateScore, showOnlyIfNeeded = true }: CompactMatchBoxProps) {
+function CompactMatchBox({ team1, team2, match, bgColor = "bg-white/5", onUpdateScore, showOnlyIfNeeded = true }: CompactMatchBoxProps) {
   const [showWinnerModal, setShowWinnerModal] = useState(false);
 
   if (showOnlyIfNeeded && (!team1 || !team2)) {
     return (
       <div className={`glass-card p-2 ${bgColor} opacity-50 text-center`}>
-        <div className="text-xs text-white/60">{label || "En attente..."}</div>
+        <div className="text-xs text-white/60">En attente...</div>
       </div>
     );
   }
@@ -576,15 +570,28 @@ function CompactMatchBox({ team1, team2, match, label, bgColor = "bg-white/5", o
 
   return (
     <>
-      <div className={`glass-card p-2 ${bgColor} transition-all duration-300`}>
-        {/* Terrain */}
-        <div className="text-center mb-1">
+      <div className={`glass-card p-2 ${bgColor} transition-all duration-300 relative`}>
+        {/* Terrain en haut à gauche */}
+        <div className="absolute top-1 left-1">
           <span className="text-xs font-bold text-blue-400">T{match?.court || '-'}</span>
         </div>
 
-        {/* Équipes SANS SCORES mais avec couronnes */}
-        <div className="flex items-center justify-between text-xs mb-1">
-          <div className="flex items-center space-x-1 flex-1">
+        {/* Bouton Trophée en haut à droite */}
+        {match && onUpdateScore && team1 && team2 && !match.completed && (
+          <div className="absolute top-1 right-1">
+            <button
+              onClick={() => setShowWinnerModal(true)}
+              className="p-1 bg-yellow-500/80 text-white rounded hover:bg-yellow-500 transition-colors"
+              title="Sélectionner le gagnant"
+            >
+              <Trophy className="w-3 h-3" />
+            </button>
+          </div>
+        )}
+
+        {/* Équipes centrées SANS SCORES mais avec couronnes */}
+        <div className="flex items-center justify-center text-xs pt-4 pb-1">
+          <div className="flex items-center space-x-1">
             <span className="font-bold text-white truncate">
               {team1?.name || "..."}
             </span>
@@ -595,7 +602,7 @@ function CompactMatchBox({ team1, team2, match, label, bgColor = "bg-white/5", o
           
           <span className="mx-2 text-white/60 text-xs">vs</span>
           
-          <div className="flex items-center space-x-1 flex-1 justify-end">
+          <div className="flex items-center space-x-1">
             {winner?.id === team2?.id && (
               <Crown className="w-3 h-3 text-yellow-400 flex-shrink-0" />
             )}
@@ -604,22 +611,6 @@ function CompactMatchBox({ team1, team2, match, label, bgColor = "bg-white/5", o
             </span>
           </div>
         </div>
-
-        {label && (
-          <div className="text-center text-xs text-white/60 mb-1">{label}</div>
-        )}
-
-        {/* Bouton Gagnant */}
-        {match && onUpdateScore && team1 && team2 && !match.completed && (
-          <div className="text-center">
-            <button
-              onClick={() => setShowWinnerModal(true)}
-              className="px-2 py-1 bg-yellow-500/80 text-white rounded text-xs font-bold hover:bg-yellow-500 transition-colors"
-            >
-              Gagnant
-            </button>
-          </div>
-        )}
       </div>
 
       {/* Modal de sélection du gagnant */}
