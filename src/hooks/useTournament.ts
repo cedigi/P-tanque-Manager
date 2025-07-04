@@ -483,7 +483,7 @@ export function useTournament() {
           }
         }
       } else if (poolTeams.length === 3) {
-        // Gestion spéciale pour les poules de 3 équipes
+        // LOGIQUE CORRIGÉE pour les poules de 3 équipes
         const [team1, team2, team3] = poolTeams;
         
         // Trouver le match du premier tour (entre team1 et team2)
@@ -560,6 +560,75 @@ export function useTournament() {
               hackingAttempts: 0,
             });
             hasNewMatches = true;
+          }
+
+          // NOUVEAU : Vérifier s'il faut un barrage dans une poule de 3
+          // Si le match final (winner vs team3) est terminé, calculer les statistiques
+          const finalMatch = allMatches.find(m => 
+            m.poolId === pool.id && m.round === 2 && !m.isBye &&
+            ((m.team1Id === winner.id && m.team2Id === team3!.id) ||
+             (m.team1Id === team3!.id && m.team2Id === winner.id))
+          );
+
+          if (finalMatch?.completed) {
+            // Calculer les statistiques de chaque équipe
+            const getTeamStats = (team: Team) => {
+              const teamMatches = allMatches.filter(m => 
+                m.poolId === pool.id && m.completed && !m.isBye && 
+                (m.team1Id === team.id || m.team2Id === team.id)
+              );
+
+              let wins = 0;
+              teamMatches.forEach(match => {
+                const isTeam1 = match.team1Id === team.id;
+                const teamScore = isTeam1 ? match.team1Score! : match.team2Score!;
+                const opponentScore = isTeam1 ? match.team2Score! : match.team1Score!;
+                
+                if (teamScore > opponentScore) wins++;
+              });
+
+              return { wins, matches: teamMatches.length };
+            };
+
+            const team1Stats = getTeamStats(team1!);
+            const team2Stats = getTeamStats(team2!);
+            const team3Stats = getTeamStats(team3!);
+
+            // Trouver les équipes avec exactement 1 victoire
+            const allStats = [
+              { team: team1!, ...team1Stats },
+              { team: team2!, ...team2Stats },
+              { team: team3!, ...team3Stats }
+            ];
+
+            const teamsWithOneWin = allStats.filter(stat => stat.wins === 1);
+
+            // S'il y a exactement 2 équipes avec 1 victoire, créer un barrage
+            if (teamsWithOneWin.length === 2) {
+              const barrageExists = allMatches.some(m => 
+                m.poolId === pool.id && m.round === 3 &&
+                ((m.team1Id === teamsWithOneWin[0].team.id && m.team2Id === teamsWithOneWin[1].team.id) ||
+                 (m.team1Id === teamsWithOneWin[1].team.id && m.team2Id === teamsWithOneWin[0].team.id))
+              );
+
+              if (!barrageExists) {
+                allMatches.push({
+                  id: crypto.randomUUID(),
+                  round: 3,
+                  court: courtIndex,
+                  team1Id: teamsWithOneWin[0].team.id,
+                  team2Id: teamsWithOneWin[1].team.id,
+                  completed: false,
+                  isBye: false,
+                  poolId: pool.id,
+                  battleIntensity: Math.floor(Math.random() * 50) + 25,
+                  hackingAttempts: 0,
+                });
+                
+                courtIndex = (courtIndex % updatedTournament.courts) + 1;
+                hasNewMatches = true;
+              }
+            }
           }
         }
       }

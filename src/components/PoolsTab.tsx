@@ -351,7 +351,7 @@ function CompactFourTeamPool({ poolTeams, poolMatches, pool, onUpdateScore }: {
   );
 }
 
-// Composant pour poules de 3 équipes - Version compacte CORRIGÉE
+// Composant pour poules de 3 équipes - Version CORRIGÉE
 function CompactThreeTeamPool({ poolTeams, poolMatches, pool, onUpdateScore }: {
   poolTeams: Team[];
   poolMatches: Match[];
@@ -389,36 +389,37 @@ function CompactThreeTeamPool({ poolTeams, poolMatches, pool, onUpdateScore }: {
        (m.team1Id === team3.id && m.team2Id === firstRoundResult.winner.id));
   });
 
-  // NOUVEAU : Logique pour le match de barrage dans une poule de 3
-  // Si le gagnant du premier match perd contre team3, alors il y a égalité
-  // et il faut un barrage entre le perdant du premier match et le perdant du match final
-  const finalResult = getWinnerLoser(finalMatch, firstRoundResult.winner || team1, team3);
-  
-  // Vérifier s'il faut un barrage
-  let needsBarrage = false;
-  let barrageTeam1: Team | null = null;
-  let barrageTeam2: Team | null = null;
-  
-  if (finalMatch?.completed && firstRoundResult.winner && firstRoundResult.loser) {
-    // Si team3 gagne le match final, alors :
-    // - team3 a 1 victoire (contre le gagnant du premier match)
-    // - le gagnant du premier match a 1 victoire et 1 défaite
-    // - le perdant du premier match a 1 défaite
-    // Il faut donc un barrage entre team3 et le gagnant du premier match
-    
-    if (finalResult.winner?.id === team3.id) {
-      needsBarrage = true;
-      barrageTeam1 = team3;
-      barrageTeam2 = firstRoundResult.winner;
-    }
-    // Si le gagnant du premier match gagne aussi le match final, pas de barrage
-  }
+  // LOGIQUE CORRIGÉE pour le barrage dans une poule de 3
+  // Calculer les statistiques de chaque équipe
+  const getTeamStats = (team: Team) => {
+    const teamMatches = poolMatches.filter(m => 
+      m.completed && !m.isBye && (m.team1Id === team.id || m.team2Id === team.id)
+    );
+
+    let wins = 0;
+    teamMatches.forEach(match => {
+      const isTeam1 = match.team1Id === team.id;
+      const teamScore = isTeam1 ? match.team1Score! : match.team2Score!;
+      const opponentScore = isTeam1 ? match.team2Score! : match.team1Score!;
+      
+      if (teamScore > opponentScore) wins++;
+    });
+
+    return { wins, matches: teamMatches.length };
+  };
+
+  const allStats = poolTeams.map(team => ({
+    team,
+    ...getTeamStats(team)
+  }));
+
+  // Trouver les équipes avec exactement 1 victoire
+  const teamsWithOneWin = allStats.filter(stat => stat.wins === 1);
 
   const barrageMatch = poolMatches.find(m => 
     m.round === 3 && 
-    barrageTeam1 && barrageTeam2 &&
-    ((m.team1Id === barrageTeam1.id && m.team2Id === barrageTeam2.id) ||
-     (m.team1Id === barrageTeam2.id && m.team2Id === barrageTeam1.id))
+    teamsWithOneWin.some(stat => stat.team.id === m.team1Id) &&
+    teamsWithOneWin.some(stat => stat.team.id === m.team2Id)
   );
 
   return (
@@ -457,17 +458,17 @@ function CompactThreeTeamPool({ poolTeams, poolMatches, pool, onUpdateScore }: {
             T- {firstRoundResult.loser?.name || "Perdant"}
           </div>
           <div className="text-xs text-red-400">
-            {needsBarrage ? "En attente" : "Éliminé"}
+            {teamsWithOneWin.length === 2 ? "En attente" : "Éliminé"}
           </div>
         </div>
 
         <CompactMatchBox 
-          team1={barrageTeam1} 
-          team2={barrageTeam2} 
+          team1={teamsWithOneWin[0]?.team} 
+          team2={teamsWithOneWin[1]?.team} 
           match={barrageMatch}
           bgColor="bg-red-500/10"
           onUpdateScore={onUpdateScore}
-          showOnlyIfNeeded={needsBarrage}
+          showOnlyIfNeeded={teamsWithOneWin.length === 2}
         />
       </div>
     </div>
@@ -522,7 +523,7 @@ function WinnerModal({ team1, team2, onSelectWinner, onClose }: WinnerModalProps
   );
 }
 
-// Composant de case de match compacte SANS SCORES - VERSION FINALE
+// Composant de case de match compacte CORRIGÉ - Les noms ne disparaissent plus
 interface CompactMatchBoxProps {
   team1?: Team | null;
   team2?: Team | null;
@@ -568,6 +569,10 @@ function CompactMatchBox({ team1, team2, match, bgColor = "bg-white/5", onUpdate
     setShowWinnerModal(false);
   };
 
+  // CORRECTION : Toujours afficher les noms même si pas d'équipes définies
+  const displayTeam1Name = team1?.name || "En attente...";
+  const displayTeam2Name = team2?.name || "En attente...";
+
   return (
     <>
       <div className={`glass-card p-2 ${bgColor} transition-all duration-300 relative`}>
@@ -589,11 +594,11 @@ function CompactMatchBox({ team1, team2, match, bgColor = "bg-white/5", onUpdate
           </div>
         )}
 
-        {/* Équipes centrées SANS SCORES mais avec couronnes */}
+        {/* Équipes centrées SANS SCORES mais avec couronnes - NOMS TOUJOURS VISIBLES */}
         <div className="flex items-center justify-center text-xs pt-4 pb-1">
           <div className="flex items-center space-x-1">
             <span className="font-bold text-white truncate">
-              {team1?.name || "..."}
+              {displayTeam1Name}
             </span>
             {winner?.id === team1?.id && (
               <Crown className="w-3 h-3 text-yellow-400 flex-shrink-0" />
@@ -607,7 +612,7 @@ function CompactMatchBox({ team1, team2, match, bgColor = "bg-white/5", onUpdate
               <Crown className="w-3 h-3 text-yellow-400 flex-shrink-0" />
             )}
             <span className="font-bold text-white truncate">
-              {team2?.name || "..."}
+              {displayTeam2Name}
             </span>
           </div>
         </div>
