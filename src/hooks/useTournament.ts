@@ -375,7 +375,7 @@ export function useTournament() {
     }
   };
 
-  // Fonction pour placer progressivement les équipes qualifiées dans les phases finales
+  // Fonction pour placer progressivement les équipes qualifiées dans les phases finales - CORRIGÉE
   const updateFinalPhasesWithQualified = (updatedTournament: Tournament) => {
     const isPoolTournament = updatedTournament.type === 'doublette-poule' || updatedTournament.type === 'triplette-poule';
     
@@ -393,11 +393,8 @@ export function useTournament() {
     // Trouver les matchs vides de la première phase finale (round 100)
     const firstRoundFinalMatches = finalMatches.filter(m => m.round === 100);
     
-    // Placer les nouvelles équipes qualifiées dans les matchs vides
-    const updatedMatches = [...poolMatches];
-    const usedTeams = new Set<string>();
-    
     // Récupérer les équipes déjà placées
+    const usedTeams = new Set<string>();
     firstRoundFinalMatches.forEach(match => {
       if (match.team1Id) usedTeams.add(match.team1Id);
       if (match.team2Id) usedTeams.add(match.team2Id);
@@ -406,50 +403,117 @@ export function useTournament() {
     // Nouvelles équipes à placer (seulement celles avec 2 victoires)
     const newQualifiedTeams = qualifiedTeams.filter(team => !usedTeams.has(team.id));
     
-    // Mélanger les nouvelles équipes pour placement aléatoire
+    if (newQualifiedTeams.length === 0) {
+      // Pas de nouvelles équipes à placer
+      return updatedTournament;
+    }
+
+    // CORRECTION PRINCIPALE : Placement vraiment aléatoire
+    // 1. Créer une liste de toutes les positions vides disponibles
+    const availablePositions: { matchIndex: number; position: 'team1' | 'team2' }[] = [];
+    
+    firstRoundFinalMatches.forEach((match, matchIndex) => {
+      if (!match.team1Id) {
+        availablePositions.push({ matchIndex, position: 'team1' });
+      }
+      if (!match.team2Id) {
+        availablePositions.push({ matchIndex, position: 'team2' });
+      }
+    });
+
+    // 2. Mélanger les positions disponibles
+    const shuffledPositions = [...availablePositions].sort(() => Math.random() - 0.5);
+    
+    // 3. Mélanger les nouvelles équipes
     const shuffledNewTeams = [...newQualifiedTeams].sort(() => Math.random() - 0.5);
     
-    let teamIndex = 0;
-    const updatedFinalMatches = firstRoundFinalMatches.map(match => {
-      let updatedMatch = { ...match };
+    // 4. Placer les équipes dans les positions aléatoires
+    const updatedFinalMatches = [...firstRoundFinalMatches];
+    
+    shuffledNewTeams.forEach((team, teamIndex) => {
+      if (teamIndex >= shuffledPositions.length) return; // Plus de positions disponibles
       
-      // Placer team1 si vide
-      if (!updatedMatch.team1Id && teamIndex < shuffledNewTeams.length) {
-        const team = shuffledNewTeams[teamIndex];
-        updatedMatch.team1Id = team.id;
-        teamIndex++;
-      }
+      const position = shuffledPositions[teamIndex];
+      const match = updatedFinalMatches[position.matchIndex];
       
-      // Placer team2 si vide et qu'il reste des équipes
-      if (!updatedMatch.team2Id && teamIndex < shuffledNewTeams.length) {
-        const team = shuffledNewTeams[teamIndex];
-        // Éviter les équipes de même poule si possible
-        let selectedTeam = team;
-        
-        if (updatedMatch.team1Id) {
-          const team1 = updatedTournament.teams.find(t => t.id === updatedMatch.team1Id);
-          const availableTeams = shuffledNewTeams.slice(teamIndex).filter(t => t.poolId !== team1?.poolId);
-          
-          if (availableTeams.length > 0) {
-            selectedTeam = availableTeams[0];
-            // Ajuster l'index pour pointer vers la bonne équipe
-            teamIndex = shuffledNewTeams.findIndex(t => t.id === selectedTeam.id) + 1;
-          } else {
-            teamIndex++;
-          }
-        } else {
-          teamIndex++;
+      // Vérifier qu'on n'a pas déjà une équipe de la même poule dans ce match
+      let canPlace = true;
+      
+      if (position.position === 'team1' && match.team2Id) {
+        const otherTeam = updatedTournament.teams.find(t => t.id === match.team2Id);
+        if (otherTeam && otherTeam.poolId === team.poolId) {
+          canPlace = false;
         }
-        
-        updatedMatch.team2Id = selectedTeam.id;
+      } else if (position.position === 'team2' && match.team1Id) {
+        const otherTeam = updatedTournament.teams.find(t => t.id === match.team1Id);
+        if (otherTeam && otherTeam.poolId === team.poolId) {
+          canPlace = false;
+        }
       }
       
-      return updatedMatch;
+      if (canPlace) {
+        // Placer l'équipe
+        if (position.position === 'team1') {
+          updatedFinalMatches[position.matchIndex] = {
+            ...match,
+            team1Id: team.id
+          };
+        } else {
+          updatedFinalMatches[position.matchIndex] = {
+            ...match,
+            team2Id: team.id
+          };
+        }
+      } else {
+        // Chercher une autre position libre pour éviter le conflit de poule
+        const alternativePositions = shuffledPositions.slice(teamIndex + 1);
+        
+        for (const altPosition of alternativePositions) {
+          const altMatch = updatedFinalMatches[altPosition.matchIndex];
+          let altCanPlace = true;
+          
+          if (altPosition.position === 'team1' && altMatch.team2Id) {
+            const otherTeam = updatedTournament.teams.find(t => t.id === altMatch.team2Id);
+            if (otherTeam && otherTeam.poolId === team.poolId) {
+              altCanPlace = false;
+            }
+          } else if (altPosition.position === 'team2' && altMatch.team1Id) {
+            const otherTeam = updatedTournament.teams.find(t => t.id === altMatch.team1Id);
+            if (otherTeam && otherTeam.poolId === team.poolId) {
+              altCanPlace = false;
+            }
+          }
+          
+          if (altCanPlace) {
+            // Placer dans la position alternative
+            if (altPosition.position === 'team1') {
+              updatedFinalMatches[altPosition.matchIndex] = {
+                ...altMatch,
+                team1Id: team.id
+              };
+            } else {
+              updatedFinalMatches[altPosition.matchIndex] = {
+                ...altMatch,
+                team2Id: team.id
+              };
+            }
+            
+            // Retirer cette position de la liste
+            const altIndex = shuffledPositions.findIndex(p => 
+              p.matchIndex === altPosition.matchIndex && p.position === altPosition.position
+            );
+            if (altIndex > -1) {
+              shuffledPositions.splice(altIndex, 1);
+            }
+            break;
+          }
+        }
+      }
     });
     
     // Reconstituer tous les matchs
     const allUpdatedMatches = [
-      ...updatedMatches,
+      ...poolMatches,
       ...updatedFinalMatches,
       ...finalMatches.filter(m => m.round > 100) // Garder les autres phases finales
     ];
