@@ -59,26 +59,44 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools, onUpdateSc
   };
 
   const generatePoolHTML = (poolTeams: Team[], poolMatches: Match[]) => {
-    if (poolTeams.length !== 4) return '<p>Poule incomplète</p>';
+    if (poolTeams.length === 4) {
+      const [team1, team2, team3, team4] = poolTeams;
+      
+      const match1vs4 = poolMatches.find(m => 
+        (m.team1Id === team1.id && m.team2Id === team4.id) ||
+        (m.team1Id === team4.id && m.team2Id === team1.id)
+      );
+      const match2vs3 = poolMatches.find(m => 
+        (m.team1Id === team2.id && m.team2Id === team3.id) ||
+        (m.team1Id === team3.id && m.team2Id === team2.id)
+      );
 
-    const [team1, team2, team3, team4] = poolTeams;
-    
-    const match1vs4 = poolMatches.find(m => 
-      (m.team1Id === team1.id && m.team2Id === team4.id) ||
-      (m.team1Id === team4.id && m.team2Id === team1.id)
-    );
-    const match2vs3 = poolMatches.find(m => 
-      (m.team1Id === team2.id && m.team2Id === team3.id) ||
-      (m.team1Id === team3.id && m.team2Id === team2.id)
-    );
+      return `
+        <div class="match-box">T${match1vs4?.court || '-'} | ${team1.name} ${match1vs4?.completed ? `${match1vs4.team1Id === team1.id ? match1vs4.team1Score : match1vs4.team2Score} - ${match1vs4.team1Id === team1.id ? match1vs4.team2Score : match1vs4.team1Score}` : '- - -'} ${team4.name}</div>
+        <div class="match-box">T${match2vs3?.court || '-'} | ${team2.name} ${match2vs3?.completed ? `${match2vs3.team1Id === team2.id ? match2vs3.team1Score : match2vs3.team2Score} - ${match2vs3.team1Id === team2.id ? match2vs3.team2Score : match2vs3.team1Score}` : '- - -'} ${team3.name}</div>
+        <div class="match-box">V vs V : - - -</div>
+        <div class="match-box">D vs D : - - -</div>
+        <div class="match-box">Barrage : - - -</div>
+      `;
+    } else if (poolTeams.length === 3) {
+      const [team1, team2, team3] = poolTeams;
+      
+      const match1vs2 = poolMatches.find(m => 
+        m.round === 1 && !m.isBye &&
+        ((m.team1Id === team1.id && m.team2Id === team2.id) ||
+         (m.team1Id === team2.id && m.team2Id === team1.id))
+      );
 
-    return `
-      <div class="match-box">T${match1vs4?.court || '-'} | ${team1.name} ${match1vs4?.completed ? `${match1vs4.team1Id === team1.id ? match1vs4.team1Score : match1vs4.team2Score} - ${match1vs4.team1Id === team1.id ? match1vs4.team2Score : match1vs4.team1Score}` : '- - -'} ${team4.name}</div>
-      <div class="match-box">T${match2vs3?.court || '-'} | ${team2.name} ${match2vs3?.completed ? `${match2vs3.team1Id === team2.id ? match2vs3.team1Score : match2vs3.team2Score} - ${match2vs3.team1Id === team2.id ? match2vs3.team2Score : match2vs3.team1Score}` : '- - -'} ${team3.name}</div>
-      <div class="match-box">V vs V : - - -</div>
-      <div class="match-box">D vs D : - - -</div>
-      <div class="match-box">Barrage : - - -</div>
-    `;
+      return `
+        <div class="match-box">T${match1vs2?.court || '-'} | ${team1.name} ${match1vs2?.completed ? `${match1vs2.team1Id === team1.id ? match1vs2.team1Score : match1vs2.team2Score} - ${match1vs2.team1Id === team1.id ? match1vs2.team2Score : match1vs2.team1Score}` : '- - -'} ${team2.name}</div>
+        <div class="match-box">${team3.name} - Qualifié d'office</div>
+        <div class="match-box">V vs Qualifié : - - -</div>
+        <div class="match-box">Perdant éliminé</div>
+        <div class="match-box">Pas de barrage</div>
+      `;
+    } else {
+      return '<p>Poule incomplète</p>';
+    }
   };
 
   return (
@@ -186,7 +204,11 @@ function CompactFiveBoxPool({ pool, teams, matches, onUpdateScore }: CompactFive
   const poolMatches = matches.filter(m => m.poolId === pool.id);
   const poolTeams = pool.teamIds.map(id => teams.find(t => t.id === id)).filter(Boolean) as Team[];
   
-  if (poolTeams.length !== 4) {
+  if (poolTeams.length === 4) {
+    return <FourTeamPool poolTeams={poolTeams} poolMatches={poolMatches} pool={pool} onUpdateScore={onUpdateScore} />;
+  } else if (poolTeams.length === 3) {
+    return <ThreeTeamPool poolTeams={poolTeams} poolMatches={poolMatches} pool={pool} onUpdateScore={onUpdateScore} />;
+  } else {
     return (
       <div className="glass-card p-3 min-w-[280px]">
         <h3 className="text-sm font-bold text-white mb-2">{pool.name}</h3>
@@ -194,7 +216,15 @@ function CompactFiveBoxPool({ pool, teams, matches, onUpdateScore }: CompactFive
       </div>
     );
   }
+}
 
+// Composant pour poules de 4 équipes
+function FourTeamPool({ poolTeams, poolMatches, pool, onUpdateScore }: {
+  poolTeams: Team[];
+  poolMatches: Match[];
+  pool: Pool;
+  onUpdateScore?: (matchId: string, team1Score: number, team2Score: number) => void;
+}) {
   const [team1, team2, team3, team4] = poolTeams;
 
   // Case 1 : Match 1 vs 4
@@ -227,7 +257,7 @@ function CompactFiveBoxPool({ pool, teams, matches, onUpdateScore }: CompactFive
   const result1vs4 = getWinnerLoser(match1vs4, team1, team4);
   const result2vs3 = getWinnerLoser(match2vs3, team2, team3);
 
-  // Case 3 : Gagnants vs Gagnants (se remplit automatiquement)
+  // Case 3 : Gagnants vs Gagnants
   const winnersMatch = poolMatches.find(m => {
     if (!result1vs4.winner || !result2vs3.winner) return false;
     return (
@@ -236,7 +266,7 @@ function CompactFiveBoxPool({ pool, teams, matches, onUpdateScore }: CompactFive
     );
   });
 
-  // Case 4 : Perdants vs Perdants (se remplit automatiquement)
+  // Case 4 : Perdants vs Perdants
   const losersMatch = poolMatches.find(m => {
     if (!result1vs4.loser || !result2vs3.loser) return false;
     return (
@@ -270,7 +300,7 @@ function CompactFiveBoxPool({ pool, teams, matches, onUpdateScore }: CompactFive
 
   const teamsWithOneWin = allStats.filter(stat => stat.wins === 1 && stat.matches >= 2);
 
-  // Case 5 : Match de barrage (se remplit automatiquement si nécessaire)
+  // Case 5 : Match de barrage
   const barrageMatch = poolMatches.find(m => 
     m.round === 3 && 
     teamsWithOneWin.some(stat => stat.team.id === m.team1Id) &&
@@ -287,7 +317,6 @@ function CompactFiveBoxPool({ pool, teams, matches, onUpdateScore }: CompactFive
       </div>
       
       <div className="p-2 space-y-2">
-        {/* Case 1 : Match 1 vs 4 */}
         <CompactMatchBox 
           team1={team1} 
           team2={team4} 
@@ -295,7 +324,6 @@ function CompactFiveBoxPool({ pool, teams, matches, onUpdateScore }: CompactFive
           onUpdateScore={onUpdateScore}
         />
         
-        {/* Case 2 : Match 2 vs 3 */}
         <CompactMatchBox 
           team1={team2} 
           team2={team3} 
@@ -303,7 +331,6 @@ function CompactFiveBoxPool({ pool, teams, matches, onUpdateScore }: CompactFive
           onUpdateScore={onUpdateScore}
         />
 
-        {/* Case 3 : Gagnants vs Gagnants */}
         <CompactMatchBox 
           team1={result1vs4.winner} 
           team2={result2vs3.winner} 
@@ -313,7 +340,6 @@ function CompactFiveBoxPool({ pool, teams, matches, onUpdateScore }: CompactFive
           onUpdateScore={onUpdateScore}
         />
 
-        {/* Case 4 : Perdants vs Perdants */}
         <CompactMatchBox 
           team1={result1vs4.loser} 
           team2={result2vs3.loser} 
@@ -323,7 +349,6 @@ function CompactFiveBoxPool({ pool, teams, matches, onUpdateScore }: CompactFive
           onUpdateScore={onUpdateScore}
         />
 
-        {/* Case 5 : Match de barrage */}
         <CompactMatchBox 
           team1={teamsWithOneWin[0]?.team} 
           team2={teamsWithOneWin[1]?.team} 
@@ -333,6 +358,116 @@ function CompactFiveBoxPool({ pool, teams, matches, onUpdateScore }: CompactFive
           onUpdateScore={onUpdateScore}
           showOnlyIfNeeded={teamsWithOneWin.length === 2}
         />
+      </div>
+    </div>
+  );
+}
+
+// Composant pour poules de 3 équipes
+function ThreeTeamPool({ poolTeams, poolMatches, pool, onUpdateScore }: {
+  poolTeams: Team[];
+  poolMatches: Match[];
+  pool: Pool;
+  onUpdateScore?: (matchId: string, team1Score: number, team2Score: number) => void;
+}) {
+  const [team1, team2, team3] = poolTeams;
+
+  // Case 1 : Match entre team1 et team2
+  const firstRoundMatch = poolMatches.find(m => 
+    m.round === 1 && !m.isBye &&
+    ((m.team1Id === team1.id && m.team2Id === team2.id) ||
+     (m.team1Id === team2.id && m.team2Id === team1.id))
+  );
+
+  // Déterminer le gagnant et le perdant du premier match
+  const getWinnerLoser = (match: Match | undefined, teamA: Team, teamB: Team) => {
+    if (!match?.completed) return { winner: null, loser: null };
+    
+    const isTeamAFirst = match.team1Id === teamA.id;
+    const teamAScore = isTeamAFirst ? match.team1Score! : match.team2Score!;
+    const teamBScore = isTeamAFirst ? match.team2Score! : match.team1Score!;
+    
+    if (teamAScore > teamBScore) {
+      return { winner: teamA, loser: teamB };
+    } else {
+      return { winner: teamB, loser: teamA };
+    }
+  };
+
+  const firstRoundResult = getWinnerLoser(firstRoundMatch, team1, team2);
+
+  // Case 3 : Match gagnant vs team3 (qualifiée d'office)
+  const finalMatch = poolMatches.find(m => {
+    if (!firstRoundResult.winner) return false;
+    return m.round === 2 && !m.isBye &&
+      ((m.team1Id === firstRoundResult.winner.id && m.team2Id === team3.id) ||
+       (m.team1Id === team3.id && m.team2Id === firstRoundResult.winner.id));
+  });
+
+  return (
+    <div className="glass-card overflow-hidden min-w-[280px] max-w-[320px]">
+      <div className="px-3 py-2 border-b border-white/20 bg-white/5">
+        <h3 className="text-sm font-bold text-white tracking-wide flex items-center space-x-2">
+          <Grid3X3 className="w-3 h-3" />
+          <span>{pool.name} (3 équipes)</span>
+        </h3>
+      </div>
+      
+      <div className="p-2 space-y-2">
+        {/* Case 1 : Premier match */}
+        <CompactMatchBox 
+          team1={team1} 
+          team2={team2} 
+          match={firstRoundMatch}
+          onUpdateScore={onUpdateScore}
+        />
+        
+        {/* Case 2 : Team3 qualifiée d'office */}
+        <div className="glass-card p-2 bg-blue-500/10 border-blue-400/30">
+          <div className="flex items-center space-x-2">
+            <div className="w-8 text-center">
+              <div className="text-xs font-bold text-blue-400">-</div>
+            </div>
+            <div className="flex-1 text-center">
+              <div className="font-bold text-white text-xs">
+                {team3.name}
+              </div>
+              <div className="text-xs text-blue-400 mt-1">Qualifié d'office</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Case 3 : Gagnant vs Qualifié d'office */}
+        <CompactMatchBox 
+          team1={firstRoundResult.winner} 
+          team2={team3} 
+          match={finalMatch}
+          label="V vs Qualifié"
+          bgColor="bg-green-500/10 border-green-400/30"
+          onUpdateScore={onUpdateScore}
+        />
+
+        {/* Case 4 : Perdant éliminé */}
+        <div className="glass-card p-2 bg-red-500/10 border-red-400/30 opacity-60">
+          <div className="flex items-center space-x-2">
+            <div className="w-8 text-center">
+              <div className="text-xs font-bold text-red-400">-</div>
+            </div>
+            <div className="flex-1 text-center">
+              <div className="font-bold text-white text-xs">
+                {firstRoundResult.loser?.name || "Perdant"}
+              </div>
+              <div className="text-xs text-red-400 mt-1">Éliminé</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Case 5 : Pas de barrage */}
+        <div className="glass-card p-2 bg-gray-500/10 border-gray-400/30 opacity-40">
+          <div className="text-center text-white/60 text-xs">
+            Pas de barrage
+          </div>
+        </div>
       </div>
     </div>
   );

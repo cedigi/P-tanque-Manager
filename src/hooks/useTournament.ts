@@ -113,7 +113,7 @@ export function useTournament() {
       };
     });
 
-    // Generate initial matches for each pool (1 vs 4, 2 vs 3)
+    // Generate initial matches for each pool
     const allMatches: Match[] = [];
     let courtIndex = 1;
     
@@ -154,6 +154,43 @@ export function useTournament() {
         });
         
         courtIndex = (courtIndex % tournament.courts) + 1;
+      } else if (poolTeams.length === 3) {
+        // Pour une poule de 3 : créer un seul match entre 2 équipes
+        // La 3ème équipe est automatiquement qualifiée pour la phase 2
+        const [team1, team2, team3] = poolTeams;
+        
+        // Match entre les 2 premières équipes
+        allMatches.push({
+          id: crypto.randomUUID(),
+          round: 1,
+          court: courtIndex,
+          team1Id: team1!.id,
+          team2Id: team2!.id,
+          completed: false,
+          isBye: false,
+          poolId: pool.id,
+          battleIntensity: Math.floor(Math.random() * 50) + 25,
+          hackingAttempts: 0,
+        });
+        
+        courtIndex = (courtIndex % tournament.courts) + 1;
+        
+        // L'équipe 3 est automatiquement placée en phase 2 (gagnants)
+        // On peut créer un match fictif pour indiquer sa qualification automatique
+        allMatches.push({
+          id: crypto.randomUUID(),
+          round: 2,
+          court: 0, // Court 0 = match virtuel
+          team1Id: team3!.id,
+          team2Id: team3!.id, // Match contre elle-même
+          team1Score: 13,
+          team2Score: 0,
+          completed: true,
+          isBye: true,
+          poolId: pool.id,
+          battleIntensity: 0,
+          hackingAttempts: 0,
+        });
       }
     });
 
@@ -443,6 +480,86 @@ export function useTournament() {
               courtIndex = (courtIndex % updatedTournament.courts) + 1;
               hasNewMatches = true;
             }
+          }
+        }
+      } else if (poolTeams.length === 3) {
+        // Gestion spéciale pour les poules de 3 équipes
+        const [team1, team2, team3] = poolTeams;
+        
+        // Trouver le match du premier tour (entre team1 et team2)
+        const firstRoundMatch = poolMatches.find(m => 
+          m.round === 1 && !m.isBye &&
+          ((m.team1Id === team1!.id && m.team2Id === team2!.id) ||
+           (m.team1Id === team2!.id && m.team2Id === team1!.id))
+        );
+        
+        // Si le premier match est terminé, générer les matchs de phase 2
+        if (firstRoundMatch?.completed) {
+          const getWinner = (match: Match, teamA: Team, teamB: Team) => {
+            const isTeamAFirst = match.team1Id === teamA.id;
+            const teamAScore = isTeamAFirst ? match.team1Score! : match.team2Score!;
+            const teamBScore = isTeamAFirst ? match.team2Score! : match.team1Score!;
+            return teamAScore > teamBScore ? teamA : teamB;
+          };
+          
+          const getLoser = (match: Match, teamA: Team, teamB: Team) => {
+            const isTeamAFirst = match.team1Id === teamA.id;
+            const teamAScore = isTeamAFirst ? match.team1Score! : match.team2Score!;
+            const teamBScore = isTeamAFirst ? match.team2Score! : match.team1Score!;
+            return teamAScore < teamBScore ? teamA : teamB;
+          };
+          
+          const winner = getWinner(firstRoundMatch, team1!, team2!);
+          const loser = getLoser(firstRoundMatch, team1!, team2!);
+          
+          // Match gagnant vs team3 (qui était qualifiée d'office)
+          const winnersMatchExists = allMatches.some(m => 
+            m.poolId === pool.id && m.round === 2 &&
+            ((m.team1Id === winner.id && m.team2Id === team3!.id) ||
+             (m.team1Id === team3!.id && m.team2Id === winner.id))
+          );
+          
+          if (!winnersMatchExists) {
+            allMatches.push({
+              id: crypto.randomUUID(),
+              round: 2,
+              court: courtIndex,
+              team1Id: winner.id,
+              team2Id: team3!.id,
+              completed: false,
+              isBye: false,
+              poolId: pool.id,
+              battleIntensity: Math.floor(Math.random() * 50) + 25,
+              hackingAttempts: 0,
+            });
+            
+            courtIndex = (courtIndex % updatedTournament.courts) + 1;
+            hasNewMatches = true;
+          }
+          
+          // Le perdant du premier match est automatiquement éliminé (pas de match des perdants)
+          // On peut créer un match fictif pour indiquer son élimination
+          const loserEliminationExists = allMatches.some(m => 
+            m.poolId === pool.id && m.round === 2 && m.isBye &&
+            m.team1Id === loser.id && m.team2Id === loser.id
+          );
+          
+          if (!loserEliminationExists) {
+            allMatches.push({
+              id: crypto.randomUUID(),
+              round: 2,
+              court: 0, // Court 0 = match virtuel
+              team1Id: loser.id,
+              team2Id: loser.id,
+              team1Score: 0,
+              team2Score: 13,
+              completed: true,
+              isBye: true,
+              poolId: pool.id,
+              battleIntensity: 0,
+              hackingAttempts: 0,
+            });
+            hasNewMatches = true;
           }
         }
       }
