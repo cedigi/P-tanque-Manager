@@ -99,29 +99,13 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools, onUpdateSc
     }
   };
 
-  // Calculer les équipes qualifiées pour les phases finales - SEULEMENT celles qui sont définitivement qualifiées
-  const getDefinitivelyQualifiedTeams = () => {
+  // Calculer les équipes actuellement qualifiées (même partiellement)
+  const getCurrentQualifiedTeams = () => {
     const qualified: Team[] = [];
     
     pools.forEach(pool => {
       const poolMatches = tournament.matches.filter(m => m.poolId === pool.id && m.completed);
       const poolTeams = pool.teamIds.map(id => teams.find(t => t.id === id)).filter(Boolean) as Team[];
-      
-      // Vérifier si la poule est complètement terminée
-      let poolCompleted = false;
-      
-      if (poolTeams.length === 4) {
-        // Pour une poule de 4, il faut au moins 4 matchs terminés
-        poolCompleted = poolMatches.length >= 4;
-      } else if (poolTeams.length === 3) {
-        // Pour une poule de 3, il faut au moins 3 matchs terminés
-        poolCompleted = poolMatches.length >= 3;
-      }
-      
-      // Ne prendre les qualifiés que si la poule est complètement terminée
-      if (!poolCompleted) {
-        return;
-      }
       
       // Calculer les statistiques de chaque équipe dans la poule
       const teamStats = poolTeams.map(team => {
@@ -129,7 +113,6 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools, onUpdateSc
           !m.isBye && (m.team1Id === team.id || m.team2Id === team.id)
         );
 
-        // CORRECTION : Compter aussi les victoires BYE
         const byeMatches = poolMatches.filter(m => 
           m.isBye && (m.team1Id === team.id || m.team2Id === team.id) &&
           ((m.team1Id === team.id && (m.team1Score || 0) > (m.team2Score || 0)) ||
@@ -153,7 +136,6 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools, onUpdateSc
 
         // Ajouter les victoires BYE
         wins += byeMatches.length;
-        // Ajouter les points des victoires BYE
         byeMatches.forEach(match => {
           const isTeam1 = match.team1Id === team.id;
           const teamScore = isTeam1 ? match.team1Score! : match.team2Score!;
@@ -178,20 +160,38 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools, onUpdateSc
         return b.performance - a.performance;
       });
 
-      // CORRECTION : Pour les poules de 3, on prend les 2 premiers (après barrage éventuel)
+      // Déterminer les qualifiés selon l'état de la poule
       if (poolTeams.length === 4) {
-        // Pour une poule de 4, on prend les 2 premiers
-        qualified.push(...teamStats.slice(0, 2).map(stat => stat.team));
+        // Pour une poule de 4, vérifier l'état d'avancement
+        const completedMatches = poolMatches.length;
+        
+        if (completedMatches >= 4) {
+          // Poule terminée : prendre les 2 premiers
+          qualified.push(...teamStats.slice(0, 2).map(stat => stat.team));
+        } else if (completedMatches >= 2) {
+          // Au moins les 2 premiers matchs : on peut identifier au moins 1 qualifié certain
+          const teamsWithTwoWins = teamStats.filter(stat => stat.wins >= 2);
+          qualified.push(...teamsWithTwoWins.map(stat => stat.team));
+        }
       } else if (poolTeams.length === 3) {
-        // Pour une poule de 3, on prend les 2 premiers (le gagnant + le vainqueur du barrage)
-        qualified.push(...teamStats.slice(0, 2).map(stat => stat.team));
+        // Pour une poule de 3
+        const completedMatches = poolMatches.filter(m => !m.isBye).length;
+        
+        if (completedMatches >= 2) {
+          // Poule terminée : prendre les 2 premiers
+          qualified.push(...teamStats.slice(0, 2).map(stat => stat.team));
+        } else if (completedMatches >= 1) {
+          // Premier match terminé : l'équipe avec BYE + le gagnant sont qualifiés
+          const teamsWithAtLeastOneWin = teamStats.filter(stat => stat.wins >= 1);
+          qualified.push(...teamsWithAtLeastOneWin.slice(0, 2).map(stat => stat.team));
+        }
       }
     });
 
     return qualified;
   };
 
-  const qualifiedTeams = getDefinitivelyQualifiedTeams();
+  const qualifiedTeams = getCurrentQualifiedTeams();
 
   return (
     <div className="p-6">
@@ -241,7 +241,7 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools, onUpdateSc
             ))}
           </div>
 
-          {/* Phases finales - TOUJOURS affichées avec cadres vides */}
+          {/* Phases finales - TOUJOURS affichées avec remplissage progressif */}
           <FinalPhases 
             qualifiedTeams={qualifiedTeams}
             tournament={tournament}
@@ -294,7 +294,7 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools, onUpdateSc
   );
 }
 
-// Nouveau composant pour les phases finales avec cadres vides qui se remplissent
+// Nouveau composant pour les phases finales avec remplissage progressif
 interface FinalPhasesProps {
   qualifiedTeams: Team[];
   tournament: Tournament;
@@ -333,8 +333,8 @@ function FinalPhases({ qualifiedTeams, tournament, onUpdateScore, totalTeams }: 
 
   const config = getPhaseConfiguration(expectedQualified);
 
-  // Trouver les matchs des phases finales (ceux sans poolId)
-  const finalMatches = tournament.matches.filter(m => !m.poolId);
+  // Trouver les matchs des phases finales (ceux sans poolId et round >= 100)
+  const finalMatches = tournament.matches.filter(m => !m.poolId && m.round >= 100);
 
   return (
     <div className="mb-8">
@@ -364,7 +364,7 @@ function FinalPhases({ qualifiedTeams, tournament, onUpdateScore, totalTeams }: 
   );
 }
 
-// Composant pour une phase spécifique avec cadres vides
+// Composant pour une phase spécifique avec remplissage progressif
 interface PhaseSectionProps {
   phaseName: string;
   phaseIndex: number;
@@ -392,37 +392,33 @@ function PhaseSection({ phaseName, phaseIndex, qualifiedTeams, matches, tourname
 
   const expectedMatches = getExpectedMatches();
   
-  // Créer des cadres vides si nécessaire
-  const emptySlots = Math.max(0, expectedMatches - phaseMatches.length);
+  // Compter les matchs avec au moins une équipe
+  const matchesWithTeams = phaseMatches.filter(m => m.team1Id || m.team2Id);
+  const matchesReady = phaseMatches.filter(m => m.team1Id && m.team2Id);
   
   return (
     <div className="space-y-4">
       <h4 className="text-xl font-bold text-white tracking-wide border-b border-white/20 pb-2">
-        {phaseName} ({phaseMatches.length}/{expectedMatches})
+        {phaseName} ({matchesReady.length}/{expectedMatches} prêts)
       </h4>
       
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3">
         {/* Matchs existants */}
         {phaseMatches.map(match => (
-          <CompactFinalMatchBox
+          <ProgressiveFinalMatchBox
             key={match.id}
             match={match}
             tournament={tournament}
             onUpdateScore={onUpdateScore}
           />
         ))}
-        
-        {/* Cadres vides */}
-        {Array.from({ length: emptySlots }, (_, index) => (
-          <EmptyMatchSlot key={`empty-${index}`} />
-        ))}
       </div>
       
-      {phaseMatches.length === 0 && emptySlots === 0 && (
+      {phaseMatches.length === 0 && (
         <div className="text-center py-8">
           <div className="text-white/60">
             {phaseIndex === 0 ? 
-              "En attente de plus d'équipes qualifiées" :
+              "En attente d'équipes qualifiées" :
               "En attente des résultats de la phase précédente"
             }
           </div>
@@ -432,43 +428,18 @@ function PhaseSection({ phaseName, phaseIndex, qualifiedTeams, matches, tourname
   );
 }
 
-// Composant pour un cadre vide
-function EmptyMatchSlot() {
-  return (
-    <div className="glass-card p-3 bg-gradient-to-br from-gray-500/10 to-gray-600/10 border-gray-400/30 min-h-[120px] opacity-50">
-      <div className="text-center mb-2">
-        <span className="text-xs font-bold text-gray-400">T-</span>
-      </div>
-      
-      <div className="space-y-2">
-        <div className="flex items-center justify-center">
-          <span className="font-bold text-gray-400 text-sm">En attente...</span>
-        </div>
-        
-        <div className="flex items-center justify-center">
-          <span className="text-gray-400/60 font-bold text-xs">VS</span>
-        </div>
-        
-        <div className="flex items-center justify-center">
-          <span className="font-bold text-gray-400 text-sm">En attente...</span>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// Composant compact pour un match de phase finale
-interface CompactFinalMatchBoxProps {
+// Composant progressif pour un match de phase finale
+interface ProgressiveFinalMatchBoxProps {
   match: Match;
   tournament: Tournament;
   onUpdateScore?: (matchId: string, team1Score: number, team2Score: number) => void;
 }
 
-function CompactFinalMatchBox({ match, tournament, onUpdateScore }: CompactFinalMatchBoxProps) {
+function ProgressiveFinalMatchBox({ match, tournament, onUpdateScore }: ProgressiveFinalMatchBoxProps) {
   const [showWinnerModal, setShowWinnerModal] = useState(false);
   
-  const team1 = tournament.teams.find(t => t.id === match.team1Id);
-  const team2 = tournament.teams.find(t => t.id === match.team2Id);
+  const team1 = match.team1Id ? tournament.teams.find(t => t.id === match.team1Id) : null;
+  const team2 = match.team2Id ? tournament.teams.find(t => t.id === match.team2Id) : null;
 
   const getWinner = () => {
     if (!match.completed || !team1 || !team2) return null;
@@ -490,26 +461,45 @@ function CompactFinalMatchBox({ match, tournament, onUpdateScore }: CompactFinal
     setShowWinnerModal(false);
   };
 
+  // Déterminer l'état du match
+  const isEmpty = !team1 && !team2;
+  const isPartial = (team1 && !team2) || (!team1 && team2);
+  const isReady = team1 && team2;
+
   return (
     <>
-      <div className="glass-card p-3 bg-gradient-to-br from-purple-500/10 to-blue-500/10 border-purple-400/30 min-h-[120px]">
+      <div className={`glass-card p-3 min-h-[120px] transition-all duration-300 ${
+        isEmpty ? 'bg-gradient-to-br from-gray-500/10 to-gray-600/10 border-gray-400/30 opacity-50' :
+        isPartial ? 'bg-gradient-to-br from-yellow-500/10 to-orange-500/10 border-yellow-400/30' :
+        'bg-gradient-to-br from-purple-500/10 to-blue-500/10 border-purple-400/30'
+      }`}>
         {/* Terrain */}
         <div className="text-center mb-2">
-          <span className="text-xs font-bold text-purple-400">T{match.court}</span>
+          <span className={`text-xs font-bold ${
+            isEmpty ? 'text-gray-400' :
+            isPartial ? 'text-yellow-400' :
+            'text-purple-400'
+          }`}>
+            T{match.court || '-'}
+          </span>
         </div>
 
         {/* Équipes */}
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-1 flex-1 min-w-0">
-              <span className="font-bold text-white text-sm truncate">{team1?.name || "En attente..."}</span>
+              <span className={`font-bold text-sm truncate ${
+                team1 ? 'text-white' : 'text-gray-400'
+              }`}>
+                {team1?.name || "En attente..."}
+              </span>
               {winner?.id === team1?.id && <Crown className="w-3 h-3 text-yellow-400 flex-shrink-0" />}
             </div>
           </div>
 
           {/* Bouton VS ou Trophée */}
           <div className="flex items-center justify-center">
-            {match && onUpdateScore && team1 && team2 && !match.completed ? (
+            {isReady && onUpdateScore && !match.completed ? (
               <button
                 onClick={() => setShowWinnerModal(true)}
                 className="p-1 bg-yellow-500/80 text-white rounded hover:bg-yellow-500 transition-colors"
@@ -518,13 +508,23 @@ function CompactFinalMatchBox({ match, tournament, onUpdateScore }: CompactFinal
                 <Trophy className="w-3 h-3" />
               </button>
             ) : (
-              <span className="text-white/60 font-bold text-xs">VS</span>
+              <span className={`font-bold text-xs ${
+                isEmpty ? 'text-gray-400/60' :
+                isPartial ? 'text-yellow-400/80' :
+                'text-white/60'
+              }`}>
+                {isEmpty ? '...' : isPartial ? '?' : 'VS'}
+              </span>
             )}
           </div>
 
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-1 flex-1 min-w-0">
-              <span className="font-bold text-white text-sm truncate">{team2?.name || "En attente..."}</span>
+              <span className={`font-bold text-sm truncate ${
+                team2 ? 'text-white' : 'text-gray-400'
+              }`}>
+                {team2?.name || "En attente..."}
+              </span>
               {winner?.id === team2?.id && <Crown className="w-3 h-3 text-yellow-400 flex-shrink-0" />}
             </div>
           </div>
