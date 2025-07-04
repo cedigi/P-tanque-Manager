@@ -367,6 +367,13 @@ export function useTournament() {
           !m.isBye && (m.team1Id === team.id || m.team2Id === team.id)
         );
 
+        // CORRECTION : Compter aussi les victoires BYE
+        const byeMatches = poolMatches.filter(m => 
+          m.isBye && (m.team1Id === team.id || m.team2Id === team.id) &&
+          ((m.team1Id === team.id && (m.team1Score || 0) > (m.team2Score || 0)) ||
+           (m.team2Id === team.id && (m.team2Score || 0) > (m.team1Score || 0)))
+        );
+
         let wins = 0;
         let pointsFor = 0;
         let pointsAgainst = 0;
@@ -382,11 +389,16 @@ export function useTournament() {
           if (teamScore > opponentScore) wins++;
         });
 
-        // CORRECTION : Ajouter les victoires BYE
-        const byeMatches = poolMatches.filter(m => 
-          m.isBye && (m.team1Id === team.id || m.team2Id === team.id)
-        );
+        // Ajouter les victoires BYE
         wins += byeMatches.length;
+        // Ajouter les points des victoires BYE
+        byeMatches.forEach(match => {
+          const isTeam1 = match.team1Id === team.id;
+          const teamScore = isTeam1 ? match.team1Score! : match.team2Score!;
+          const opponentScore = isTeam1 ? match.team2Score! : match.team1Score!;
+          pointsFor += teamScore;
+          pointsAgainst += opponentScore;
+        });
 
         return { 
           team, 
@@ -407,10 +419,10 @@ export function useTournament() {
       // CORRECTION : Pour les poules de 3, on prend les 2 premiers (après barrage éventuel)
       if (poolTeams.length === 4) {
         // Pour une poule de 4, on prend les 2 premiers
-        qualified.push(...teamStats.slice(0, 2).map(stat => stat.team));
+        qualifiedTeams.push(...teamStats.slice(0, 2).map(stat => stat.team));
       } else if (poolTeams.length === 3) {
         // Pour une poule de 3, on prend les 2 premiers (le gagnant + le vainqueur du barrage)
-        qualified.push(...teamStats.slice(0, 2).map(stat => stat.team));
+        qualifiedTeams.push(...teamStats.slice(0, 2).map(stat => stat.team));
       }
     });
 
@@ -725,6 +737,14 @@ export function useTournament() {
                 (m.team1Id === team.id || m.team2Id === team.id)
               );
 
+              // CORRECTION : Compter aussi les victoires BYE
+              const byeMatches = allMatches.filter(m => 
+                m.poolId === pool.id && m.completed && m.isBye && 
+                (m.team1Id === team.id || m.team2Id === team.id) &&
+                ((m.team1Id === team.id && (m.team1Score || 0) > (m.team2Score || 0)) ||
+                 (m.team2Id === team.id && (m.team2Score || 0) > (m.team1Score || 0)))
+              );
+
               let wins = 0;
               teamMatches.forEach(match => {
                 const isTeam1 = match.team1Id === team.id;
@@ -735,10 +755,6 @@ export function useTournament() {
               });
 
               // Ajouter les victoires BYE
-              const byeMatches = allMatches.filter(m => 
-                m.poolId === pool.id && m.completed && m.isBye && 
-                (m.team1Id === team.id || m.team2Id === team.id)
-              );
               wins += byeMatches.length;
 
               return { wins, matches: teamMatches.length + byeMatches.length };

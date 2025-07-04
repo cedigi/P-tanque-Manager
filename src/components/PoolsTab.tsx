@@ -89,9 +89,9 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools, onUpdateSc
 
       return `
         <div class="match-box">T${match1vs2?.court || '-'} | ${team1.name} ${match1vs2?.completed ? `${match1vs2.team1Id === team1.id ? match1vs2.team1Score : match1vs2.team2Score} - ${match1vs2.team1Id === team1.id ? match1vs2.team2Score : match1vs2.team1Score}` : '- - -'} ${team2.name}</div>
-        <div class="match-box">${team3.name} - Qualifié d'office</div>
+        <div class="match-box">${team3.name} - BYE</div>
         <div class="match-box">Finale : - - -</div>
-        <div class="match-box">Perdant éliminé</div>
+        <div class="match-box">Perdant : BYE</div>
         <div class="match-box">Match de barrage : - - -</div>
       `;
     } else {
@@ -113,6 +113,13 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools, onUpdateSc
           !m.isBye && (m.team1Id === team.id || m.team2Id === team.id)
         );
 
+        // CORRECTION : Compter aussi les victoires BYE
+        const byeMatches = poolMatches.filter(m => 
+          m.isBye && (m.team1Id === team.id || m.team2Id === team.id) &&
+          ((m.team1Id === team.id && (m.team1Score || 0) > (m.team2Score || 0)) ||
+           (m.team2Id === team.id && (m.team2Score || 0) > (m.team1Score || 0)))
+        );
+
         let wins = 0;
         let pointsFor = 0;
         let pointsAgainst = 0;
@@ -128,13 +135,24 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools, onUpdateSc
           if (teamScore > opponentScore) wins++;
         });
 
+        // Ajouter les victoires BYE
+        wins += byeMatches.length;
+        // Ajouter les points des victoires BYE
+        byeMatches.forEach(match => {
+          const isTeam1 = match.team1Id === team.id;
+          const teamScore = isTeam1 ? match.team1Score! : match.team2Score!;
+          const opponentScore = isTeam1 ? match.team2Score! : match.team1Score!;
+          pointsFor += teamScore;
+          pointsAgainst += opponentScore;
+        });
+
         return { 
           team, 
           wins, 
           pointsFor, 
           pointsAgainst, 
           performance: pointsFor - pointsAgainst,
-          matches: teamMatches.length 
+          matches: teamMatches.length + byeMatches.length
         };
       });
 
@@ -666,6 +684,13 @@ function CompactThreeTeamPool({ poolTeams, poolMatches, pool, onUpdateScore }: {
       m.completed && !m.isBye && (m.team1Id === team.id || m.team2Id === team.id)
     );
 
+    // CORRECTION : Compter aussi les victoires BYE
+    const byeMatches = poolMatches.filter(m => 
+      m.completed && m.isBye && (m.team1Id === team.id || m.team2Id === team.id) &&
+      ((m.team1Id === team.id && (m.team1Score || 0) > (m.team2Score || 0)) ||
+       (m.team2Id === team.id && (m.team2Score || 0) > (m.team1Score || 0)))
+    );
+
     let wins = 0;
     teamMatches.forEach(match => {
       const isTeam1 = match.team1Id === team.id;
@@ -675,7 +700,10 @@ function CompactThreeTeamPool({ poolTeams, poolMatches, pool, onUpdateScore }: {
       if (teamScore > opponentScore) wins++;
     });
 
-    return { wins, matches: teamMatches.length };
+    // Ajouter les victoires BYE
+    wins += byeMatches.length;
+
+    return { wins, matches: teamMatches.length + byeMatches.length };
   };
 
   const allStats = poolTeams.map(team => ({
@@ -712,7 +740,7 @@ function CompactThreeTeamPool({ poolTeams, poolMatches, pool, onUpdateScore }: {
             <span>{team3.name}</span>
             <Crown className="w-3 h-3 text-yellow-400" />
           </div>
-          <div className="text-xs text-blue-400">Qualifié</div>
+          <div className="text-xs text-blue-400">BYE</div>
         </div>
 
         <CompactMatchBox 
@@ -723,13 +751,11 @@ function CompactThreeTeamPool({ poolTeams, poolMatches, pool, onUpdateScore }: {
           onUpdateScore={onUpdateScore}
         />
 
-        <div className="glass-card p-2 bg-red-500/10 text-center opacity-60">
+        <div className="glass-card p-2 bg-orange-500/10 text-center">
           <div className="text-xs font-bold text-white">
             T- {firstRoundResult.loser?.name || "Perdant"}
           </div>
-          <div className="text-xs text-red-400">
-            {teamsWithOneWin.length === 2 ? "En attente" : "Éliminé"}
-          </div>
+          <div className="text-xs text-orange-400">BYE</div>
         </div>
 
         <CompactMatchBox 
