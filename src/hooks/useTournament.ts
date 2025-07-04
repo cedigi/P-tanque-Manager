@@ -324,7 +324,7 @@ export function useTournament() {
     }
   };
 
-  // Fonction pour générer automatiquement les phases finales progressivement
+  // Fonction pour générer automatiquement les phases finales progressivement - SEULEMENT quand nécessaire
   const generateProgressiveFinalPhases = (updatedTournament: Tournament) => {
     const isPoolTournament = updatedTournament.type === 'doublette-poule' || updatedTournament.type === 'triplette-poule';
     
@@ -404,10 +404,11 @@ export function useTournament() {
       }
     });
 
-    // Générer les matchs des phases finales si on a assez d'équipes et pas déjà fait
+    // CORRECTION : Ne générer les phases finales QUE si on a assez d'équipes ET qu'il n'y a pas déjà de matchs
     const finalMatches = updatedTournament.matches.filter(m => !m.poolId);
     
-    if (finalMatches.length === 0 && qualifiedTeams.length >= 2) {
+    // Condition stricte : au moins 4 équipes qualifiées ET aucun match de phase finale existant
+    if (finalMatches.length === 0 && qualifiedTeams.length >= 4) {
       const newFinalMatches: Match[] = [];
       let courtIndex = Math.max(...updatedTournament.matches.map(m => m.court), 0) + 1;
       
