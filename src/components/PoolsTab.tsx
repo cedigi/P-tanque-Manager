@@ -279,7 +279,7 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools, onUpdateSc
   );
 }
 
-// Nouveau composant pour les phases finales
+// Nouveau composant pour les phases finales avec génération progressive
 interface FinalPhasesProps {
   qualifiedTeams: Team[];
   tournament: Tournament;
@@ -304,6 +304,90 @@ function FinalPhases({ qualifiedTeams, tournament, onUpdateScore }: FinalPhasesP
   // Trouver les matchs des phases finales (ceux sans poolId)
   const finalMatches = tournament.matches.filter(m => !m.poolId);
 
+  // Générer automatiquement les premiers matchs si on a assez d'équipes
+  const generateInitialMatches = () => {
+    if (finalMatches.length === 0 && teamCount >= 2) {
+      // Créer les premiers matchs en évitant les équipes de même poule
+      const availableTeams = [...qualifiedTeams];
+      const newMatches: Match[] = [];
+      
+      // Mélanger les équipes
+      availableTeams.sort(() => Math.random() - 0.5);
+      
+      // Créer les paires en évitant les équipes de même poule
+      const usedTeams = new Set<string>();
+      
+      for (let i = 0; i < availableTeams.length && usedTeams.size < availableTeams.length - 1; i++) {
+        const team1 = availableTeams[i];
+        if (usedTeams.has(team1.id)) continue;
+        
+        // Chercher un adversaire qui n'est pas de la même poule
+        let opponent = null;
+        for (let j = i + 1; j < availableTeams.length; j++) {
+          const team2 = availableTeams[j];
+          if (usedTeams.has(team2.id)) continue;
+          
+          // Vérifier qu'ils ne sont pas de la même poule
+          if (team1.poolId !== team2.poolId) {
+            opponent = team2;
+            break;
+          }
+        }
+        
+        // Si pas d'adversaire de poule différente, prendre le premier disponible
+        if (!opponent) {
+          for (let j = i + 1; j < availableTeams.length; j++) {
+            const team2 = availableTeams[j];
+            if (!usedTeams.has(team2.id)) {
+              opponent = team2;
+              break;
+            }
+          }
+        }
+        
+        if (opponent) {
+          usedTeams.add(team1.id);
+          usedTeams.add(opponent.id);
+          
+          newMatches.push({
+            id: crypto.randomUUID(),
+            round: 100, // 100+ pour les phases finales
+            court: newMatches.length + 1,
+            team1Id: team1.id,
+            team2Id: opponent.id,
+            completed: false,
+            isBye: false,
+            battleIntensity: Math.floor(Math.random() * 50) + 25,
+            hackingAttempts: 0,
+          });
+        }
+      }
+      
+      // Équipe qualifiée d'office si nombre impair
+      const remainingTeams = availableTeams.filter(t => !usedTeams.has(t.id));
+      if (remainingTeams.length === 1) {
+        newMatches.push({
+          id: crypto.randomUUID(),
+          round: 100,
+          court: 0,
+          team1Id: remainingTeams[0].id,
+          team2Id: remainingTeams[0].id,
+          team1Score: 13,
+          team2Score: 0,
+          completed: true,
+          isBye: true,
+          battleIntensity: 0,
+          hackingAttempts: 0,
+        });
+      }
+      
+      return newMatches;
+    }
+    return [];
+  };
+
+  const initialMatches = generateInitialMatches();
+
   return (
     <div className="mb-8">
       <div className="glass-card p-6">
@@ -321,7 +405,7 @@ function FinalPhases({ qualifiedTeams, tournament, onUpdateScore }: FinalPhasesP
                 phaseName={phaseName}
                 phaseIndex={index}
                 qualifiedTeams={qualifiedTeams}
-                matches={finalMatches}
+                matches={[...finalMatches, ...initialMatches]}
                 tournament={tournament}
                 onUpdateScore={onUpdateScore}
               />
@@ -358,10 +442,10 @@ function PhaseSection({ phaseName, phaseIndex, qualifiedTeams, matches, tourname
         {phaseName}
       </h4>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3">
         {phaseMatches.length > 0 ? (
           phaseMatches.map(match => (
-            <FinalMatchBox
+            <CompactFinalMatchBox
               key={match.id}
               match={match}
               tournament={tournament}
@@ -372,7 +456,7 @@ function PhaseSection({ phaseName, phaseIndex, qualifiedTeams, matches, tourname
           <div className="col-span-full text-center py-8">
             <div className="text-white/60">
               {phaseIndex === 0 ? 
-                "Les matchs seront générés automatiquement quand toutes les poules seront terminées" :
+                "Les matchs sont générés automatiquement dès qu'il y a assez d'équipes qualifiées" :
                 "En attente des résultats de la phase précédente"
               }
             </div>
@@ -383,14 +467,14 @@ function PhaseSection({ phaseName, phaseIndex, qualifiedTeams, matches, tourname
   );
 }
 
-// Composant pour un match de phase finale
-interface FinalMatchBoxProps {
+// Composant compact pour un match de phase finale
+interface CompactFinalMatchBoxProps {
   match: Match;
   tournament: Tournament;
   onUpdateScore?: (matchId: string, team1Score: number, team2Score: number) => void;
 }
 
-function FinalMatchBox({ match, tournament, onUpdateScore }: FinalMatchBoxProps) {
+function CompactFinalMatchBox({ match, tournament, onUpdateScore }: CompactFinalMatchBoxProps) {
   const [showWinnerModal, setShowWinnerModal] = useState(false);
   
   const team1 = tournament.teams.find(t => t.id === match.team1Id);
@@ -418,51 +502,41 @@ function FinalMatchBox({ match, tournament, onUpdateScore }: FinalMatchBoxProps)
 
   return (
     <>
-      <div className="glass-card p-4 bg-gradient-to-br from-purple-500/10 to-blue-500/10 border-purple-400/30">
+      <div className="glass-card p-3 bg-gradient-to-br from-purple-500/10 to-blue-500/10 border-purple-400/30 min-h-[120px]">
         {/* Terrain */}
-        <div className="text-center mb-3">
-          <span className="text-sm font-bold text-purple-400">Terrain {match.court}</span>
+        <div className="text-center mb-2">
+          <span className="text-xs font-bold text-purple-400">T{match.court}</span>
         </div>
 
         {/* Équipes */}
-        <div className="space-y-3">
+        <div className="space-y-2">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <span className="font-bold text-white">{team1?.name || "En attente..."}</span>
-              {winner?.id === team1?.id && <Crown className="w-4 h-4 text-yellow-400" />}
+            <div className="flex items-center space-x-1 flex-1 min-w-0">
+              <span className="font-bold text-white text-sm truncate">{team1?.name || "En attente..."}</span>
+              {winner?.id === team1?.id && <Crown className="w-3 h-3 text-yellow-400 flex-shrink-0" />}
             </div>
-            {match.completed && (
-              <span className="text-lg font-bold text-white">
-                {match.team1Score}
-              </span>
-            )}
           </div>
 
-          {/* Séparateur avec bouton ou score */}
+          {/* Bouton VS ou Trophée */}
           <div className="flex items-center justify-center">
             {match && onUpdateScore && team1 && team2 && !match.completed ? (
               <button
                 onClick={() => setShowWinnerModal(true)}
-                className="p-2 bg-yellow-500/80 text-white rounded-lg hover:bg-yellow-500 transition-colors"
+                className="p-1 bg-yellow-500/80 text-white rounded hover:bg-yellow-500 transition-colors"
                 title="Sélectionner le gagnant"
               >
-                <Trophy className="w-4 h-4" />
+                <Trophy className="w-3 h-3" />
               </button>
             ) : (
-              <span className="text-white/60 font-bold">VS</span>
+              <span className="text-white/60 font-bold text-xs">VS</span>
             )}
           </div>
 
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <span className="font-bold text-white">{team2?.name || "En attente..."}</span>
-              {winner?.id === team2?.id && <Crown className="w-4 h-4 text-yellow-400" />}
+            <div className="flex items-center space-x-1 flex-1 min-w-0">
+              <span className="font-bold text-white text-sm truncate">{team2?.name || "En attente..."}</span>
+              {winner?.id === team2?.id && <Crown className="w-3 h-3 text-yellow-400 flex-shrink-0" />}
             </div>
-            {match.completed && (
-              <span className="text-lg font-bold text-white">
-                {match.team2Score}
-              </span>
-            )}
           </div>
         </div>
       </div>
