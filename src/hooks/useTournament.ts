@@ -175,11 +175,10 @@ export function useTournament() {
         
         courtIndex = (courtIndex % tournament.courts) + 1;
         
-        // L'équipe 3 est automatiquement placée en phase 2 (gagnants)
-        // On peut créer un match fictif pour indiquer sa qualification automatique
+        // L'équipe 3 reçoit un BYE automatique (1 victoire)
         allMatches.push({
           id: crypto.randomUUID(),
-          round: 2,
+          round: 1,
           court: 0, // Court 0 = match virtuel
           team1Id: team3!.id,
           team2Id: team3!.id, // Match contre elle-même
@@ -383,13 +382,19 @@ export function useTournament() {
           if (teamScore > opponentScore) wins++;
         });
 
+        // CORRECTION : Ajouter les victoires BYE
+        const byeMatches = poolMatches.filter(m => 
+          m.isBye && (m.team1Id === team.id || m.team2Id === team.id)
+        );
+        wins += byeMatches.length;
+
         return { 
           team, 
           wins, 
           pointsFor, 
           pointsAgainst, 
           performance: pointsFor - pointsAgainst,
-          matches: teamMatches.length 
+          matches: teamMatches.length + byeMatches.length
         };
       });
 
@@ -399,13 +404,13 @@ export function useTournament() {
         return b.performance - a.performance;
       });
 
-      // Prendre les 2 premiers de chaque poule (ou 1 seul si poule de 3 avec élimination)
+      // CORRECTION : Pour les poules de 3, on prend les 2 premiers (après barrage éventuel)
       if (poolTeams.length === 4) {
         // Pour une poule de 4, on prend les 2 premiers
-        qualifiedTeams.push(...teamStats.slice(0, 2).map(stat => stat.team));
+        qualified.push(...teamStats.slice(0, 2).map(stat => stat.team));
       } else if (poolTeams.length === 3) {
-        // Pour une poule de 3, on prend le premier
-        qualifiedTeams.push(teamStats[0].team);
+        // Pour une poule de 3, on prend les 2 premiers (le gagnant + le vainqueur du barrage)
+        qualified.push(...teamStats.slice(0, 2).map(stat => stat.team));
       }
     });
 
@@ -680,22 +685,21 @@ export function useTournament() {
             hasNewMatches = true;
           }
           
-          // Le perdant du premier match est automatiquement éliminé (pas de match des perdants)
-          // On peut créer un match fictif pour indiquer son élimination
-          const loserEliminationExists = allMatches.some(m => 
+          // CORRECTION : Le perdant du premier match reçoit automatiquement un BYE (1 victoire)
+          const loserByeExists = allMatches.some(m => 
             m.poolId === pool.id && m.round === 2 && m.isBye &&
             m.team1Id === loser.id && m.team2Id === loser.id
           );
           
-          if (!loserEliminationExists) {
+          if (!loserByeExists) {
             allMatches.push({
               id: crypto.randomUUID(),
               round: 2,
               court: 0, // Court 0 = match virtuel
               team1Id: loser.id,
               team2Id: loser.id,
-              team1Score: 0,
-              team2Score: 13,
+              team1Score: 13,
+              team2Score: 0,
               completed: true,
               isBye: true,
               poolId: pool.id,
@@ -730,7 +734,14 @@ export function useTournament() {
                 if (teamScore > opponentScore) wins++;
               });
 
-              return { wins, matches: teamMatches.length };
+              // Ajouter les victoires BYE
+              const byeMatches = allMatches.filter(m => 
+                m.poolId === pool.id && m.completed && m.isBye && 
+                (m.team1Id === team.id || m.team2Id === team.id)
+              );
+              wins += byeMatches.length;
+
+              return { wins, matches: teamMatches.length + byeMatches.length };
             };
 
             const team1Stats = getTeamStats(team1!);
