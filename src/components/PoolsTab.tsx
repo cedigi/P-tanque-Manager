@@ -403,7 +403,7 @@ function PhaseSection({ phaseName, phaseIndex, qualifiedTeams, matches, tourname
       </h4>
       
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3">
-        {/* Matchs existants */}
+        {/* Afficher TOUS les matchs, même vides */}
         {phaseMatches.map(match => (
           <ProgressiveFinalMatchBox
             key={match.id}
@@ -428,7 +428,7 @@ function PhaseSection({ phaseName, phaseIndex, qualifiedTeams, matches, tourname
   );
 }
 
-// Composant progressif pour un match de phase finale
+// Composant progressif pour un match de phase finale - TOUJOURS ACTIF
 interface ProgressiveFinalMatchBoxProps {
   match: Match;
   tournament: Tournament;
@@ -468,17 +468,19 @@ function ProgressiveFinalMatchBox({ match, tournament, onUpdateScore }: Progress
 
   return (
     <>
-      <div className={`glass-card p-3 min-h-[120px] transition-all duration-300 ${
-        isEmpty ? 'bg-gradient-to-br from-gray-500/10 to-gray-600/10 border-gray-400/30 opacity-50' :
-        isPartial ? 'bg-gradient-to-br from-yellow-500/10 to-orange-500/10 border-yellow-400/30' :
-        'bg-gradient-to-br from-purple-500/10 to-blue-500/10 border-purple-400/30'
+      <div className={`glass-card p-3 min-h-[120px] transition-all duration-300 cursor-pointer hover:scale-105 ${
+        isEmpty ? 'bg-gradient-to-br from-gray-500/20 to-gray-600/20 border-gray-400/40' :
+        isPartial ? 'bg-gradient-to-br from-yellow-500/20 to-orange-500/20 border-yellow-400/50' :
+        isReady ? 'bg-gradient-to-br from-purple-500/20 to-blue-500/20 border-purple-400/50' :
+        'bg-gradient-to-br from-green-500/20 to-emerald-500/20 border-green-400/50'
       }`}>
         {/* Terrain */}
         <div className="text-center mb-2">
           <span className={`text-xs font-bold ${
             isEmpty ? 'text-gray-400' :
             isPartial ? 'text-yellow-400' :
-            'text-purple-400'
+            isReady ? 'text-purple-400' :
+            'text-green-400'
           }`}>
             T{match.court || '-'}
           </span>
@@ -491,10 +493,15 @@ function ProgressiveFinalMatchBox({ match, tournament, onUpdateScore }: Progress
               <span className={`font-bold text-sm truncate ${
                 team1 ? 'text-white' : 'text-gray-400'
               }`}>
-                {team1?.name || "En attente..."}
+                {team1?.name || "🔄 En attente..."}
               </span>
               {winner?.id === team1?.id && <Crown className="w-3 h-3 text-yellow-400 flex-shrink-0" />}
             </div>
+            {match.completed && team1 && (
+              <span className="text-sm font-bold text-green-400">
+                {match.team1Score}
+              </span>
+            )}
           </div>
 
           {/* Bouton VS ou Trophée */}
@@ -502,7 +509,7 @@ function ProgressiveFinalMatchBox({ match, tournament, onUpdateScore }: Progress
             {isReady && onUpdateScore && !match.completed ? (
               <button
                 onClick={() => setShowWinnerModal(true)}
-                className="p-1 bg-yellow-500/80 text-white rounded hover:bg-yellow-500 transition-colors"
+                className="p-1 bg-yellow-500/80 text-white rounded hover:bg-yellow-500 transition-colors animate-pulse"
                 title="Sélectionner le gagnant"
               >
                 <Trophy className="w-3 h-3" />
@@ -511,9 +518,13 @@ function ProgressiveFinalMatchBox({ match, tournament, onUpdateScore }: Progress
               <span className={`font-bold text-xs ${
                 isEmpty ? 'text-gray-400/60' :
                 isPartial ? 'text-yellow-400/80' :
+                match.completed ? 'text-green-400' :
                 'text-white/60'
               }`}>
-                {isEmpty ? '...' : isPartial ? '?' : 'VS'}
+                {isEmpty ? '⏳' : 
+                 isPartial ? '🔄' : 
+                 match.completed ? '✅' : 
+                 'VS'}
               </span>
             )}
           </div>
@@ -523,10 +534,32 @@ function ProgressiveFinalMatchBox({ match, tournament, onUpdateScore }: Progress
               <span className={`font-bold text-sm truncate ${
                 team2 ? 'text-white' : 'text-gray-400'
               }`}>
-                {team2?.name || "En attente..."}
+                {team2?.name || "🔄 En attente..."}
               </span>
               {winner?.id === team2?.id && <Crown className="w-3 h-3 text-yellow-400 flex-shrink-0" />}
             </div>
+            {match.completed && team2 && (
+              <span className="text-sm font-bold text-green-400">
+                {match.team2Score}
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Indicateur d'état */}
+        <div className="mt-2 text-center">
+          <div className={`text-xs font-medium ${
+            isEmpty ? 'text-gray-400' :
+            isPartial ? 'text-yellow-400' :
+            isReady && !match.completed ? 'text-purple-400 animate-pulse' :
+            match.completed ? 'text-green-400' :
+            'text-white/60'
+          }`}>
+            {isEmpty ? 'Vide' :
+             isPartial ? 'Partiel' :
+             isReady && !match.completed ? 'PRÊT !' :
+             match.completed ? 'Terminé' :
+             'En cours'}
           </div>
         </div>
       </div>
@@ -628,6 +661,13 @@ function CompactFourTeamPool({ poolTeams, poolMatches, pool, onUpdateScore }: {
       m.completed && (m.team1Id === team.id || m.team2Id === team.id)
     );
 
+    // CORRECTION : Compter aussi les victoires BYE
+    const byeMatches = poolMatches.filter(m => 
+      m.completed && m.isBye && (m.team1Id === team.id || m.team2Id === team.id) &&
+      ((m.team1Id === team.id && (m.team1Score || 0) > (m.team2Score || 0)) ||
+       (m.team2Id === team.id && (m.team2Score || 0) > (m.team1Score || 0)))
+    );
+
     let wins = 0;
     teamMatches.forEach(match => {
       const isTeam1 = match.team1Id === team.id;
@@ -637,7 +677,10 @@ function CompactFourTeamPool({ poolTeams, poolMatches, pool, onUpdateScore }: {
       if (teamScore > opponentScore) wins++;
     });
 
-    return { wins, matches: teamMatches.length };
+    // Ajouter les victoires BYE
+    wins += byeMatches.length;
+
+    return { wins, matches: teamMatches.length + byeMatches.length };
   };
 
   const allStats = poolTeams.map(team => ({
