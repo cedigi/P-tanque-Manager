@@ -134,10 +134,10 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools, onUpdateSc
 
       {pools.length > 0 ? (
         <>
-          {/* Affichage des poules avec exactement 5 cases - Layout plus compact */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-8">
+          {/* Affichage des poules avec exactement 5 cases - Taille normale */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
             {pools.map((pool) => (
-              <CompactFiveBoxPool 
+              <FiveBoxPool 
                 key={pool.id} 
                 pool={pool} 
                 teams={teams} 
@@ -192,15 +192,15 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools, onUpdateSc
   );
 }
 
-// Composant compact avec exactement 5 cases qui se remplissent automatiquement
-interface CompactFiveBoxPoolProps {
+// Composant avec exactement 5 cases qui se remplissent automatiquement - Taille normale
+interface FiveBoxPoolProps {
   pool: Pool;
   teams: Team[];
   matches: Match[];
   onUpdateScore?: (matchId: string, team1Score: number, team2Score: number) => void;
 }
 
-function CompactFiveBoxPool({ pool, teams, matches, onUpdateScore }: CompactFiveBoxPoolProps) {
+function FiveBoxPool({ pool, teams, matches, onUpdateScore }: FiveBoxPoolProps) {
   const poolMatches = matches.filter(m => m.poolId === pool.id);
   const poolTeams = pool.teamIds.map(id => teams.find(t => t.id === id)).filter(Boolean) as Team[];
   
@@ -210,9 +210,9 @@ function CompactFiveBoxPool({ pool, teams, matches, onUpdateScore }: CompactFive
     return <ThreeTeamPool poolTeams={poolTeams} poolMatches={poolMatches} pool={pool} onUpdateScore={onUpdateScore} />;
   } else {
     return (
-      <div className="glass-card p-3 min-w-[280px]">
-        <h3 className="text-sm font-bold text-white mb-2">{pool.name}</h3>
-        <p className="text-white/70 text-xs">Poule incomplète ({poolTeams.length}/4 équipes)</p>
+      <div className="glass-card p-6">
+        <h3 className="text-lg font-bold text-white mb-4">{pool.name}</h3>
+        <p className="text-white/70">Poule incomplète ({poolTeams.length}/4 équipes)</p>
       </div>
     );
   }
@@ -308,30 +308,30 @@ function FourTeamPool({ poolTeams, poolMatches, pool, onUpdateScore }: {
   );
 
   return (
-    <div className="glass-card overflow-hidden min-w-[300px] max-w-[350px]">
-      <div className="px-3 py-2 border-b border-white/20 bg-white/5">
-        <h3 className="text-sm font-bold text-white tracking-wide flex items-center space-x-2">
-          <Grid3X3 className="w-3 h-3" />
+    <div className="glass-card overflow-hidden">
+      <div className="px-6 py-4 border-b border-white/20 bg-white/5">
+        <h3 className="text-xl font-bold text-white tracking-wide flex items-center space-x-2">
+          <Grid3X3 className="w-5 h-5" />
           <span>{pool.name}</span>
         </h3>
       </div>
       
-      <div className="p-3 space-y-3">
-        <CompactMatchBox 
+      <div className="p-6 space-y-4">
+        <MatchBox 
           team1={team1} 
           team2={team4} 
           match={match1vs4}
           onUpdateScore={onUpdateScore}
         />
         
-        <CompactMatchBox 
+        <MatchBox 
           team1={team2} 
           team2={team3} 
           match={match2vs3}
           onUpdateScore={onUpdateScore}
         />
 
-        <CompactMatchBox 
+        <MatchBox 
           team1={result1vs4.winner} 
           team2={result2vs3.winner} 
           match={winnersMatch}
@@ -340,7 +340,7 @@ function FourTeamPool({ poolTeams, poolMatches, pool, onUpdateScore }: {
           onUpdateScore={onUpdateScore}
         />
 
-        <CompactMatchBox 
+        <MatchBox 
           team1={result1vs4.loser} 
           team2={result2vs3.loser} 
           match={losersMatch}
@@ -349,7 +349,7 @@ function FourTeamPool({ poolTeams, poolMatches, pool, onUpdateScore }: {
           onUpdateScore={onUpdateScore}
         />
 
-        <CompactMatchBox 
+        <MatchBox 
           team1={teamsWithOneWin[0]?.team} 
           team2={teamsWithOneWin[1]?.team} 
           match={barrageMatch}
@@ -405,17 +405,17 @@ function ThreeTeamPool({ poolTeams, poolMatches, pool, onUpdateScore }: {
   });
 
   return (
-    <div className="glass-card overflow-hidden min-w-[300px] max-w-[350px]">
-      <div className="px-3 py-2 border-b border-white/20 bg-white/5">
-        <h3 className="text-sm font-bold text-white tracking-wide flex items-center space-x-2">
-          <Grid3X3 className="w-3 h-3" />
+    <div className="glass-card overflow-hidden">
+      <div className="px-6 py-4 border-b border-white/20 bg-white/5">
+        <h3 className="text-xl font-bold text-white tracking-wide flex items-center space-x-2">
+          <Grid3X3 className="w-5 h-5" />
           <span>{pool.name} (3 équipes)</span>
         </h3>
       </div>
       
-      <div className="p-3 space-y-3">
+      <div className="p-6 space-y-4">
         {/* Case 1 : Premier match */}
-        <CompactMatchBox 
+        <MatchBox 
           team1={team1} 
           team2={team2} 
           match={firstRoundMatch}
@@ -423,22 +423,19 @@ function ThreeTeamPool({ poolTeams, poolMatches, pool, onUpdateScore }: {
         />
         
         {/* Case 2 : Team3 qualifiée d'office */}
-        <div className="glass-card p-3 bg-blue-500/10 border-blue-400/30">
-          <div className="flex items-center space-x-3">
-            <div className="w-8 text-center">
-              <div className="text-xs font-bold text-blue-400">-</div>
-            </div>
-            <div className="flex-1 text-center">
-              <div className="font-bold text-white text-sm">
+        <div className="glass-card p-4 bg-blue-500/10 border-blue-400/30">
+          <div className="flex items-center justify-center space-x-3">
+            <div className="text-center">
+              <div className="font-bold text-white text-lg">
                 {team3.name}
               </div>
-              <div className="text-xs text-blue-400 mt-1">Qualifié d'office</div>
+              <div className="text-sm text-blue-400 mt-1">Qualifié d'office</div>
             </div>
           </div>
         </div>
 
         {/* Case 3 : Gagnant vs Qualifié d'office */}
-        <CompactMatchBox 
+        <MatchBox 
           team1={firstRoundResult.winner} 
           team2={team3} 
           match={finalMatch}
@@ -448,23 +445,20 @@ function ThreeTeamPool({ poolTeams, poolMatches, pool, onUpdateScore }: {
         />
 
         {/* Case 4 : Perdant éliminé */}
-        <div className="glass-card p-3 bg-red-500/10 border-red-400/30 opacity-60">
-          <div className="flex items-center space-x-3">
-            <div className="w-8 text-center">
-              <div className="text-xs font-bold text-red-400">-</div>
-            </div>
-            <div className="flex-1 text-center">
-              <div className="font-bold text-white text-sm">
+        <div className="glass-card p-4 bg-red-500/10 border-red-400/30 opacity-60">
+          <div className="flex items-center justify-center space-x-3">
+            <div className="text-center">
+              <div className="font-bold text-white text-lg">
                 {firstRoundResult.loser?.name || "Perdant"}
               </div>
-              <div className="text-xs text-red-400 mt-1">Éliminé</div>
+              <div className="text-sm text-red-400 mt-1">Éliminé</div>
             </div>
           </div>
         </div>
 
         {/* Case 5 : Pas de barrage */}
-        <div className="glass-card p-3 bg-gray-500/10 border-gray-400/30 opacity-40">
-          <div className="text-center text-white/60 text-sm">
+        <div className="glass-card p-4 bg-gray-500/10 border-gray-400/30 opacity-40">
+          <div className="text-center text-white/60">
             Pas de barrage
           </div>
         </div>
@@ -473,8 +467,8 @@ function ThreeTeamPool({ poolTeams, poolMatches, pool, onUpdateScore }: {
   );
 }
 
-// Composant compact pour chaque case de match
-interface CompactMatchBoxProps {
+// Composant pour chaque case de match - Taille normale
+interface MatchBoxProps {
   team1?: Team | null;
   team2?: Team | null;
   match?: Match;
@@ -484,7 +478,7 @@ interface CompactMatchBoxProps {
   showOnlyIfNeeded?: boolean;
 }
 
-function CompactMatchBox({ team1, team2, match, label, bgColor = "bg-white/5", onUpdateScore, showOnlyIfNeeded = true }: CompactMatchBoxProps) {
+function MatchBox({ team1, team2, match, label, bgColor = "bg-white/5", onUpdateScore, showOnlyIfNeeded = true }: MatchBoxProps) {
   const [editingScore, setEditingScore] = useState(false);
   const [scores, setScores] = useState({ team1: 0, team2: 0 });
   const [showWinnerSelector, setShowWinnerSelector] = useState(false);
@@ -492,8 +486,8 @@ function CompactMatchBox({ team1, team2, match, label, bgColor = "bg-white/5", o
   // Si showOnlyIfNeeded est true et qu'il n'y a pas d'équipes, ne pas afficher
   if (showOnlyIfNeeded && (!team1 || !team2)) {
     return (
-      <div className={`glass-card p-3 ${bgColor} opacity-50`}>
-        <div className="text-center text-white/60 text-sm">
+      <div className={`glass-card p-4 ${bgColor} opacity-50`}>
+        <div className="text-center text-white/60">
           {label || "En attente..."}
         </div>
       </div>
@@ -535,58 +529,58 @@ function CompactMatchBox({ team1, team2, match, label, bgColor = "bg-white/5", o
   };
 
   return (
-    <div className={`glass-card p-3 ${bgColor} transition-all duration-300`}>
+    <div className={`glass-card p-4 ${bgColor} transition-all duration-300`}>
       {/* Ligne 1: Terrain */}
-      <div className="flex items-center justify-center mb-2">
-        <div className="text-sm font-bold text-blue-400">
+      <div className="flex items-center justify-center mb-3">
+        <div className="text-lg font-bold text-blue-400">
           Terrain {match?.court ? match.court : '-'}
         </div>
       </div>
 
       {/* Ligne 2: Équipes et score */}
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center justify-between mb-4">
         {/* Équipe 1 */}
         <div className="flex-1 text-left">
-          <div className="font-bold text-white text-sm truncate">
+          <div className="font-bold text-white text-lg">
             {team1?.name || "..."}
           </div>
         </div>
 
         {/* Score central */}
-        <div className="mx-3 text-center min-w-[80px]">
+        <div className="mx-4 text-center min-w-[120px]">
           {editingScore && match ? (
-            <div className="flex items-center space-x-1">
+            <div className="flex items-center space-x-2">
               <input
                 type="number"
                 min="0"
                 max="13"
                 value={scores.team1}
                 onChange={(e) => setScores({ ...scores, team1: Number(e.target.value) })}
-                className="w-8 px-1 py-1 text-center bg-white/10 border border-white/20 rounded text-white text-sm font-bold"
+                className="w-12 px-2 py-1 text-center bg-white/10 border border-white/20 rounded text-white font-bold"
               />
-              <span className="text-white text-sm">-</span>
+              <span className="text-white font-bold">-</span>
               <input
                 type="number"
                 min="0"
                 max="13"
                 value={scores.team2}
                 onChange={(e) => setScores({ ...scores, team2: Number(e.target.value) })}
-                className="w-8 px-1 py-1 text-center bg-white/10 border border-white/20 rounded text-white text-sm font-bold"
+                className="w-12 px-2 py-1 text-center bg-white/10 border border-white/20 rounded text-white font-bold"
               />
             </div>
           ) : (
-            <div className="text-lg font-bold text-white">
+            <div className="text-2xl font-bold text-white">
               {getTeamScore(team1)} - {getTeamScore(team2)}
             </div>
           )}
           {label && (
-            <div className="text-xs text-white/60 mt-1">{label}</div>
+            <div className="text-sm text-white/60 mt-1">{label}</div>
           )}
         </div>
 
         {/* Équipe 2 */}
         <div className="flex-1 text-right">
-          <div className="font-bold text-white text-sm truncate">
+          <div className="font-bold text-white text-lg">
             {team2?.name || "..."}
           </div>
         </div>
@@ -594,18 +588,18 @@ function CompactMatchBox({ team1, team2, match, label, bgColor = "bg-white/5", o
 
       {/* Ligne 3: Boutons d'action */}
       {match && onUpdateScore && team1 && team2 && (
-        <div className="flex justify-center space-x-2">
+        <div className="flex justify-center space-x-3">
           {editingScore ? (
             <>
               <button
                 onClick={handleSaveScore}
-                className="px-3 py-1 bg-green-500/80 text-white rounded text-sm font-bold hover:bg-green-500 transition-colors"
+                className="px-4 py-2 bg-green-500/80 text-white rounded font-bold hover:bg-green-500 transition-colors"
               >
                 ✓ Valider
               </button>
               <button
                 onClick={() => setEditingScore(false)}
-                className="px-3 py-1 bg-red-500/80 text-white rounded text-sm font-bold hover:bg-red-500 transition-colors"
+                className="px-4 py-2 bg-red-500/80 text-white rounded font-bold hover:bg-red-500 transition-colors"
               >
                 ✕ Annuler
               </button>
@@ -614,23 +608,23 @@ function CompactMatchBox({ team1, team2, match, label, bgColor = "bg-white/5", o
             <>
               <button
                 onClick={() => handleQuickWin('team1')}
-                className="px-3 py-1 bg-green-500/80 text-white rounded text-sm font-bold hover:bg-green-500 transition-colors flex items-center space-x-1"
+                className="px-4 py-2 bg-green-500/80 text-white rounded font-bold hover:bg-green-500 transition-colors flex items-center space-x-2"
                 title={`${team1.name} gagne`}
               >
-                <Crown className="w-3 h-3" />
-                <span>{team1.name.substring(0, 6)}...</span>
+                <Crown className="w-4 h-4" />
+                <span>{team1.name.length > 8 ? team1.name.substring(0, 8) + '...' : team1.name}</span>
               </button>
               <button
                 onClick={() => handleQuickWin('team2')}
-                className="px-3 py-1 bg-green-500/80 text-white rounded text-sm font-bold hover:bg-green-500 transition-colors flex items-center space-x-1"
+                className="px-4 py-2 bg-green-500/80 text-white rounded font-bold hover:bg-green-500 transition-colors flex items-center space-x-2"
                 title={`${team2.name} gagne`}
               >
-                <Crown className="w-3 h-3" />
-                <span>{team2.name.substring(0, 6)}...</span>
+                <Crown className="w-4 h-4" />
+                <span>{team2.name.length > 8 ? team2.name.substring(0, 8) + '...' : team2.name}</span>
               </button>
               <button
                 onClick={() => setShowWinnerSelector(false)}
-                className="px-2 py-1 bg-red-500/80 text-white rounded text-sm font-bold hover:bg-red-500 transition-colors"
+                className="px-3 py-2 bg-red-500/80 text-white rounded font-bold hover:bg-red-500 transition-colors"
               >
                 ✕
               </button>
@@ -639,18 +633,18 @@ function CompactMatchBox({ team1, team2, match, label, bgColor = "bg-white/5", o
             <>
               <button
                 onClick={handleEditScore}
-                className="px-3 py-1 bg-blue-500/80 text-white rounded text-sm font-bold hover:bg-blue-500 transition-colors flex items-center space-x-1"
+                className="px-4 py-2 bg-blue-500/80 text-white rounded font-bold hover:bg-blue-500 transition-colors flex items-center space-x-2"
                 title="Modifier le score"
               >
-                <Edit3 className="w-3 h-3" />
+                <Edit3 className="w-4 h-4" />
                 <span>Score</span>
               </button>
               <button
                 onClick={() => setShowWinnerSelector(true)}
-                className="px-3 py-1 bg-yellow-500/80 text-white rounded text-sm font-bold hover:bg-yellow-500 transition-colors flex items-center space-x-1"
+                className="px-4 py-2 bg-yellow-500/80 text-white rounded font-bold hover:bg-yellow-500 transition-colors flex items-center space-x-2"
                 title="Définir le gagnant rapidement"
               >
-                <Target className="w-3 h-3" />
+                <Target className="w-4 h-4" />
                 <span>Gagnant</span>
               </button>
             </>
