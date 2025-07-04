@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Pool, Team, Tournament, Match } from '../types/tournament';
-import { Grid3X3, Users, Trophy, Shuffle, Printer, MapPin, Edit3 } from 'lucide-react';
+import { Grid3X3, Users, Trophy, Shuffle, Printer, Edit3 } from 'lucide-react';
 
 interface PoolsTabProps {
   tournament: Tournament;
@@ -25,17 +25,17 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools, onUpdateSc
           <style>
             body { font-family: Arial, sans-serif; margin: 20px; }
             h1 { text-align: center; margin-bottom: 30px; }
-            .pools-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 20px; }
+            .pools-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
             .pool { border: 2px solid #333; border-radius: 8px; padding: 15px; margin-bottom: 20px; }
             .pool-title { font-weight: bold; font-size: 18px; margin-bottom: 15px; text-align: center; background: #f0f0f0; padding: 10px; border-radius: 4px; }
-            .match-row { display: flex; justify-content: space-between; align-items: center; padding: 8px; border: 1px solid #ddd; margin: 3px 0; background: #f9f9f9; border-radius: 4px; }
+            .match-box { border: 1px solid #ddd; padding: 8px; margin: 4px 0; background: #f9f9f9; border-radius: 4px; text-align: center; }
             .team-name { font-weight: bold; }
-            .score { font-weight: bold; text-align: center; min-width: 60px; }
+            .score { font-weight: bold; }
             @media print { body { margin: 0; } }
           </style>
         </head>
         <body>
-          <h1>Brackets des Poules - ${tournament.name}</h1>
+          <h1>Poules - ${tournament.name}</h1>
           <div class="pools-container">
             ${pools.map(pool => {
               const poolMatches = tournament.matches.filter(m => m.poolId === pool.id);
@@ -44,7 +44,7 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools, onUpdateSc
               return `
                 <div class="pool">
                   <div class="pool-title">${pool.name}</div>
-                  ${generateBracketHTML(poolTeams, poolMatches)}
+                  ${generatePoolHTML(poolTeams, poolMatches)}
                 </div>
               `;
             }).join('')}
@@ -58,7 +58,7 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools, onUpdateSc
     printWindow.print();
   };
 
-  const generateBracketHTML = (poolTeams: Team[], poolMatches: Match[]) => {
+  const generatePoolHTML = (poolTeams: Team[], poolMatches: Match[]) => {
     if (poolTeams.length !== 4) return '<p>Poule incomplète</p>';
 
     const [team1, team2, team3, team4] = poolTeams;
@@ -73,18 +73,11 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools, onUpdateSc
     );
 
     return `
-      <div>
-        <div class="match-row">
-          <span class="team-name">${team1.name}</span>
-          <span class="score">${match1vs4?.completed ? `${match1vs4.team1Id === team1.id ? match1vs4.team1Score : match1vs4.team2Score} - ${match1vs4.team1Id === team1.id ? match1vs4.team2Score : match1vs4.team1Score}` : '- - -'}</span>
-          <span class="team-name">${team4.name}</span>
-        </div>
-        <div class="match-row">
-          <span class="team-name">${team2.name}</span>
-          <span class="score">${match2vs3?.completed ? `${match2vs3.team1Id === team2.id ? match2vs3.team1Score : match2vs3.team2Score} - ${match2vs3.team1Id === team2.id ? match2vs3.team2Score : match2vs3.team1Score}` : '- - -'}</span>
-          <span class="team-name">${team3.name}</span>
-        </div>
-      </div>
+      <div class="match-box">${team1.name} ${match1vs4?.completed ? `${match1vs4.team1Id === team1.id ? match1vs4.team1Score : match1vs4.team2Score} - ${match1vs4.team1Id === team1.id ? match1vs4.team2Score : match1vs4.team1Score}` : '- - -'} ${team4.name}</div>
+      <div class="match-box">${team2.name} ${match2vs3?.completed ? `${match2vs3.team1Id === team2.id ? match2vs3.team1Score : match2vs3.team2Score} - ${match2vs3.team1Id === team2.id ? match2vs3.team2Score : match2vs3.team1Score}` : '- - -'} ${team3.name}</div>
+      <div class="match-box">V vs V : - - -</div>
+      <div class="match-box">D vs D : - - -</div>
+      <div class="match-box">Barrage : - - -</div>
     `;
   };
 
@@ -123,16 +116,15 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools, onUpdateSc
 
       {pools.length > 0 ? (
         <>
-          {/* Affichage des poules avec système de bracket compact */}
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-8">
+          {/* Affichage des poules avec exactement 5 cases */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 mb-8">
             {pools.map((pool) => (
-              <CompactBracketPool 
+              <FiveBoxPool 
                 key={pool.id} 
                 pool={pool} 
                 teams={teams} 
                 matches={tournament.matches}
                 onUpdateScore={onUpdateScore}
-                isSolo={isSolo}
               />
             ))}
           </div>
@@ -182,16 +174,15 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools, onUpdateSc
   );
 }
 
-// Composant pour le système de bracket compact
-interface CompactBracketPoolProps {
+// Composant avec exactement 5 cases qui se remplissent automatiquement
+interface FiveBoxPoolProps {
   pool: Pool;
   teams: Team[];
   matches: Match[];
   onUpdateScore?: (matchId: string, team1Score: number, team2Score: number) => void;
-  isSolo: boolean;
 }
 
-function CompactBracketPool({ pool, teams, matches, onUpdateScore, isSolo }: CompactBracketPoolProps) {
+function FiveBoxPool({ pool, teams, matches, onUpdateScore }: FiveBoxPoolProps) {
   const poolMatches = matches.filter(m => m.poolId === pool.id);
   const poolTeams = pool.teamIds.map(id => teams.find(t => t.id === id)).filter(Boolean) as Team[];
   
@@ -206,18 +197,19 @@ function CompactBracketPool({ pool, teams, matches, onUpdateScore, isSolo }: Com
 
   const [team1, team2, team3, team4] = poolTeams;
 
-  // Matchs du premier tour (1 vs 4, 2 vs 3)
+  // Case 1 : Match 1 vs 4
   const match1vs4 = poolMatches.find(m => 
     (m.team1Id === team1.id && m.team2Id === team4.id) ||
     (m.team1Id === team4.id && m.team2Id === team1.id)
   );
   
+  // Case 2 : Match 2 vs 3
   const match2vs3 = poolMatches.find(m => 
     (m.team1Id === team2.id && m.team2Id === team3.id) ||
     (m.team1Id === team3.id && m.team2Id === team2.id)
   );
 
-  // Déterminer les gagnants et perdants automatiquement
+  // Déterminer automatiquement les gagnants et perdants
   const getWinnerLoser = (match: Match | undefined, teamA: Team, teamB: Team) => {
     if (!match?.completed) return { winner: null, loser: null };
     
@@ -235,7 +227,7 @@ function CompactBracketPool({ pool, teams, matches, onUpdateScore, isSolo }: Com
   const result1vs4 = getWinnerLoser(match1vs4, team1, team4);
   const result2vs3 = getWinnerLoser(match2vs3, team2, team3);
 
-  // Matchs du deuxième tour (automatiquement remplis)
+  // Case 3 : Gagnants vs Gagnants (se remplit automatiquement)
   const winnersMatch = poolMatches.find(m => {
     if (!result1vs4.winner || !result2vs3.winner) return false;
     return (
@@ -244,6 +236,7 @@ function CompactBracketPool({ pool, teams, matches, onUpdateScore, isSolo }: Com
     );
   });
 
+  // Case 4 : Perdants vs Perdants (se remplit automatiquement)
   const losersMatch = poolMatches.find(m => {
     if (!result1vs4.loser || !result2vs3.loser) return false;
     return (
@@ -252,12 +245,10 @@ function CompactBracketPool({ pool, teams, matches, onUpdateScore, isSolo }: Com
     );
   });
 
-  // Déterminer qui a besoin d'un match de barrage
+  // Calculer qui a besoin d'un match de barrage
   const getTeamStats = (team: Team) => {
     const teamMatches = poolMatches.filter(m => 
-      m.completed && (
-        m.team1Id === team.id || m.team2Id === team.id
-      )
+      m.completed && (m.team1Id === team.id || m.team2Id === team.id)
     );
 
     let wins = 0;
@@ -272,16 +263,14 @@ function CompactBracketPool({ pool, teams, matches, onUpdateScore, isSolo }: Com
     return { wins, matches: teamMatches.length };
   };
 
-  // Calculer les statistiques pour déterminer le barrage
   const allStats = poolTeams.map(team => ({
     team,
     ...getTeamStats(team)
   }));
 
   const teamsWithOneWin = allStats.filter(stat => stat.wins === 1 && stat.matches >= 2);
-  const needsBarrage = teamsWithOneWin.length === 2;
 
-  // Match de barrage
+  // Case 5 : Match de barrage (se remplit automatiquement si nécessaire)
   const barrageMatch = poolMatches.find(m => 
     m.round === 3 && 
     teamsWithOneWin.some(stat => stat.team.id === m.team1Id) &&
@@ -297,81 +286,86 @@ function CompactBracketPool({ pool, teams, matches, onUpdateScore, isSolo }: Com
         </h3>
       </div>
       
-      <div className="p-4 space-y-4">
-        {/* Première ligne : Match 1 vs 4 */}
-        <CompactMatchCard 
+      <div className="p-4 space-y-3">
+        {/* Case 1 : Match 1 vs 4 */}
+        <MatchBox 
           team1={team1} 
           team2={team4} 
           match={match1vs4}
           onUpdateScore={onUpdateScore}
         />
         
-        {/* Deuxième ligne : Match 2 vs 3 */}
-        <CompactMatchCard 
+        {/* Case 2 : Match 2 vs 3 */}
+        <MatchBox 
           team1={team2} 
           team2={team3} 
           match={match2vs3}
           onUpdateScore={onUpdateScore}
         />
 
-        {/* Troisième ligne : Gagnants vs Gagnants */}
-        {(result1vs4.winner && result2vs3.winner) && (
-          <CompactMatchCard 
-            team1={result1vs4.winner} 
-            team2={result2vs3.winner} 
-            match={winnersMatch}
-            label="Gagnants"
-            isWinnersMatch={true}
-            onUpdateScore={onUpdateScore}
-          />
-        )}
+        {/* Case 3 : Gagnants vs Gagnants */}
+        <MatchBox 
+          team1={result1vs4.winner} 
+          team2={result2vs3.winner} 
+          match={winnersMatch}
+          label="V vs V"
+          bgColor="bg-green-500/10 border-green-400/30"
+          onUpdateScore={onUpdateScore}
+        />
 
-        {/* Quatrième ligne : Perdants vs Perdants */}
-        {(result1vs4.loser && result2vs3.loser) && (
-          <CompactMatchCard 
-            team1={result1vs4.loser} 
-            team2={result2vs3.loser} 
-            match={losersMatch}
-            label="Perdants"
-            isLosersMatch={true}
-            onUpdateScore={onUpdateScore}
-          />
-        )}
+        {/* Case 4 : Perdants vs Perdants */}
+        <MatchBox 
+          team1={result1vs4.loser} 
+          team2={result2vs3.loser} 
+          match={losersMatch}
+          label="D vs D"
+          bgColor="bg-orange-500/10 border-orange-400/30"
+          onUpdateScore={onUpdateScore}
+        />
 
-        {/* Cinquième ligne : Match de barrage */}
-        {needsBarrage && (
-          <CompactMatchCard 
-            team1={teamsWithOneWin[0].team} 
-            team2={teamsWithOneWin[1].team} 
-            match={barrageMatch}
-            label="Barrage"
-            isBarrageMatch={true}
-            onUpdateScore={onUpdateScore}
-          />
-        )}
+        {/* Case 5 : Match de barrage */}
+        <MatchBox 
+          team1={teamsWithOneWin[0]?.team} 
+          team2={teamsWithOneWin[1]?.team} 
+          match={barrageMatch}
+          label="Barrage"
+          bgColor="bg-red-500/10 border-red-400/30"
+          onUpdateScore={onUpdateScore}
+          showOnlyIfNeeded={teamsWithOneWin.length === 2}
+        />
       </div>
     </div>
   );
 }
 
-// Composant pour afficher une carte de match compacte
-interface CompactMatchCardProps {
-  team1: Team;
-  team2: Team;
+// Composant pour chaque case de match
+interface MatchBoxProps {
+  team1?: Team | null;
+  team2?: Team | null;
   match?: Match;
   label?: string;
-  isWinnersMatch?: boolean;
-  isLosersMatch?: boolean;
-  isBarrageMatch?: boolean;
+  bgColor?: string;
   onUpdateScore?: (matchId: string, team1Score: number, team2Score: number) => void;
+  showOnlyIfNeeded?: boolean;
 }
 
-function CompactMatchCard({ team1, team2, match, label, isWinnersMatch, isLosersMatch, isBarrageMatch, onUpdateScore }: CompactMatchCardProps) {
+function MatchBox({ team1, team2, match, label, bgColor = "bg-white/5", onUpdateScore, showOnlyIfNeeded = true }: MatchBoxProps) {
   const [editingScore, setEditingScore] = useState(false);
   const [scores, setScores] = useState({ team1: 0, team2: 0 });
 
-  const getTeamScore = (team: Team) => {
-    if (!match?.completed) return '-';
+  // Si showOnlyIfNeeded est true et qu'il n'y a pas d'équipes, ne pas afficher
+  if (showOnlyIfNeeded && (!team1 || !team2)) {
+    return (
+      <div className={`glass-card p-3 ${bgColor} opacity-50`}>
+        <div className="text-center text-white/60 text-sm">
+          {label || "En attente..."}
+        </div>
+      </div>
+    );
+  }
+
+  const getTeamScore = (team: Team | null | undefined) => {
+    if (!team || !match?.completed) return '-';
     const isTeam1 = match.team1Id === team.id;
     return isTeam1 ? match.team1Score : match.team2Score;
   };
@@ -392,20 +386,17 @@ function CompactMatchCard({ team1, team2, match, label, isWinnersMatch, isLosers
   };
 
   return (
-    <div className={`glass-card p-3 transition-all duration-300 ${
-      isWinnersMatch ? 'border-green-400/40 bg-green-500/10' :
-      isLosersMatch ? 'border-orange-400/40 bg-orange-500/10' :
-      isBarrageMatch ? 'border-red-400/40 bg-red-500/10' :
-      'border-white/20'
-    }`}>
+    <div className={`glass-card p-3 ${bgColor} transition-all duration-300`}>
       <div className="flex items-center justify-between">
         {/* Équipe 1 */}
         <div className="flex-1 text-left">
-          <div className="font-bold text-white text-sm">{team1.name}</div>
+          <div className="font-bold text-white text-sm">
+            {team1?.name || "..."}
+          </div>
         </div>
 
         {/* Score central */}
-        <div className="mx-4 text-center min-w-[80px]">
+        <div className="mx-4 text-center min-w-[100px]">
           {editingScore && match ? (
             <div className="flex items-center space-x-1">
               <input
@@ -443,7 +434,7 @@ function CompactMatchCard({ team1, team2, match, label, isWinnersMatch, isLosers
               <div className="text-lg font-bold text-white">
                 {getTeamScore(team1)} - {getTeamScore(team2)}
               </div>
-              {match && onUpdateScore && (
+              {match && onUpdateScore && team1 && team2 && (
                 <button
                   onClick={handleEditScore}
                   className="p-1 text-white/60 hover:text-white transition-colors"
@@ -466,7 +457,9 @@ function CompactMatchCard({ team1, team2, match, label, isWinnersMatch, isLosers
 
         {/* Équipe 2 */}
         <div className="flex-1 text-right">
-          <div className="font-bold text-white text-sm">{team2.name}</div>
+          <div className="font-bold text-white text-sm">
+            {team2?.name || "..."}
+          </div>
         </div>
       </div>
     </div>
