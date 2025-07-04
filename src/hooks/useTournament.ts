@@ -383,7 +383,7 @@ export function useTournament() {
       return updatedTournament;
     }
 
-    // Obtenir les équipes qualifiées actuelles
+    // Obtenir les équipes qualifiées actuelles (avec 2 victoires)
     const qualifiedTeams = getCurrentQualifiedTeams(updatedTournament);
     
     // Obtenir les matchs des phases finales (round >= 100)
@@ -392,7 +392,6 @@ export function useTournament() {
     
     // Trouver les matchs vides de la première phase finale (round 100)
     const firstRoundFinalMatches = finalMatches.filter(m => m.round === 100);
-    const emptyMatches = firstRoundFinalMatches.filter(m => !m.team1Id || !m.team2Id);
     
     // Placer les nouvelles équipes qualifiées dans les matchs vides
     const updatedMatches = [...poolMatches];
@@ -404,10 +403,10 @@ export function useTournament() {
       if (match.team2Id) usedTeams.add(match.team2Id);
     });
     
-    // Nouvelles équipes à placer
+    // Nouvelles équipes à placer (seulement celles avec 2 victoires)
     const newQualifiedTeams = qualifiedTeams.filter(team => !usedTeams.has(team.id));
     
-    // Mélanger les nouvelles équipes
+    // Mélanger les nouvelles équipes pour placement aléatoire
     const shuffledNewTeams = [...newQualifiedTeams].sort(() => Math.random() - 0.5);
     
     let teamIndex = 0;
@@ -461,7 +460,7 @@ export function useTournament() {
     };
   };
 
-  // Fonction pour obtenir les équipes actuellement qualifiées (même partiellement)
+  // Fonction pour obtenir les équipes actuellement qualifiées (avec 2 victoires minimum)
   const getCurrentQualifiedTeams = (tournament: Tournament): Team[] => {
     const qualified: Team[] = [];
     
@@ -522,37 +521,15 @@ export function useTournament() {
         return b.performance - a.performance;
       });
 
-      // CORRECTION : Logique de qualification plus stricte
+      // CORRECTION : Logique de qualification stricte - 2 victoires minimum
       if (poolTeams.length === 4) {
-        // Pour une poule de 4, vérifier l'état d'avancement
-        const completedMatches = poolMatches.length;
-        
-        if (completedMatches >= 4) {
-          // Poule terminée : prendre les 2 premiers
-          qualified.push(...teamStats.slice(0, 2).map(stat => stat.team));
-        } else if (completedMatches >= 2) {
-          // Au moins les 2 premiers matchs : on peut identifier au moins 1 qualifié certain
-          const teamsWithTwoWins = teamStats.filter(stat => stat.wins >= 2);
-          qualified.push(...teamsWithTwoWins.map(stat => stat.team));
-        }
+        // Pour une poule de 4, seules les équipes avec 2 victoires sont qualifiées
+        const teamsWithTwoWins = teamStats.filter(stat => stat.wins >= 2);
+        qualified.push(...teamsWithTwoWins.map(stat => stat.team));
       } else if (poolTeams.length === 3) {
-        // CORRECTION MAJEURE : Pour une poule de 3
-        const realMatches = poolMatches.filter(m => !m.isBye);
-        
-        if (realMatches.length >= 2) {
-          // Poule terminée : prendre les 2 premiers
-          qualified.push(...teamStats.slice(0, 2).map(stat => stat.team));
-        } else if (realMatches.length >= 1) {
-          // CORRECTION : Seulement le gagnant du premier match est qualifié
-          // L'équipe avec BYE doit encore jouer pour se qualifier
-          const firstMatchWinner = teamStats.find(stat => 
-            stat.wins >= 1 && stat.matches >= 2 // Au moins 1 victoire ET au moins 2 matchs (1 réel + 1 BYE)
-          );
-          
-          if (firstMatchWinner) {
-            qualified.push(firstMatchWinner.team);
-          }
-        }
+        // Pour une poule de 3, seules les équipes avec 2 victoires sont qualifiées
+        const teamsWithTwoWins = teamStats.filter(stat => stat.wins >= 2);
+        qualified.push(...teamsWithTwoWins.map(stat => stat.team));
       }
     });
 
