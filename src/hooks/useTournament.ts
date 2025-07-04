@@ -324,15 +324,46 @@ export function useTournament() {
     }
   };
 
-  // Fonction pour générer automatiquement les phases finales progressivement - SEULEMENT quand nécessaire
-  const generateProgressiveFinalPhases = (updatedTournament: Tournament) => {
+  // CORRECTION : Ne plus générer automatiquement les phases finales
+  // Les phases finales ne seront générées que manuellement ou quand TOUTES les poules sont terminées
+  const checkAndGenerateFinalPhases = (updatedTournament: Tournament) => {
     const isPoolTournament = updatedTournament.type === 'doublette-poule' || updatedTournament.type === 'triplette-poule';
     
     if (!isPoolTournament || updatedTournament.pools.length === 0) {
       return updatedTournament;
     }
 
-    // Calculer les équipes qualifiées disponibles
+    // Vérifier si TOUTES les poules sont complètement terminées
+    const allPoolsCompleted = updatedTournament.pools.every(pool => {
+      const poolMatches = updatedTournament.matches.filter(m => m.poolId === pool.id);
+      const poolTeams = pool.teamIds.map(id => updatedTournament.teams.find(t => t.id === id)).filter(Boolean);
+      
+      if (poolTeams.length === 4) {
+        // Pour une poule de 4, il faut au moins 4 matchs terminés (incluant éventuellement le barrage)
+        const completedMatches = poolMatches.filter(m => m.completed);
+        // Vérifier qu'il y a au moins finale + petite finale + éventuellement barrage
+        return completedMatches.length >= 4; // 2 premiers matchs + finale + petite finale (minimum)
+      } else if (poolTeams.length === 3) {
+        // Pour une poule de 3, il faut au moins 3 matchs terminés (premier match + finale + BYE du perdant)
+        const completedMatches = poolMatches.filter(m => m.completed);
+        return completedMatches.length >= 3; // Premier match + finale + BYE perdant (minimum)
+      }
+      
+      return false;
+    });
+
+    // Ne générer les phases finales QUE si toutes les poules sont terminées
+    if (!allPoolsCompleted) {
+      return updatedTournament;
+    }
+
+    // Vérifier qu'il n'y a pas déjà de matchs de phases finales
+    const finalMatches = updatedTournament.matches.filter(m => !m.poolId);
+    if (finalMatches.length > 0) {
+      return updatedTournament;
+    }
+
+    // Calculer les équipes qualifiées finales
     const qualifiedTeams: Team[] = [];
     
     updatedTournament.pools.forEach(pool => {
@@ -345,7 +376,7 @@ export function useTournament() {
           !m.isBye && (m.team1Id === team.id || m.team2Id === team.id)
         );
 
-        // CORRECTION : Compter aussi les victoires BYE
+        // Compter aussi les victoires BYE
         const byeMatches = poolMatches.filter(m => 
           m.isBye && (m.team1Id === team.id || m.team2Id === team.id) &&
           ((m.team1Id === team.id && (m.team1Score || 0) > (m.team2Score || 0)) ||
@@ -394,41 +425,33 @@ export function useTournament() {
         return b.performance - a.performance;
       });
 
-      // CORRECTION : Pour les poules de 3, on prend les 2 premiers (après barrage éventuel)
+      // Prendre les 2 premiers de chaque poule
       if (poolTeams.length === 4) {
-        // Pour une poule de 4, on prend les 2 premiers
         qualifiedTeams.push(...teamStats.slice(0, 2).map(stat => stat.team));
       } else if (poolTeams.length === 3) {
-        // Pour une poule de 3, on prend les 2 premiers (le gagnant + le vainqueur du barrage)
         qualifiedTeams.push(...teamStats.slice(0, 2).map(stat => stat.team));
       }
     });
 
-    // CORRECTION : Ne générer les phases finales QUE si on a assez d'équipes ET qu'il n'y a pas déjà de matchs
-    const finalMatches = updatedTournament.matches.filter(m => !m.poolId);
-    
-    // Condition stricte : au moins 4 équipes qualifiées ET aucun match de phase finale existant
-    if (finalMatches.length === 0 && qualifiedTeams.length >= 4) {
+    // Générer les premiers matchs des phases finales
+    if (qualifiedTeams.length >= 4) {
       const newFinalMatches: Match[] = [];
       let courtIndex = Math.max(...updatedTournament.matches.map(m => m.court), 0) + 1;
       
-      // Créer les premiers matchs en évitant les équipes de même poule
-      const availableTeams = [...qualifiedTeams];
-      
-      // Mélanger les équipes
-      availableTeams.sort(() => Math.random() - 0.5);
+      // Mélanger les équipes qualifiées
+      const shuffledTeams = [...qualifiedTeams].sort(() => Math.random() - 0.5);
       
       // Créer les paires en évitant les équipes de même poule
       const usedTeams = new Set<string>();
       
-      for (let i = 0; i < availableTeams.length && usedTeams.size < availableTeams.length - 1; i++) {
-        const team1 = availableTeams[i];
+      for (let i = 0; i < shuffledTeams.length && usedTeams.size < shuffledTeams.length - 1; i++) {
+        const team1 = shuffledTeams[i];
         if (usedTeams.has(team1.id)) continue;
         
         // Chercher un adversaire qui n'est pas de la même poule
         let opponent = null;
-        for (let j = i + 1; j < availableTeams.length; j++) {
-          const team2 = availableTeams[j];
+        for (let j = i + 1; j < shuffledTeams.length; j++) {
+          const team2 = shuffledTeams[j];
           if (usedTeams.has(team2.id)) continue;
           
           // Vérifier qu'ils ne sont pas de la même poule
@@ -440,8 +463,8 @@ export function useTournament() {
         
         // Si pas d'adversaire de poule différente, prendre le premier disponible
         if (!opponent) {
-          for (let j = i + 1; j < availableTeams.length; j++) {
-            const team2 = availableTeams[j];
+          for (let j = i + 1; j < shuffledTeams.length; j++) {
+            const team2 = shuffledTeams[j];
             if (!usedTeams.has(team2.id)) {
               opponent = team2;
               break;
@@ -470,7 +493,7 @@ export function useTournament() {
       }
       
       // Équipe qualifiée d'office si nombre impair
-      const remainingTeams = availableTeams.filter(t => !usedTeams.has(t.id));
+      const remainingTeams = shuffledTeams.filter(t => !usedTeams.has(t.id));
       if (remainingTeams.length === 1) {
         newFinalMatches.push({
           id: crypto.randomUUID(),
@@ -820,8 +843,8 @@ export function useTournament() {
       matches: allMatches,
     };
 
-    // Générer les phases finales progressivement
-    result = generateProgressiveFinalPhases(result);
+    // CORRECTION : Vérifier et générer les phases finales seulement si toutes les poules sont terminées
+    result = checkAndGenerateFinalPhases(result);
 
     return result;
   };

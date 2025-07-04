@@ -99,13 +99,29 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools, onUpdateSc
     }
   };
 
-  // Calculer les équipes qualifiées pour les phases finales
-  const getQualifiedTeams = () => {
+  // Calculer les équipes qualifiées pour les phases finales - SEULEMENT celles qui sont définitivement qualifiées
+  const getDefinitivelyQualifiedTeams = () => {
     const qualified: Team[] = [];
     
     pools.forEach(pool => {
       const poolMatches = tournament.matches.filter(m => m.poolId === pool.id && m.completed);
       const poolTeams = pool.teamIds.map(id => teams.find(t => t.id === id)).filter(Boolean) as Team[];
+      
+      // Vérifier si la poule est complètement terminée
+      let poolCompleted = false;
+      
+      if (poolTeams.length === 4) {
+        // Pour une poule de 4, il faut au moins 4 matchs terminés
+        poolCompleted = poolMatches.length >= 4;
+      } else if (poolTeams.length === 3) {
+        // Pour une poule de 3, il faut au moins 3 matchs terminés
+        poolCompleted = poolMatches.length >= 3;
+      }
+      
+      // Ne prendre les qualifiés que si la poule est complètement terminée
+      if (!poolCompleted) {
+        return;
+      }
       
       // Calculer les statistiques de chaque équipe dans la poule
       const teamStats = poolTeams.map(team => {
@@ -175,7 +191,7 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools, onUpdateSc
     return qualified;
   };
 
-  const qualifiedTeams = getQualifiedTeams();
+  const qualifiedTeams = getDefinitivelyQualifiedTeams();
 
   return (
     <div className="p-6">
@@ -612,13 +628,6 @@ function CompactFourTeamPool({ poolTeams, poolMatches, pool, onUpdateScore }: {
       m.completed && (m.team1Id === team.id || m.team2Id === team.id)
     );
 
-    // CORRECTION : Compter aussi les victoires BYE
-    const byeMatches = poolMatches.filter(m => 
-      m.completed && m.isBye && (m.team1Id === team.id || m.team2Id === team.id) &&
-      ((m.team1Id === team.id && (m.team1Score || 0) > (m.team2Score || 0)) ||
-       (m.team2Id === team.id && (m.team2Score || 0) > (m.team1Score || 0)))
-    );
-
     let wins = 0;
     teamMatches.forEach(match => {
       const isTeam1 = match.team1Id === team.id;
@@ -628,10 +637,7 @@ function CompactFourTeamPool({ poolTeams, poolMatches, pool, onUpdateScore }: {
       if (teamScore > opponentScore) wins++;
     });
 
-    // Ajouter les victoires BYE
-    wins += byeMatches.length;
-
-    return { wins, matches: teamMatches.length + byeMatches.length };
+    return { wins, matches: teamMatches.length };
   };
 
   const allStats = poolTeams.map(team => ({
