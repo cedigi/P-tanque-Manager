@@ -325,6 +325,149 @@ export function useTournament() {
     }
   };
 
+  // Fonction pour générer automatiquement les phases finales
+  const generateFinalPhases = (updatedTournament: Tournament) => {
+    const isPoolTournament = updatedTournament.type === 'doublette-poule' || updatedTournament.type === 'triplette-poule';
+    
+    if (!isPoolTournament || updatedTournament.pools.length === 0) {
+      return updatedTournament;
+    }
+
+    // Vérifier si toutes les poules sont terminées
+    const allPoolsCompleted = updatedTournament.pools.every(pool => {
+      const poolMatches = updatedTournament.matches.filter(m => m.poolId === pool.id);
+      const poolTeams = pool.teamIds.map(id => updatedTournament.teams.find(t => t.id === id)).filter(Boolean);
+      
+      if (poolTeams.length === 4) {
+        // Pour une poule de 4, il faut au moins 4 matchs terminés (2 premiers tours + éventuellement barrage)
+        const completedMatches = poolMatches.filter(m => m.completed);
+        return completedMatches.length >= 3; // Au minimum finale et petite finale
+      } else if (poolTeams.length === 3) {
+        // Pour une poule de 3, il faut au moins 2 matchs terminés
+        const completedMatches = poolMatches.filter(m => m.completed && !m.isBye);
+        return completedMatches.length >= 2; // Premier match + finale
+      }
+      
+      return false;
+    });
+
+    if (!allPoolsCompleted) {
+      return updatedTournament;
+    }
+
+    // Calculer les équipes qualifiées
+    const qualifiedTeams: Team[] = [];
+    
+    updatedTournament.pools.forEach(pool => {
+      const poolMatches = updatedTournament.matches.filter(m => m.poolId === pool.id && m.completed);
+      const poolTeams = pool.teamIds.map(id => updatedTournament.teams.find(t => t.id === id)).filter(Boolean) as Team[];
+      
+      // Calculer les statistiques de chaque équipe dans la poule
+      const teamStats = poolTeams.map(team => {
+        const teamMatches = poolMatches.filter(m => 
+          !m.isBye && (m.team1Id === team.id || m.team2Id === team.id)
+        );
+
+        let wins = 0;
+        let pointsFor = 0;
+        let pointsAgainst = 0;
+
+        teamMatches.forEach(match => {
+          const isTeam1 = match.team1Id === team.id;
+          const teamScore = isTeam1 ? match.team1Score! : match.team2Score!;
+          const opponentScore = isTeam1 ? match.team2Score! : match.team1Score!;
+          
+          pointsFor += teamScore;
+          pointsAgainst += opponentScore;
+          
+          if (teamScore > opponentScore) wins++;
+        });
+
+        return { 
+          team, 
+          wins, 
+          pointsFor, 
+          pointsAgainst, 
+          performance: pointsFor - pointsAgainst,
+          matches: teamMatches.length 
+        };
+      });
+
+      // Trier par victoires puis par performance
+      teamStats.sort((a, b) => {
+        if (b.wins !== a.wins) return b.wins - a.wins;
+        return b.performance - a.performance;
+      });
+
+      // Prendre les 2 premiers de chaque poule (ou 1 seul si poule de 3 avec élimination)
+      if (poolTeams.length === 4) {
+        // Pour une poule de 4, on prend les 2 premiers
+        qualifiedTeams.push(...teamStats.slice(0, 2).map(stat => stat.team));
+      } else if (poolTeams.length === 3) {
+        // Pour une poule de 3, on prend le premier
+        qualifiedTeams.push(teamStats[0].team);
+      }
+    });
+
+    // Générer les matchs des phases finales si pas déjà fait
+    const finalMatches = updatedTournament.matches.filter(m => !m.poolId);
+    
+    if (finalMatches.length === 0 && qualifiedTeams.length >= 2) {
+      const newFinalMatches: Match[] = [];
+      let courtIndex = Math.max(...updatedTournament.matches.map(m => m.court), 0) + 1;
+      
+      // Déterminer la phase de départ
+      const teamCount = qualifiedTeams.length;
+      let currentPhaseTeams = [...qualifiedTeams];
+      let phaseRound = 100; // 100+ pour les phases finales
+      
+      // Mélanger les équipes qualifiées
+      currentPhaseTeams.sort(() => Math.random() - 0.5);
+      
+      // Générer les matchs jusqu'à la finale
+      while (currentPhaseTeams.length > 1) {
+        const phaseMatches: Match[] = [];
+        const nextPhaseTeams: string[] = [];
+        
+        // Créer les matchs de cette phase
+        for (let i = 0; i < currentPhaseTeams.length; i += 2) {
+          if (i + 1 < currentPhaseTeams.length) {
+            const match: Match = {
+              id: crypto.randomUUID(),
+              round: phaseRound,
+              court: courtIndex,
+              team1Id: currentPhaseTeams[i].id,
+              team2Id: currentPhaseTeams[i + 1].id,
+              completed: false,
+              isBye: false,
+              battleIntensity: Math.floor(Math.random() * 50) + 25,
+              hackingAttempts: 0,
+            };
+            
+            phaseMatches.push(match);
+            courtIndex = (courtIndex % updatedTournament.courts) + 1;
+          } else {
+            // Équipe qualifiée d'office (nombre impair)
+            nextPhaseTeams.push(currentPhaseTeams[i].id);
+          }
+        }
+        
+        newFinalMatches.push(...phaseMatches);
+        
+        // Préparer la phase suivante (on ne peut pas déterminer les gagnants maintenant)
+        // On s'arrête ici et on laissera la logique de mise à jour des scores gérer la suite
+        break;
+      }
+      
+      return {
+        ...updatedTournament,
+        matches: [...updatedTournament.matches, ...newFinalMatches],
+      };
+    }
+
+    return updatedTournament;
+  };
+
   // Fonction pour générer automatiquement les matchs suivants quand on met à jour un score
   const autoGenerateNextMatches = (updatedTournament: Tournament) => {
     const isPoolTournament = updatedTournament.type === 'doublette-poule' || updatedTournament.type === 'triplette-poule';
@@ -634,10 +777,15 @@ export function useTournament() {
       }
     });
 
-    return {
+    let result = {
       ...updatedTournament,
       matches: allMatches,
     };
+
+    // Générer les phases finales si toutes les poules sont terminées
+    result = generateFinalPhases(result);
+
+    return result;
   };
 
   const updateMatchScore = (matchId: string, team1Score: number, team2Score: number) => {

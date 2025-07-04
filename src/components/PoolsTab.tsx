@@ -99,6 +99,66 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools, onUpdateSc
     }
   };
 
+  // Calculer les équipes qualifiées pour les phases finales
+  const getQualifiedTeams = () => {
+    const qualified: Team[] = [];
+    
+    pools.forEach(pool => {
+      const poolMatches = tournament.matches.filter(m => m.poolId === pool.id && m.completed);
+      const poolTeams = pool.teamIds.map(id => teams.find(t => t.id === id)).filter(Boolean) as Team[];
+      
+      // Calculer les statistiques de chaque équipe dans la poule
+      const teamStats = poolTeams.map(team => {
+        const teamMatches = poolMatches.filter(m => 
+          !m.isBye && (m.team1Id === team.id || m.team2Id === team.id)
+        );
+
+        let wins = 0;
+        let pointsFor = 0;
+        let pointsAgainst = 0;
+
+        teamMatches.forEach(match => {
+          const isTeam1 = match.team1Id === team.id;
+          const teamScore = isTeam1 ? match.team1Score! : match.team2Score!;
+          const opponentScore = isTeam1 ? match.team2Score! : match.team1Score!;
+          
+          pointsFor += teamScore;
+          pointsAgainst += opponentScore;
+          
+          if (teamScore > opponentScore) wins++;
+        });
+
+        return { 
+          team, 
+          wins, 
+          pointsFor, 
+          pointsAgainst, 
+          performance: pointsFor - pointsAgainst,
+          matches: teamMatches.length 
+        };
+      });
+
+      // Trier par victoires puis par performance
+      teamStats.sort((a, b) => {
+        if (b.wins !== a.wins) return b.wins - a.wins;
+        return b.performance - a.performance;
+      });
+
+      // Prendre les 2 premiers de chaque poule (ou 1 seul si poule de 3 avec élimination)
+      if (poolTeams.length === 4) {
+        // Pour une poule de 4, on prend les 2 premiers
+        qualified.push(...teamStats.slice(0, 2).map(stat => stat.team));
+      } else if (poolTeams.length === 3) {
+        // Pour une poule de 3, on prend le premier
+        qualified.push(teamStats[0].team);
+      }
+    });
+
+    return qualified;
+  };
+
+  const qualifiedTeams = getQualifiedTeams();
+
   return (
     <div className="p-6">
       <div className="flex justify-between items-center mb-8">
@@ -147,8 +207,17 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools, onUpdateSc
             ))}
           </div>
 
+          {/* Phases finales */}
+          {qualifiedTeams.length > 0 && (
+            <FinalPhases 
+              qualifiedTeams={qualifiedTeams}
+              tournament={tournament}
+              onUpdateScore={onUpdateScore}
+            />
+          )}
+
           {/* Statistiques des poules */}
-          <div className="glass-card p-6">
+          <div className="glass-card p-6 mt-8">
             <h3 className="text-xl font-bold text-white mb-4 tracking-wide flex items-center space-x-2">
               <Trophy className="w-5 h-5" />
               <span>Répartition des poules</span>
@@ -171,8 +240,8 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools, onUpdateSc
                 <div className="text-white/70 text-sm">Poules de 3</div>
               </div>
               <div className="glass-card p-4">
-                <div className="text-2xl font-bold text-white">{teams.length}</div>
-                <div className="text-white/70 text-sm">Total équipes</div>
+                <div className="text-2xl font-bold text-purple-400">{qualifiedTeams.length}</div>
+                <div className="text-white/70 text-sm">Qualifiés</div>
               </div>
             </div>
           </div>
@@ -189,6 +258,207 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools, onUpdateSc
         </div>
       )}
     </div>
+  );
+}
+
+// Nouveau composant pour les phases finales
+interface FinalPhasesProps {
+  qualifiedTeams: Team[];
+  tournament: Tournament;
+  onUpdateScore?: (matchId: string, team1Score: number, team2Score: number) => void;
+}
+
+function FinalPhases({ qualifiedTeams, tournament, onUpdateScore }: FinalPhasesProps) {
+  const teamCount = qualifiedTeams.length;
+  
+  // Déterminer la configuration du tableau en fonction du nombre d'équipes
+  const getPhaseConfiguration = (count: number) => {
+    if (count <= 2) return { phases: ['Finale'], startPhase: 'Finale' };
+    if (count <= 4) return { phases: ['Demi-finales', 'Finale'], startPhase: 'Demi-finales' };
+    if (count <= 8) return { phases: ['Quarts de finale', 'Demi-finales', 'Finale'], startPhase: 'Quarts de finale' };
+    if (count <= 16) return { phases: ['8èmes de finale', 'Quarts de finale', 'Demi-finales', 'Finale'], startPhase: '8èmes de finale' };
+    if (count <= 32) return { phases: ['16èmes de finale', '8èmes de finale', 'Quarts de finale', 'Demi-finales', 'Finale'], startPhase: '16èmes de finale' };
+    return { phases: ['32èmes de finale', '16èmes de finale', '8èmes de finale', 'Quarts de finale', 'Demi-finales', 'Finale'], startPhase: '32èmes de finale' };
+  };
+
+  const config = getPhaseConfiguration(teamCount);
+
+  // Trouver les matchs des phases finales (ceux sans poolId)
+  const finalMatches = tournament.matches.filter(m => !m.poolId);
+
+  return (
+    <div className="mb-8">
+      <div className="glass-card p-6">
+        <h3 className="text-2xl font-bold text-white mb-6 tracking-wide flex items-center space-x-2">
+          <Trophy className="w-6 h-6 text-yellow-400" />
+          <span>Phases finales</span>
+          <span className="text-lg text-white/70">({teamCount} qualifiés)</span>
+        </h3>
+
+        {teamCount >= 2 ? (
+          <div className="space-y-8">
+            {config.phases.map((phaseName, index) => (
+              <PhaseSection
+                key={phaseName}
+                phaseName={phaseName}
+                phaseIndex={index}
+                qualifiedTeams={qualifiedTeams}
+                matches={finalMatches}
+                tournament={tournament}
+                onUpdateScore={onUpdateScore}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-8">
+            <div className="text-white/60 text-lg">
+              En attente de plus d'équipes qualifiées...
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// Composant pour une phase spécifique
+interface PhaseSectionProps {
+  phaseName: string;
+  phaseIndex: number;
+  qualifiedTeams: Team[];
+  matches: Match[];
+  tournament: Tournament;
+  onUpdateScore?: (matchId: string, team1Score: number, team2Score: number) => void;
+}
+
+function PhaseSection({ phaseName, phaseIndex, qualifiedTeams, matches, tournament, onUpdateScore }: PhaseSectionProps) {
+  const phaseMatches = matches.filter(m => m.round === phaseIndex + 100); // 100+ pour les phases finales
+  
+  return (
+    <div className="space-y-4">
+      <h4 className="text-xl font-bold text-white tracking-wide border-b border-white/20 pb-2">
+        {phaseName}
+      </h4>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        {phaseMatches.length > 0 ? (
+          phaseMatches.map(match => (
+            <FinalMatchBox
+              key={match.id}
+              match={match}
+              tournament={tournament}
+              onUpdateScore={onUpdateScore}
+            />
+          ))
+        ) : (
+          <div className="col-span-full text-center py-8">
+            <div className="text-white/60">
+              {phaseIndex === 0 ? 
+                "Les matchs seront générés automatiquement quand toutes les poules seront terminées" :
+                "En attente des résultats de la phase précédente"
+              }
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// Composant pour un match de phase finale
+interface FinalMatchBoxProps {
+  match: Match;
+  tournament: Tournament;
+  onUpdateScore?: (matchId: string, team1Score: number, team2Score: number) => void;
+}
+
+function FinalMatchBox({ match, tournament, onUpdateScore }: FinalMatchBoxProps) {
+  const [showWinnerModal, setShowWinnerModal] = useState(false);
+  
+  const team1 = tournament.teams.find(t => t.id === match.team1Id);
+  const team2 = tournament.teams.find(t => t.id === match.team2Id);
+
+  const getWinner = () => {
+    if (!match.completed || !team1 || !team2) return null;
+    return (match.team1Score! > match.team2Score!) ? team1 : team2;
+  };
+
+  const winner = getWinner();
+
+  const handleQuickWin = (winnerTeam: 'team1' | 'team2') => {
+    if (!match || !onUpdateScore) return;
+    const winnerScore = 13;
+    const loserScore = Math.floor(Math.random() * 12);
+    
+    if (winnerTeam === 'team1') {
+      onUpdateScore(match.id, winnerScore, loserScore);
+    } else {
+      onUpdateScore(match.id, loserScore, winnerScore);
+    }
+    setShowWinnerModal(false);
+  };
+
+  return (
+    <>
+      <div className="glass-card p-4 bg-gradient-to-br from-purple-500/10 to-blue-500/10 border-purple-400/30">
+        {/* Terrain */}
+        <div className="text-center mb-3">
+          <span className="text-sm font-bold text-purple-400">Terrain {match.court}</span>
+        </div>
+
+        {/* Équipes */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <span className="font-bold text-white">{team1?.name || "En attente..."}</span>
+              {winner?.id === team1?.id && <Crown className="w-4 h-4 text-yellow-400" />}
+            </div>
+            {match.completed && (
+              <span className="text-lg font-bold text-white">
+                {match.team1Score}
+              </span>
+            )}
+          </div>
+
+          {/* Séparateur avec bouton ou score */}
+          <div className="flex items-center justify-center">
+            {match && onUpdateScore && team1 && team2 && !match.completed ? (
+              <button
+                onClick={() => setShowWinnerModal(true)}
+                className="p-2 bg-yellow-500/80 text-white rounded-lg hover:bg-yellow-500 transition-colors"
+                title="Sélectionner le gagnant"
+              >
+                <Trophy className="w-4 h-4" />
+              </button>
+            ) : (
+              <span className="text-white/60 font-bold">VS</span>
+            )}
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <span className="font-bold text-white">{team2?.name || "En attente..."}</span>
+              {winner?.id === team2?.id && <Crown className="w-4 h-4 text-yellow-400" />}
+            </div>
+            {match.completed && (
+              <span className="text-lg font-bold text-white">
+                {match.team2Score}
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Modal de sélection du gagnant */}
+      {showWinnerModal && team1 && team2 && (
+        <WinnerModal
+          team1={team1}
+          team2={team2}
+          onSelectWinner={handleQuickWin}
+          onClose={() => setShowWinnerModal(false)}
+        />
+      )}
+    </>
   );
 }
 
