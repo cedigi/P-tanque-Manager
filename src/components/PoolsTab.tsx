@@ -92,7 +92,7 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools, onUpdateSc
         <div class="match-box">${team3.name} - Qualifié d'office</div>
         <div class="match-box">V vs Qualifié : - - -</div>
         <div class="match-box">Perdant éliminé</div>
-        <div class="match-box">Pas de barrage</div>
+        <div class="match-box">Match de barrage : - - -</div>
       `;
     } else {
       return '<p>Poule incomplète</p>';
@@ -307,7 +307,7 @@ function CompactFourTeamPool({ poolTeams, poolMatches, pool, onUpdateScore }: {
         <h3 className="text-sm font-bold text-white">{pool.name}</h3>
       </div>
       
-      <div className="p-2 space-y-2">
+      <div className="p-2 space-y-1">
         <CompactMatchBox 
           team1={team1} 
           team2={team4} 
@@ -354,7 +354,7 @@ function CompactFourTeamPool({ poolTeams, poolMatches, pool, onUpdateScore }: {
   );
 }
 
-// Composant pour poules de 3 équipes - Version compacte
+// Composant pour poules de 3 équipes - Version compacte CORRIGÉE
 function CompactThreeTeamPool({ poolTeams, poolMatches, pool, onUpdateScore }: {
   poolTeams: Team[];
   poolMatches: Match[];
@@ -392,13 +392,45 @@ function CompactThreeTeamPool({ poolTeams, poolMatches, pool, onUpdateScore }: {
        (m.team1Id === team3.id && m.team2Id === firstRoundResult.winner.id));
   });
 
+  // NOUVEAU : Logique pour le match de barrage dans une poule de 3
+  // Si le gagnant du premier match perd contre team3, alors il y a égalité
+  // et il faut un barrage entre le perdant du premier match et le perdant du match final
+  const finalResult = getWinnerLoser(finalMatch, firstRoundResult.winner || team1, team3);
+  
+  // Vérifier s'il faut un barrage
+  let needsBarrage = false;
+  let barrageTeam1: Team | null = null;
+  let barrageTeam2: Team | null = null;
+  
+  if (finalMatch?.completed && firstRoundResult.winner && firstRoundResult.loser) {
+    // Si team3 gagne le match final, alors :
+    // - team3 a 1 victoire (contre le gagnant du premier match)
+    // - le gagnant du premier match a 1 victoire et 1 défaite
+    // - le perdant du premier match a 1 défaite
+    // Il faut donc un barrage entre team3 et le gagnant du premier match
+    
+    if (finalResult.winner?.id === team3.id) {
+      needsBarrage = true;
+      barrageTeam1 = team3;
+      barrageTeam2 = firstRoundResult.winner;
+    }
+    // Si le gagnant du premier match gagne aussi le match final, pas de barrage
+  }
+
+  const barrageMatch = poolMatches.find(m => 
+    m.round === 3 && 
+    barrageTeam1 && barrageTeam2 &&
+    ((m.team1Id === barrageTeam1.id && m.team2Id === barrageTeam2.id) ||
+     (m.team1Id === barrageTeam2.id && m.team2Id === barrageTeam1.id))
+  );
+
   return (
     <div className="glass-card overflow-hidden">
       <div className="px-3 py-2 border-b border-white/20 bg-white/5">
         <h3 className="text-sm font-bold text-white">{pool.name} (3)</h3>
       </div>
       
-      <div className="p-2 space-y-2">
+      <div className="p-2 space-y-1">
         <CompactMatchBox 
           team1={team1} 
           team2={team2} 
@@ -407,7 +439,11 @@ function CompactThreeTeamPool({ poolTeams, poolMatches, pool, onUpdateScore }: {
         />
         
         <div className="glass-card p-2 bg-blue-500/10 text-center">
-          <div className="text-xs font-bold text-white">{team3.name}</div>
+          <div className="text-xs font-bold text-white flex items-center justify-center space-x-1">
+            <span>T-</span>
+            <span>{team3.name}</span>
+            <Crown className="w-3 h-3 text-yellow-400" />
+          </div>
           <div className="text-xs text-blue-400">Qualifié</div>
         </div>
 
@@ -422,14 +458,22 @@ function CompactThreeTeamPool({ poolTeams, poolMatches, pool, onUpdateScore }: {
 
         <div className="glass-card p-2 bg-red-500/10 text-center opacity-60">
           <div className="text-xs font-bold text-white">
-            {firstRoundResult.loser?.name || "Perdant"}
+            T- {firstRoundResult.loser?.name || "Perdant"}
           </div>
-          <div className="text-xs text-red-400">Éliminé</div>
+          <div className="text-xs text-red-400">
+            {needsBarrage ? "En attente" : "Éliminé"}
+          </div>
         </div>
 
-        <div className="glass-card p-2 bg-gray-500/10 text-center opacity-40">
-          <div className="text-xs text-white/60">Pas de barrage</div>
-        </div>
+        <CompactMatchBox 
+          team1={barrageTeam1} 
+          team2={barrageTeam2} 
+          match={barrageMatch}
+          label="Barrage"
+          bgColor="bg-red-500/10"
+          onUpdateScore={onUpdateScore}
+          showOnlyIfNeeded={needsBarrage}
+        />
       </div>
     </div>
   );
@@ -483,7 +527,7 @@ function WinnerModal({ team1, team2, onSelectWinner, onClose }: WinnerModalProps
   );
 }
 
-// Composant de case de match compacte
+// Composant de case de match compacte SANS SCORES
 interface CompactMatchBoxProps {
   team1?: Team | null;
   team2?: Team | null;
@@ -505,11 +549,17 @@ function CompactMatchBox({ team1, team2, match, label, bgColor = "bg-white/5", o
     );
   }
 
-  const getTeamScore = (team: Team | null | undefined) => {
-    if (!team || !match?.completed) return '-';
-    const isTeam1 = match.team1Id === team.id;
-    return isTeam1 ? match.team1Score : match.team2Score;
+  const getWinner = () => {
+    if (!match?.completed || !team1 || !team2) return null;
+    
+    const isTeam1First = match.team1Id === team1.id;
+    const team1Score = isTeam1First ? match.team1Score! : match.team2Score!;
+    const team2Score = isTeam1First ? match.team2Score! : match.team1Score!;
+    
+    return team1Score > team2Score ? team1 : team2;
   };
+
+  const winner = getWinner();
 
   const handleQuickWin = (winnerTeam: 'team1' | 'team2') => {
     if (!match || !onUpdateScore) return;
@@ -532,21 +582,31 @@ function CompactMatchBox({ team1, team2, match, label, bgColor = "bg-white/5", o
           <span className="text-xs font-bold text-blue-400">T{match?.court || '-'}</span>
         </div>
 
-        {/* Équipes et score */}
-        <div className="flex items-center justify-between text-xs mb-2">
-          <span className="font-bold text-white truncate flex-1">
-            {team1?.name || "..."}
-          </span>
-          <span className="mx-2 font-bold text-white">
-            {getTeamScore(team1)} - {getTeamScore(team2)}
-          </span>
-          <span className="font-bold text-white truncate flex-1 text-right">
-            {team2?.name || "..."}
-          </span>
+        {/* Équipes SANS SCORES mais avec couronnes */}
+        <div className="flex items-center justify-between text-xs mb-1">
+          <div className="flex items-center space-x-1 flex-1">
+            <span className="font-bold text-white truncate">
+              {team1?.name || "..."}
+            </span>
+            {winner?.id === team1?.id && (
+              <Crown className="w-3 h-3 text-yellow-400 flex-shrink-0" />
+            )}
+          </div>
+          
+          <span className="mx-2 text-white/60 text-xs">vs</span>
+          
+          <div className="flex items-center space-x-1 flex-1 justify-end">
+            {winner?.id === team2?.id && (
+              <Crown className="w-3 h-3 text-yellow-400 flex-shrink-0" />
+            )}
+            <span className="font-bold text-white truncate">
+              {team2?.name || "..."}
+            </span>
+          </div>
         </div>
 
         {label && (
-          <div className="text-center text-xs text-white/60 mb-2">{label}</div>
+          <div className="text-center text-xs text-white/60 mb-1">{label}</div>
         )}
 
         {/* Bouton Gagnant */}
@@ -554,7 +614,7 @@ function CompactMatchBox({ team1, team2, match, label, bgColor = "bg-white/5", o
           <div className="text-center">
             <button
               onClick={() => setShowWinnerModal(true)}
-              className="px-3 py-1 bg-yellow-500/80 text-white rounded text-xs font-bold hover:bg-yellow-500 transition-colors"
+              className="px-2 py-1 bg-yellow-500/80 text-white rounded text-xs font-bold hover:bg-yellow-500 transition-colors"
             >
               Gagnant
             </button>
