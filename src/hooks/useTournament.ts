@@ -156,7 +156,7 @@ export function useTournament() {
         courtIndex = (courtIndex % tournament.courts) + 1;
       } else if (poolTeams.length === 3) {
         // Pour une poule de 3 : créer un seul match entre 2 équipes
-        // La 3ème équipe est automatiquement qualifiée pour la phase 2
+        // La 3ème équipe reçoit un BYE automatique mais n'est PAS encore qualifiée
         const [team1, team2, team3] = poolTeams;
         
         // Match entre les 2 premières équipes
@@ -175,7 +175,7 @@ export function useTournament() {
         
         courtIndex = (courtIndex % tournament.courts) + 1;
         
-        // L'équipe 3 reçoit un BYE automatique (1 victoire)
+        // L'équipe 3 reçoit un BYE automatique (1 victoire) mais doit encore jouer
         allMatches.push({
           id: crypto.randomUUID(),
           round: 1,
@@ -522,7 +522,7 @@ export function useTournament() {
         return b.performance - a.performance;
       });
 
-      // Déterminer les qualifiés selon l'état de la poule
+      // CORRECTION : Logique de qualification plus stricte
       if (poolTeams.length === 4) {
         // Pour une poule de 4, vérifier l'état d'avancement
         const completedMatches = poolMatches.length;
@@ -536,16 +536,22 @@ export function useTournament() {
           qualified.push(...teamsWithTwoWins.map(stat => stat.team));
         }
       } else if (poolTeams.length === 3) {
-        // Pour une poule de 3
-        const completedMatches = poolMatches.filter(m => !m.isBye).length;
+        // CORRECTION MAJEURE : Pour une poule de 3
+        const realMatches = poolMatches.filter(m => !m.isBye);
         
-        if (completedMatches >= 2) {
+        if (realMatches.length >= 2) {
           // Poule terminée : prendre les 2 premiers
           qualified.push(...teamStats.slice(0, 2).map(stat => stat.team));
-        } else if (completedMatches >= 1) {
-          // Premier match terminé : l'équipe avec BYE + le gagnant sont qualifiés
-          const teamsWithAtLeastOneWin = teamStats.filter(stat => stat.wins >= 1);
-          qualified.push(...teamsWithAtLeastOneWin.slice(0, 2).map(stat => stat.team));
+        } else if (realMatches.length >= 1) {
+          // CORRECTION : Seulement le gagnant du premier match est qualifié
+          // L'équipe avec BYE doit encore jouer pour se qualifier
+          const firstMatchWinner = teamStats.find(stat => 
+            stat.wins >= 1 && stat.matches >= 2 // Au moins 1 victoire ET au moins 2 matchs (1 réel + 1 BYE)
+          );
+          
+          if (firstMatchWinner) {
+            qualified.push(firstMatchWinner.team);
+          }
         }
       }
     });
