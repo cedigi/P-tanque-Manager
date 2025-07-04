@@ -404,8 +404,8 @@ export function useTournament() {
     const newQualifiedTeams = qualifiedTeams.filter(team => !usedTeams.has(team.id));
     
     if (newQualifiedTeams.length === 0) {
-      // Pas de nouvelles équipes à placer
-      return updatedTournament;
+      // Pas de nouvelles équipes à placer, mais vérifier les phases suivantes
+      return propagateWinnersToNextPhases(updatedTournament);
     }
 
     // CORRECTION PRINCIPALE : Placement vraiment aléatoire
@@ -518,10 +518,100 @@ export function useTournament() {
       ...finalMatches.filter(m => m.round > 100) // Garder les autres phases finales
     ];
     
-    return {
+    const result = {
       ...updatedTournament,
       matches: allUpdatedMatches,
     };
+
+    // NOUVEAU : Propager les gagnants vers les phases suivantes
+    return propagateWinnersToNextPhases(result);
+  };
+
+  // NOUVELLE FONCTION : Propager les gagnants des phases finales vers les phases suivantes
+  const propagateWinnersToNextPhases = (tournament: Tournament): Tournament => {
+    const finalMatches = tournament.matches.filter(m => m.round >= 100);
+    const poolMatches = tournament.matches.filter(m => m.poolId);
+    
+    // Grouper les matchs par round
+    const matchesByRound: { [round: number]: Match[] } = {};
+    finalMatches.forEach(match => {
+      if (!matchesByRound[match.round]) {
+        matchesByRound[match.round] = [];
+      }
+      matchesByRound[match.round].push(match);
+    });
+
+    const rounds = Object.keys(matchesByRound).map(Number).sort((a, b) => a - b);
+    let hasChanges = false;
+    const updatedMatches = [...finalMatches];
+
+    // Pour chaque round, vérifier si on peut propager les gagnants au round suivant
+    for (let i = 0; i < rounds.length - 1; i++) {
+      const currentRound = rounds[i];
+      const nextRound = rounds[i + 1];
+      
+      const currentRoundMatches = matchesByRound[currentRound];
+      const nextRoundMatches = matchesByRound[nextRound];
+      
+      // Vérifier si tous les matchs du round actuel sont terminés
+      const completedMatches = currentRoundMatches.filter(m => m.completed);
+      
+      if (completedMatches.length === currentRoundMatches.length && completedMatches.length > 0) {
+        // Tous les matchs du round actuel sont terminés, propager les gagnants
+        
+        // Obtenir les gagnants du round actuel
+        const winners = completedMatches.map(match => {
+          const team1 = tournament.teams.find(t => t.id === match.team1Id);
+          const team2 = tournament.teams.find(t => t.id === match.team2Id);
+          
+          if (!team1 || !team2) return null;
+          
+          return (match.team1Score! > match.team2Score!) ? team1 : team2;
+        }).filter(Boolean) as Team[];
+
+        // Placer les gagnants dans les matchs du round suivant
+        let winnerIndex = 0;
+        
+        nextRoundMatches.forEach((nextMatch, matchIndex) => {
+          const matchInUpdated = updatedMatches.find(m => m.id === nextMatch.id);
+          if (!matchInUpdated) return;
+          
+          // Placer les gagnants dans l'ordre
+          if (!matchInUpdated.team1Id && winnerIndex < winners.length) {
+            const updatedMatchIndex = updatedMatches.findIndex(m => m.id === nextMatch.id);
+            if (updatedMatchIndex !== -1) {
+              updatedMatches[updatedMatchIndex] = {
+                ...matchInUpdated,
+                team1Id: winners[winnerIndex].id
+              };
+              winnerIndex++;
+              hasChanges = true;
+            }
+          }
+          
+          if (!matchInUpdated.team2Id && winnerIndex < winners.length) {
+            const updatedMatchIndex = updatedMatches.findIndex(m => m.id === nextMatch.id);
+            if (updatedMatchIndex !== -1) {
+              updatedMatches[updatedMatchIndex] = {
+                ...updatedMatches[updatedMatchIndex],
+                team2Id: winners[winnerIndex].id
+              };
+              winnerIndex++;
+              hasChanges = true;
+            }
+          }
+        });
+      }
+    }
+
+    if (hasChanges) {
+      return {
+        ...tournament,
+        matches: [...poolMatches, ...updatedMatches]
+      };
+    }
+
+    return tournament;
   };
 
   // Fonction pour obtenir les équipes actuellement qualifiées (avec 2 victoires minimum)
