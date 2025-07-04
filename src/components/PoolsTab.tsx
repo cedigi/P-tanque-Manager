@@ -225,14 +225,13 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools, onUpdateSc
             ))}
           </div>
 
-          {/* Phases finales - SEULEMENT si on a des équipes qualifiées */}
-          {qualifiedTeams.length >= 2 && (
-            <FinalPhases 
-              qualifiedTeams={qualifiedTeams}
-              tournament={tournament}
-              onUpdateScore={onUpdateScore}
-            />
-          )}
+          {/* Phases finales - TOUJOURS affichées avec cadres vides */}
+          <FinalPhases 
+            qualifiedTeams={qualifiedTeams}
+            tournament={tournament}
+            onUpdateScore={onUpdateScore}
+            totalTeams={teams.length}
+          />
 
           {/* Statistiques des poules */}
           <div className="glass-card p-6 mt-8">
@@ -279,17 +278,34 @@ export function PoolsTab({ tournament, teams, pools, onGeneratePools, onUpdateSc
   );
 }
 
-// Nouveau composant pour les phases finales avec génération progressive
+// Nouveau composant pour les phases finales avec cadres vides qui se remplissent
 interface FinalPhasesProps {
   qualifiedTeams: Team[];
   tournament: Tournament;
   onUpdateScore?: (matchId: string, team1Score: number, team2Score: number) => void;
+  totalTeams: number;
 }
 
-function FinalPhases({ qualifiedTeams, tournament, onUpdateScore }: FinalPhasesProps) {
-  const teamCount = qualifiedTeams.length;
+function FinalPhases({ qualifiedTeams, tournament, onUpdateScore, totalTeams }: FinalPhasesProps) {
+  // Calculer la structure du tableau en fonction du nombre total d'équipes
+  const getExpectedQualified = () => {
+    const poolsOf4 = Math.floor(totalTeams / 4);
+    const remainder = totalTeams % 4;
+    let poolsOf3 = 0;
+    
+    if (remainder === 1 || remainder === 2) {
+      poolsOf3 = 2;
+    } else if (remainder === 3) {
+      poolsOf3 = 1;
+    }
+    
+    // 2 qualifiés par poule
+    return (poolsOf4 + poolsOf3) * 2;
+  };
+
+  const expectedQualified = getExpectedQualified();
   
-  // Déterminer la configuration du tableau en fonction du nombre d'équipes
+  // Déterminer les phases nécessaires
   const getPhaseConfiguration = (count: number) => {
     if (count <= 2) return { phases: ['Finale'], startPhase: 'Finale' };
     if (count <= 4) return { phases: ['Demi-finales', 'Finale'], startPhase: 'Demi-finales' };
@@ -299,7 +315,7 @@ function FinalPhases({ qualifiedTeams, tournament, onUpdateScore }: FinalPhasesP
     return { phases: ['32èmes de finale', '16èmes de finale', '8èmes de finale', 'Quarts de finale', 'Demi-finales', 'Finale'], startPhase: '32èmes de finale' };
   };
 
-  const config = getPhaseConfiguration(teamCount);
+  const config = getPhaseConfiguration(expectedQualified);
 
   // Trouver les matchs des phases finales (ceux sans poolId)
   const finalMatches = tournament.matches.filter(m => !m.poolId);
@@ -310,36 +326,29 @@ function FinalPhases({ qualifiedTeams, tournament, onUpdateScore }: FinalPhasesP
         <h3 className="text-2xl font-bold text-white mb-6 tracking-wide flex items-center space-x-2">
           <Trophy className="w-6 h-6 text-yellow-400" />
           <span>Phases finales</span>
-          <span className="text-lg text-white/70">({teamCount} qualifiés)</span>
+          <span className="text-lg text-white/70">({qualifiedTeams.length}/{expectedQualified} qualifiés)</span>
         </h3>
 
-        {teamCount >= 2 ? (
-          <div className="space-y-8">
-            {config.phases.map((phaseName, index) => (
-              <PhaseSection
-                key={phaseName}
-                phaseName={phaseName}
-                phaseIndex={index}
-                qualifiedTeams={qualifiedTeams}
-                matches={finalMatches}
-                tournament={tournament}
-                onUpdateScore={onUpdateScore}
-              />
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-8">
-            <div className="text-white/60 text-lg">
-              En attente de plus d'équipes qualifiées...
-            </div>
-          </div>
-        )}
+        <div className="space-y-8">
+          {config.phases.map((phaseName, index) => (
+            <PhaseSection
+              key={phaseName}
+              phaseName={phaseName}
+              phaseIndex={index}
+              qualifiedTeams={qualifiedTeams}
+              matches={finalMatches}
+              tournament={tournament}
+              onUpdateScore={onUpdateScore}
+              expectedQualified={expectedQualified}
+            />
+          ))}
+        </div>
       </div>
     </div>
   );
 }
 
-// Composant pour une phase spécifique
+// Composant pour une phase spécifique avec cadres vides
 interface PhaseSectionProps {
   phaseName: string;
   phaseIndex: number;
@@ -347,37 +356,86 @@ interface PhaseSectionProps {
   matches: Match[];
   tournament: Tournament;
   onUpdateScore?: (matchId: string, team1Score: number, team2Score: number) => void;
+  expectedQualified: number;
 }
 
-function PhaseSection({ phaseName, phaseIndex, qualifiedTeams, matches, tournament, onUpdateScore }: PhaseSectionProps) {
+function PhaseSection({ phaseName, phaseIndex, qualifiedTeams, matches, tournament, onUpdateScore, expectedQualified }: PhaseSectionProps) {
   const phaseMatches = matches.filter(m => m.round === phaseIndex + 100); // 100+ pour les phases finales
+  
+  // Calculer le nombre de matchs attendus pour cette phase
+  const getExpectedMatches = () => {
+    if (phaseIndex === 0) {
+      // Première phase : dépend du nombre d'équipes qualifiées
+      return Math.floor(expectedQualified / 2);
+    } else {
+      // Phases suivantes : moitié de la phase précédente
+      const previousPhaseMatches = matches.filter(m => m.round === phaseIndex + 99);
+      return Math.floor(previousPhaseMatches.length / 2);
+    }
+  };
+
+  const expectedMatches = getExpectedMatches();
+  
+  // Créer des cadres vides si nécessaire
+  const emptySlots = Math.max(0, expectedMatches - phaseMatches.length);
   
   return (
     <div className="space-y-4">
       <h4 className="text-xl font-bold text-white tracking-wide border-b border-white/20 pb-2">
-        {phaseName}
+        {phaseName} ({phaseMatches.length}/{expectedMatches})
       </h4>
       
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3">
-        {phaseMatches.length > 0 ? (
-          phaseMatches.map(match => (
-            <CompactFinalMatchBox
-              key={match.id}
-              match={match}
-              tournament={tournament}
-              onUpdateScore={onUpdateScore}
-            />
-          ))
-        ) : (
-          <div className="col-span-full text-center py-8">
-            <div className="text-white/60">
-              {phaseIndex === 0 ? 
-                "En attente de plus d'équipes qualifiées pour commencer les phases finales" :
-                "En attente des résultats de la phase précédente"
-              }
-            </div>
+        {/* Matchs existants */}
+        {phaseMatches.map(match => (
+          <CompactFinalMatchBox
+            key={match.id}
+            match={match}
+            tournament={tournament}
+            onUpdateScore={onUpdateScore}
+          />
+        ))}
+        
+        {/* Cadres vides */}
+        {Array.from({ length: emptySlots }, (_, index) => (
+          <EmptyMatchSlot key={`empty-${index}`} />
+        ))}
+      </div>
+      
+      {phaseMatches.length === 0 && emptySlots === 0 && (
+        <div className="text-center py-8">
+          <div className="text-white/60">
+            {phaseIndex === 0 ? 
+              "En attente de plus d'équipes qualifiées" :
+              "En attente des résultats de la phase précédente"
+            }
           </div>
-        )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Composant pour un cadre vide
+function EmptyMatchSlot() {
+  return (
+    <div className="glass-card p-3 bg-gradient-to-br from-gray-500/10 to-gray-600/10 border-gray-400/30 min-h-[120px] opacity-50">
+      <div className="text-center mb-2">
+        <span className="text-xs font-bold text-gray-400">T-</span>
+      </div>
+      
+      <div className="space-y-2">
+        <div className="flex items-center justify-center">
+          <span className="font-bold text-gray-400 text-sm">En attente...</span>
+        </div>
+        
+        <div className="flex items-center justify-center">
+          <span className="text-gray-400/60 font-bold text-xs">VS</span>
+        </div>
+        
+        <div className="flex items-center justify-center">
+          <span className="font-bold text-gray-400 text-sm">En attente...</span>
+        </div>
       </div>
     </div>
   );
