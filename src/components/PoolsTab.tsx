@@ -536,6 +536,7 @@ interface CompactMatchBoxProps {
 function CompactMatchBox({ team1, team2, match, bgColor = "bg-white/5", onUpdateScore, showOnlyIfNeeded = true }: CompactMatchBoxProps) {
   const [showWinnerModal, setShowWinnerModal] = useState(false);
 
+  // CORRECTION : Ne pas masquer la case si showOnlyIfNeeded est false
   if (showOnlyIfNeeded && (!team1 || !team2)) {
     return (
       <div className={`glass-card p-2 ${bgColor} opacity-50 text-center`}>
@@ -569,7 +570,8 @@ function CompactMatchBox({ team1, team2, match, bgColor = "bg-white/5", onUpdate
     setShowWinnerModal(false);
   };
 
-  // CORRECTION : Toujours afficher les noms même si pas d'équipes définies
+  // CORRECTION PRINCIPALE : Toujours afficher les noms même si pas d'équipes définies
+  // Mais garder les vrais noms quand ils existent
   const displayTeam1Name = team1?.name || "En attente...";
   const displayTeam2Name = team2?.name || "En attente...";
 
@@ -581,23 +583,11 @@ function CompactMatchBox({ team1, team2, match, bgColor = "bg-white/5", onUpdate
           <span className="text-xs font-bold text-blue-400">T{match?.court || '-'}</span>
         </div>
 
-        {/* Bouton Trophée en haut à droite */}
-        {match && onUpdateScore && team1 && team2 && !match.completed && (
-          <div className="absolute top-1 right-1">
-            <button
-              onClick={() => setShowWinnerModal(true)}
-              className="p-1 bg-yellow-500/80 text-white rounded hover:bg-yellow-500 transition-colors"
-              title="Sélectionner le gagnant"
-            >
-              <Trophy className="w-3 h-3" />
-            </button>
-          </div>
-        )}
-
-        {/* Équipes centrées SANS SCORES mais avec couronnes - NOMS TOUJOURS VISIBLES */}
-        <div className="flex items-center justify-center text-xs pt-4 pb-1">
-          <div className="flex items-center space-x-1">
-            <span className="font-bold text-white truncate">
+        {/* Bouton Trophée centré verticalement avec les noms */}
+        <div className="flex items-center justify-between pt-4 pb-1">
+          {/* Équipe 1 */}
+          <div className="flex items-center space-x-1 flex-1">
+            <span className="font-bold text-white truncate text-xs">
               {displayTeam1Name}
             </span>
             {winner?.id === team1?.id && (
@@ -605,13 +595,28 @@ function CompactMatchBox({ team1, team2, match, bgColor = "bg-white/5", onUpdate
             )}
           </div>
           
-          <span className="mx-2 text-white/60 text-xs">vs</span>
+          {/* Bouton Trophée au centre */}
+          {match && onUpdateScore && team1 && team2 && !match.completed && (
+            <button
+              onClick={() => setShowWinnerModal(true)}
+              className="mx-2 p-1 bg-yellow-500/80 text-white rounded hover:bg-yellow-500 transition-colors flex-shrink-0"
+              title="Sélectionner le gagnant"
+            >
+              <Trophy className="w-3 h-3" />
+            </button>
+          )}
           
-          <div className="flex items-center space-x-1">
+          {/* VS au centre si pas de bouton */}
+          {(!match || !onUpdateScore || !team1 || !team2 || match.completed) && (
+            <span className="mx-2 text-white/60 text-xs flex-shrink-0">vs</span>
+          )}
+          
+          {/* Équipe 2 */}
+          <div className="flex items-center space-x-1 flex-1 justify-end">
             {winner?.id === team2?.id && (
               <Crown className="w-3 h-3 text-yellow-400 flex-shrink-0" />
             )}
-            <span className="font-bold text-white truncate">
+            <span className="font-bold text-white truncate text-xs">
               {displayTeam2Name}
             </span>
           </div>
